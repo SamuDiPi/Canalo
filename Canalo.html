@@ -47,7 +47,7 @@
 </head>
 <body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
 
-  <!-- BARRA DEI MENU STILE WINDOWS / CAD DESKTOP -->
+    <!-- BARRA DEI MENU STILE WINDOWS / CAD DESKTOP -->
   <nav class="bg-slate-900 border-b border-slate-700/80 text-xs select-none sticky top-0 z-50">
     <div class="max-w-[1920px] mx-auto px-3 flex items-center justify-between">
       <div class="flex items-center">
@@ -55,37 +55,76 @@
         <div class="flex items-center gap-1.5 px-2 py-1.5 mr-2 border-r border-slate-800">
           <span class="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px] flex items-center justify-center border border-emerald-500/40">C</span>
           <span class="font-bold text-slate-200 tracking-tight">CanaloCAD</span>
-          <span class="text-[9px] mono text-slate-400">v16.3</span>
+          <span class="text-[9px] mono text-slate-400">v16.4</span>
         </div>
 
-        <!-- VOCI DI MENU A TENDINA (STILE WINDOWS) -->
+        <!-- VOCI DI MENU A TENDINA (STILE WINDOWS CAD DESKTOP) -->
         <div class="flex items-center relative" id="winMenuBar">
           <!-- 1. FILE -->
           <div class="win-menu-item relative">
             <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">File</button>
-            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
-              <button type="button" onclick="document.getElementById('dwgInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-200 flex items-center justify-between">
-                <span>📁 Importa .DWG / .DXF Reale...</span>
-                <span class="text-[10px] text-slate-400 mono">Ctrl+O</span>
-              </button>
-              <button type="button" onclick="document.getElementById('pdfInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-purple-500/20 hover:text-purple-200 flex items-center justify-between">
-                <span>📄 Importa PDF Unifilare...</span>
-                <span class="text-[10px] text-slate-400 mono">PDF</span>
+            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-60 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="resetProject(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between">
+                <span>📄 Nuovo Progetto</span>
+                <span class="text-[10px] text-slate-400 mono">Del</span>
               </button>
               <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="exportProjectJSON(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>💾 Salva Progetto (.JSON)...</span>
+                <span class="text-[10px] text-slate-400 mono">Ctrl+S</span>
+              </button>
+              <button type="button" onclick="document.getElementById('jsonProjectInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>📂 Apri Progetto (.JSON)...</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="showPwaOfflineInfo(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-200 text-emerald-300 flex items-center justify-between">
+                <span>⚡ Disponibilità Offline (PWA)</span>
+                <span class="text-[9px] px-1.5 py-0.5 bg-emerald-500/30 rounded font-bold">Offline Ready</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. IMPORTA -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Importa</button>
+            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="document.getElementById('dwgInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-200 flex items-center justify-between font-medium">
+                <span>📐 Importa .DWG Reale (WASM)...</span>
+                <span class="text-[10px] text-cyan-300 mono" id="badgeMenuDwg">Ctrl+O</span>
+              </button>
+              <button type="button" onclick="document.getElementById('dwgInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>📐 Importa File .DXF Reale...</span>
+                <span class="text-[10px] text-slate-400 mono">DXF</span>
+              </button>
+              <button type="button" onclick="document.getElementById('pdfInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-purple-500/20 hover:text-purple-200 flex items-center justify-between font-medium">
+                <span>📄 Importa Schema Unifilare PDF...</span>
+                <span class="text-[10px] text-purple-300 mono" id="badgeMenuPdf">Ctrl+U</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="toggleDwgInspector(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-emerald-300 flex items-center justify-between">
+                <span>🔍 Ispettore Entità DWG / WASM</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. ESPORTA -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Esporta</button>
+            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
               <button type="button" onclick="exportAutoCADDXF(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-amber-500/20 hover:text-amber-200 font-semibold flex items-center justify-between">
-                <span>💾 Scarica AutoCAD .DXF (1:1)...</span>
-                <span class="text-[10px] text-amber-400 mono">DXF</span>
+                <span>⚡ Scarica AutoCAD .DXF (1:1)...</span>
+                <span class="text-[10px] text-amber-400 mono" id="badgeMenuDxf">Ctrl+E</span>
               </button>
               <button type="button" onclick="toggleExportOptionsModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
                 <span>⚙️ Opzioni Esportazione DXF...</span>
               </button>
+              <div class="border-t border-slate-800 my-1"></div>
               <button type="button" onclick="exportAutoLISPDWG(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-200 flex items-center justify-between">
                 <span>📜 Genera Script AutoLISP (.SCR)</span>
                 <span class="text-[10px] text-slate-400 mono">SCR</span>
               </button>
               <button type="button" onclick="exportWordReport(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-blue-500/20 hover:text-blue-200 flex items-center justify-between">
-                <span>📝 Esporta Relazione Tecnica (.DOC)</span>
+                <span>📄 Esporta Relazione Tecnica (.DOC)</span>
                 <span class="text-[10px] text-slate-400 mono">DOC</span>
               </button>
               <button type="button" onclick="exportCSV(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
@@ -93,52 +132,45 @@
                 <span class="text-[10px] text-slate-400 mono">CSV</span>
               </button>
               <div class="border-t border-slate-800 my-1"></div>
-              <button type="button" onclick="exportProjectJSON(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
-                <span>💾 Salva Progetto (.JSON)...</span>
-              </button>
-              <button type="button" onclick="document.getElementById('jsonProjectInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
-                <span>📂 Apri Progetto (.JSON)...</span>
-              </button>
-              <div class="border-t border-slate-800 my-1"></div>
-              <button type="button" onclick="showPwaOfflineInfo(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-200 text-emerald-300 flex items-center justify-between">
-                <span>📲 Disponibilità Offline (PWA)</span>
-                <span class="text-[9px] px-1.5 py-0.5 bg-emerald-500/30 rounded font-bold">Offline Ready</span>
+              <button type="button" onclick="window.print(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>🖨️ Stampa / Salva PDF Vettoriale</span>
+                <span class="text-[10px] text-slate-400 mono">Ctrl+P</span>
               </button>
             </div>
           </div>
 
-          <!-- 2. MODIFICA -->
+          <!-- 4. MODIFICA -->
           <div class="win-menu-item relative">
             <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Modifica</button>
             <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-60 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
               <button type="button" onclick="swapDimensions(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-amber-300 flex items-center justify-between">
-                <span>⇄ Inverti Base L e Altezza H</span>
-                <span class="text-[10px] text-slate-400 mono">L ↔ H</span>
+                <span>🔄 Inverti Base L e Altezza H</span>
+                <span class="text-[10px] text-slate-400 mono" id="badgeMenuSwap">Ctrl+I</span>
               </button>
               <button type="button" onclick="resetProject(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-red-500/20 text-red-300 flex items-center justify-between">
-                <span>🗑 Svuota Canalina (0 Cavi)</span>
+                <span>🗑️ Svuota Canalina (0 Cavi)</span>
                 <span class="text-[10px] text-slate-400 mono">Del</span>
               </button>
               <div class="border-t border-slate-800 my-1"></div>
               <div class="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase">Modalità Posa Cavi:</div>
               <button type="button" onclick="state.packing='gravity'; document.getElementById('inpPacking').value='gravity'; recalculateAll(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">
-                <span>🧭 Gravità & Scomparti (CEI 64-8)</span>
+                <span>⬇️ Gravità &amp; Scomparti (CEI 64-8)</span>
               </button>
               <button type="button" onclick="state.packing='compact'; document.getElementById('inpPacking').value='compact'; recalculateAll(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">
-                <span>📐 Posa Compatta Ordinata</span>
+                <span>📦 Posa Compatta Ordinata</span>
               </button>
               <button type="button" onclick="state.packing='free'; document.getElementById('inpPacking').value='free'; recalculateAll(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">
-                <span>🔀 Coordinate DWG Originali</span>
+                <span>📐 Coordinate DWG Originali</span>
               </button>
               <div class="border-t border-slate-800 my-1"></div>
               <button type="button" onclick="recalculateAll(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
-                <span>⚡ Ricalcola Derating & Portate</span>
+                <span>⚡ Ricalcola Derating &amp; Portate</span>
                 <span class="text-[10px] text-slate-400 mono">F5</span>
               </button>
             </div>
           </div>
 
-          <!-- 3. VISUALIZZA -->
+          <!-- 5. VISUALIZZA -->
           <div class="win-menu-item relative">
             <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Visualizza</button>
             <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
@@ -149,92 +181,122 @@
                 <span>🔍 Zoom Tutto (Centra Sezione)</span>
                 <span class="text-[10px] text-slate-400 mono">Home</span>
               </button>
+              <button type="button" onclick="zoomSection(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>📐 Zoom Solo Sezione</span>
+              </button>
+              <button type="button" onclick="zoomTables(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>📊 Zoom Solo Tabelle</span>
+              </button>
               <div class="border-t border-slate-800 my-1"></div>
               <div class="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase">Sezioni Disegno Costruttivo:</div>
               <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
-                <span>📐 Proiezione 3D Assonometrica</span>
-                <input type="checkbox" id="menuChk3D" onchange="toggleSectionExport('iso3d', this.checked)" class="rounded text-cyan-500">
+                <span>📦 Proiezione 3D Assonometrica</span>
+                <input type="checkbox" id="menuChk3D" checked onchange="toggleSectionExport('iso3d', this.checked)" class="rounded text-cyan-500">
               </label>
               <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
-                <span>📈 Curva di Carico & Freccia</span>
-                <input type="checkbox" id="menuChkChart" onchange="toggleSectionExport('chart', this.checked)" class="rounded text-cyan-500">
+                <span>📈 Curva di Carico &amp; Freccia</span>
+                <input type="checkbox" id="menuChkChart" checked onchange="toggleSectionExport('chart', this.checked)" class="rounded text-cyan-500">
               </label>
               <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
                 <span>📋 Distinta Cavi Posati (BOM)</span>
-                <input type="checkbox" id="menuChkBOM" onchange="toggleSectionExport('bom', this.checked)" class="rounded text-cyan-500">
+                <input type="checkbox" id="menuChkBOM" checked onchange="toggleSectionExport('bom', this.checked)" class="rounded text-cyan-500">
               </label>
               <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
-                <span>🏛 Cartiglio & Committente</span>
-                <input type="checkbox" id="menuChkCartiglio" onchange="toggleSectionExport('cartiglio', this.checked)" class="rounded text-cyan-500">
+                <span>📐 Cartiglio &amp; Committente</span>
+                <input type="checkbox" id="menuChkCartiglio" checked onchange="toggleSectionExport('cartiglio', this.checked)" class="rounded text-cyan-500">
               </label>
             </div>
           </div>
 
-          <!-- 4. DATABASE -->
+          <!-- 6. DATABASE -->
           <div class="win-menu-item relative">
             <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Database</button>
             <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
-              <button type="button" onclick="toggleDatabaseModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-200 font-bold text-cyan-400 flex items-center justify-between">
-                <span>📚 Catalogo Tecnico Cavi & Canaline</span>
+              <button type="button" onclick="filterDbCategory('all'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-200 font-bold text-cyan-400 flex items-center justify-between">
+                <span>📖 Catalogo Tecnico Cavi &amp; Canaline</span>
+                <span class="text-[10px] text-cyan-400 mono" id="badgeMenuDb">F3</span>
               </button>
-              <button type="button" onclick="document.getElementById('dbCategorySelect').value='bt_uni'; renderDatabaseModal(); toggleDatabaseModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="filterDbCategory('bt_uni'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
                 <span>⚡ Cavi BT Unipolari (FG16M16 / FS17)</span>
               </button>
-              <button type="button" onclick="document.getElementById('dbCategorySelect').value='bt_multi'; renderDatabaseModal(); toggleDatabaseModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+              <button type="button" onclick="filterDbCategory('bt_multi'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
                 <span>🔌 Cavi BT Multipolari (FG16OM16 / H07RN)</span>
               </button>
-              <button type="button" onclick="document.getElementById('dbCategorySelect').value='signal'; renderDatabaseModal(); toggleDatabaseModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
-                <span>📡 Segnali & Dati (LiYCY / KNX / Cat6)</span>
+              <button type="button" onclick="filterDbCategory('signal'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>📡 Segnali &amp; Dati (LiYCY / KNX / Cat6)</span>
               </button>
-              <button type="button" onclick="document.getElementById('dbCategorySelect').value='fire'; renderDatabaseModal(); toggleDatabaseModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+              <button type="button" onclick="filterDbCategory('fire'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
                 <span>🔥 Resistenti al Fuoco PH120 (FTG18)</span>
+              </button>
+              <button type="button" onclick="filterDbCategory('data'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>🌐 Reti Dati LAN &amp; Fibra Ottica</span>
+              </button>
+              <button type="button" onclick="filterDbCategory('trays_supports'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-amber-300">
+                <span>🏗️ Canaline &amp; Mensole Normate</span>
               </button>
             </div>
           </div>
 
-          <!-- 5. PROGETTO -->
+          <!-- 7. PROGETTO -->
           <div class="win-menu-item relative">
             <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Progetto</button>
-            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-56 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="openCartiglioSettingsModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-amber-500/20 text-amber-300 flex items-center justify-between font-bold">
+                <span>📐 Dati Cartiglio, Progettista &amp; Committente...</span>
+                <span class="text-[10px] text-amber-300 mono" id="badgeMenuCartiglio">F2</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
               <button type="button" onclick="addNewSectionTab(false); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 text-emerald-300 flex items-center justify-between">
                 <span>➕ Nuova Sezione Canalina</span>
               </button>
               <button type="button" onclick="addNewSectionTab(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 text-cyan-300 flex items-center justify-between">
-                <span>⧉ Duplica Sezione Corrente</span>
+                <span>📑 Duplica Sezione Corrente</span>
               </button>
               <button type="button" onclick="deleteCurrentSectionTab(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-red-500/20 text-red-300 flex items-center justify-between">
-                <span>🗑 Elimina Sezione Corrente</span>
+                <span>🗑️ Elimina Sezione Corrente</span>
               </button>
             </div>
           </div>
 
-          <!-- 6. STRUMENTI -->
+          <!-- 8. STRUMENTI -->
           <div class="win-menu-item relative">
             <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Strumenti</button>
-            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-60 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
-              <button type="button" onclick="toggleDwgInspector(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-emerald-300 flex items-center justify-between">
-                <span>🔍 Ispettore Entità DWG / WASM</span>
+            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="openShortcutsModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 text-cyan-300 flex items-center justify-between font-bold">
+                <span>⌨️ Personalizza Scorciatoie da Tastiera...</span>
+                <span class="text-[10px] text-cyan-300 mono" id="badgeMenuShortcuts">F4</span>
               </button>
-              <button type="button" onclick="const m=document.getElementById('planTagModal'); if(m) m.classList.remove('hidden'); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
-                <span>🏷 Etichetta Planimetria & Sigla</span>
+              <button type="button" onclick="openCartiglioSettingsModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>🏷️ Etichetta Planimetria &amp; Sigla</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="toggleRuler(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>📏 Righello CAD Misura Distanze</span>
+              </button>
+              <button type="button" onclick="autoSizeTray(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-amber-300">
+                <span>⚡ Dimensionamento Automatico (Auto-Size)</span>
+              </button>
+              <button type="button" onclick="toggleDwgInspector(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-emerald-300">
+                <span>🔍 Ispettore Entità DWG / WASM</span>
               </button>
             </div>
           </div>
 
-          <!-- 7. AIUTO -->
+          <!-- 9. AIUTO -->
           <div class="win-menu-item relative">
             <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Aiuto</button>
             <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
               <button type="button" onclick="showQuickHelpModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between">
-                <span>ℹ️ Guida Rapida & Comandi</span>
-                <span class="text-[10px] text-slate-400 mono">F1</span>
+                <span>📖 Guida Rapida &amp; Comandi</span>
+                <span class="text-[10px] text-slate-400 mono" id="badgeMenuHelp">F1</span>
               </button>
               <button type="button" onclick="showPwaOfflineInfo(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-emerald-300 flex items-center justify-between">
-                <span>🌐 Informazioni PWA Offline</span>
+                <span>⚡ Informazioni PWA Offline</span>
               </button>
               <div class="border-t border-slate-800 my-1"></div>
-              <div class="px-3 py-1.5 text-[10px] text-slate-400">
-                Constructive Cable Tray Studio v16.3<br>Motore CAD 100% Client-Side
+              <div class="px-3 py-1.5 text-[10px] text-slate-400 leading-tight">
+                Constructive Cable Tray Studio v16.4<br>Motore CAD 100% Client-Side &bull; LibreDWG C/WASM
               </div>
             </div>
           </div>
@@ -253,28 +315,16 @@
     </div>
   </nav>
 
-  <!-- BARRA DEGLI STRUMENTI RAPIDI (SLIM TOOLBAR ESSENZIALE) -->
+  <!-- BARRA DEGLI STRUMENTI RAPIDI (SLIM TOOLBAR ESSENZIALE & PULITA) -->
   <div class="bg-slate-900/90 border-b border-slate-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
     <div class="flex items-center gap-2 flex-wrap">
-      <!-- BOTTONI RAPIDI APERTURA FILE -->
-      <button type="button" onclick="document.getElementById('dwgInput').click()" class="inline-flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1 rounded shadow text-xs transition" title="Carica file reale DWG o DXF">
-        <span>📁 Apri DWG / DXF</span>
-      </button>
-      <input id="dwgInput" type="file" accept=".dwg,.dxf" class="hidden" onchange="importCADFile(this)">
-
-      <button type="button" onclick="document.getElementById('pdfInput').click()" class="inline-flex items-center gap-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-400/50 px-2.5 py-1 rounded font-semibold text-xs transition" title="Abbina schema unifilare PDF">
-        <span>📄 PDF Unifilare</span>
-      </button>
-      <input id="pdfInput" type="file" accept=".pdf" class="hidden" onchange="importPDFFile(this)">
-      <input id="jsonProjectInput" type="file" accept=".json" class="hidden" onchange="importProjectJSON(this)">
-
-      <div class="h-4 w-px bg-slate-700 mx-1 hidden sm:block"></div>
-
       <!-- TITOLO CANALINA IN TESTATA RAPIDA -->
       <div class="flex items-center bg-slate-950 border border-slate-700 rounded px-2 py-0.5">
         <span class="text-[10px] mono text-slate-400 mr-1.5 font-bold">Titolo:</span>
         <input id="inpTitleQuick" type="text" value="NUOVA CANALINA" onchange="document.getElementById('inpTitle').value = this.value; state.title = this.value; drawScene();" class="bg-transparent text-xs text-amber-300 font-semibold w-48 sm:w-64 focus:outline-none" title="Titolo della canalina (ereditato da parentesi)">
       </div>
+      <!-- Elemento sicuro per compatibilità di lettura -->
+      <span id="headerTitle" class="hidden"></span>
 
       <div class="h-4 w-px bg-slate-700 mx-1 hidden sm:block"></div>
 
@@ -283,16 +333,33 @@
       <button type="button" onclick="addNewSectionTab(false)" class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold transition" title="Aggiungi nuova tratta">
         +
       </button>
+
+      <!-- PULSANTI RAPIDI APERTURA -->
+      <div class="h-4 w-px bg-slate-700 mx-1 hidden sm:block"></div>
+      <button type="button" onclick="document.getElementById('dwgInput').click()" class="inline-flex items-center gap-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded font-semibold text-[11px] transition" title="Apri DWG / DXF (Ctrl+O)">
+        <span>📂 DWG/DXF</span>
+      </button>
+      <input id="dwgInput" type="file" accept=".dwg,.dxf" class="hidden" onchange="importCADFile(this)">
+
+      <button type="button" onclick="document.getElementById('pdfInput').click()" class="inline-flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-semibold text-[11px] transition" title="Importa PDF Unifilare (Ctrl+U)">
+        <span>📄 PDF</span>
+      </button>
+      <input id="pdfInput" type="file" accept=".pdf" class="hidden" onchange="importPDFFile(this)">
+      <input id="jsonProjectInput" type="file" accept=".json" class="hidden" onchange="importProjectJSON(this)">
+
+      <button type="button" onclick="openCartiglioSettingsModal()" class="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-[11px] transition" title="Dati Cartiglio, Progettista &amp; Committente (F2)">
+        <span>📐 Cartiglio</span>
+      </button>
     </div>
 
     <!-- AREA EXPORT RAPIDO A DESTRA -->
     <div class="flex items-center gap-1.5">
-      <div class="hidden md:flex items-center bg-slate-950 border border-slate-700 rounded px-2 py-0.5">
+      <div class="hidden lg:flex items-center bg-slate-950 border border-slate-700 rounded px-2 py-0.5">
         <span class="text-[10px] mono text-slate-400 mr-1">File:</span>
         <input id="exportName" type="text" value="NUOVA_CANALINA" class="bg-transparent text-xs mono text-amber-300 font-semibold w-36 focus:outline-none">
       </div>
       <button type="button" onclick="exportAutoCADDXF()" class="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded shadow text-xs transition" title="Scarica il disegno CAD in formato .DXF 1:1 identico alla preview">
-        <span>💾 Scarica DXF</span>
+        <span>⚡ Scarica DXF</span>
       </button>
       <button type="button" onclick="toggleExportOptionsModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-2 py-1 rounded font-semibold transition" title="Opzioni di Stile, Font e Formato DXF">
         <span>⚙️</span>
@@ -602,6 +669,9 @@
           </div>
         </div>
 
+        <!-- CONTROLLO POSIZIONE SETTI DINAMICO (TRASCINABILI E REGOLABILI) -->
+        <div id="septumPosControls" class="hidden p-2 bg-slate-950/80 border border-cyan-500/40 rounded-md text-[11px] space-y-1.5 shadow-inner"></div>
+
         <div>
           <label class="block text-[10px] text-emerald-300 font-semibold mb-0.5">Conduttore Equipotenziale di Terra (PE)</label>
           <select id="inpEarth" onchange="syncFromUI()" class="w-full bg-slate-950 border border-emerald-500/50 rounded px-2 py-1 text-xs text-white">
@@ -750,40 +820,7 @@
         </div>
       </div>
 
-      <!-- CARTIGLIO PROGETTO -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 shadow">
-        <h2 class="text-[11px] font-bold uppercase tracking-wider text-amber-400 mb-1">Cartiglio Tavola CAD</h2>
-        <div class="grid grid-cols-2 gap-1.5 text-xs">
-          <div>
-            <label class="block text-[9px] text-slate-400">Committente</label>
-            <input id="inpClient" type="text" value="PROGETTO ESECUTIVO" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] mono text-white">
-          </div>
-          <div>
-            <label class="block text-[9px] text-slate-400">Cod. Elaborato</label>
-            <input id="inpDocCode" type="text" value="PE-IMP-EL-PART-02" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] mono text-white">
-          </div>
-          <div>
-            <label class="block text-[9px] text-slate-400">Progettista</label>
-            <input id="inpAuthor" type="text" value="STUDIO TECNICO" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] mono text-white">
-          </div>
-          <div>
-            <label class="block text-[9px] text-amber-300 font-semibold">Scala Disegno</label>
-            <select id="inpScale" onchange="onScaleChange(this.value)" class="w-full bg-slate-950 border border-amber-500/50 rounded px-1.5 py-0.5 text-[11px] mono text-amber-300 font-semibold">
-              <option value="1:1" selected>1:1 (Costruttivo)</option>
-              <option value="1:2">1:2</option>
-              <option value="1:5">1:5</option>
-              <option value="1:10">1:10</option>
-              <option value="1:20">1:20</option>
-              <option value="1:50">1:50</option>
-              <option value="1:100">1:100 (Layout)</option>
-            </select>
-          </div>
-          <div class="col-span-2">
-            <label class="block text-[9px] text-slate-400">Dicitura Cartiglio (Scala / Rev)</label>
-            <input id="inpScaleRev" type="text" value="Scala 1:1 - Rev.00" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] mono text-white">
-          </div>
-        </div>
-      </div>
+
 
     </section>
 
@@ -1051,6 +1088,104 @@
       </div>
       <div class="p-3 bg-slate-950 border-t border-slate-800 text-right">
         <button type="button" onclick="closePwaOfflineModal()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded transition">Ho capito</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE DATI CARTIGLIO, PROGETTISTA & COMMITTENTE (F2) -->
+  <div id="cartiglioSettingsModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl w-full max-w-xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-xs">
+      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center border border-amber-500/30">📐</span>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Dati Cartiglio, Progettista &amp; Committente</h3>
+        </div>
+        <button type="button" onclick="closeCartiglioSettingsModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3.5 text-slate-300 text-xs">
+        <p class="text-[11px] text-slate-400">Queste informazioni vengono impresse nel cartiglio unificato della tavola grafica CAD 1:1 e nel file .DXF esportato.</p>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2">
+            <label class="block text-[10px] uppercase font-bold text-amber-300 mb-1">Committente / Cliente</label>
+            <input id="cfgClient" type="text" value="PROGETTO ESECUTIVO" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-white focus:outline-none focus:border-amber-400">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-[10px] uppercase font-bold text-slate-300 mb-1">Titolo Opera / Progetto</label>
+            <input id="cfgProject" type="text" value="IMPIANTI ELETTRICI E SPECIALI" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400">
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-300 mb-1">Progettista / Disegnatore</label>
+            <input id="cfgAuthor" type="text" value="STUDIO TECNICO" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-white focus:outline-none focus:border-cyan-400">
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-300 mb-1">Responsabile / Approvatore</label>
+            <input id="cfgChecker" type="text" value="RESPONSABILE TECNICO" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-white focus:outline-none focus:border-cyan-400">
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-300 mb-1">Codice Tavola / Elaborato</label>
+            <input id="cfgDocCode" type="text" value="PE-IMP-EL-PART-02" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-white focus:outline-none focus:border-cyan-400">
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-slate-300 mb-1">Revisione</label>
+            <input id="cfgRev" type="text" value="Rev. 00" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-white focus:outline-none focus:border-cyan-400">
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-cyan-300 mb-1">Scala Rappresentazione CAD</label>
+            <select id="cfgScale" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white">
+              <option value="1:1" selected>1:1 (Costruttivo Esecutivo)</option>
+              <option value="1:2">1:2</option>
+              <option value="1:5">1:5</option>
+              <option value="1:10">1:10</option>
+              <option value="1:20">1:20</option>
+              <option value="1:50">1:50</option>
+              <option value="1:100">1:100 (Layout Planimetrico)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-bold text-emerald-300 mb-1">Etichetta Planimetria &amp; Quota</label>
+            <input id="cfgPlanTag" type="text" value="SEZ. A-A | H=+3.20m" class="w-full bg-slate-950 border border-emerald-500/40 rounded px-2.5 py-1.5 text-xs mono text-emerald-300 focus:outline-none focus:border-emerald-400">
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800">
+          <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer">
+            <input type="checkbox" id="cfgSaveDefaults" checked class="accent-amber-400 rounded">
+            <span>Memorizza questi dati come predefiniti per tutti i nuovi progetti (LocalStorage)</span>
+          </label>
+        </div>
+      </div>
+      <div class="p-3 bg-slate-950 border-t border-slate-800 flex justify-between items-center">
+        <button type="button" onclick="closeCartiglioSettingsModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-medium transition">Annulla</button>
+        <button type="button" onclick="saveCartiglioSettings()" class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded font-bold transition">Applica al Disegno</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE PERSONALIZZAZIONE SCORCIATOIE DA TASTIERA (F4) -->
+  <div id="keyboardShortcutsModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl w-full max-w-xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-xs">
+      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-cyan-500/20 text-cyan-300 font-bold flex items-center justify-center border border-cyan-500/30">⌨</span>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Personalizzazione Scorciatoie da Tastiera</h3>
+        </div>
+        <button type="button" onclick="closeShortcutsModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3 text-slate-300 text-xs">
+        <p class="text-[11px] text-slate-400">Clicca sul tasto a destra di qualsiasi comando per assegnare una nuova combinazione di tasti. Viene salvata automaticamente sul browser.</p>
+        
+        <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/60 divide-y divide-slate-800/80" id="shortcutsTableBody">
+          <!-- Popolato dinamicamente -->
+        </div>
+
+        <div id="rebindBanner" class="hidden bg-amber-500/20 border border-amber-500/50 text-amber-200 p-2.5 rounded-lg text-center font-bold animate-pulse text-xs">
+          Premi la nuova combinazione di tasti sulla tastiera... (o premi Esc per annullare)
+        </div>
+      </div>
+      <div class="p-3 bg-slate-950 border-t border-slate-800 flex justify-between items-center">
+        <button type="button" onclick="resetDefaultShortcuts()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-medium transition text-[11px]">Ripristina Predefinite</button>
+        <button type="button" onclick="closeShortcutsModal()" class="px-4 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded font-bold transition">Chiudi</button>
       </div>
     </div>
   </div>
@@ -1426,6 +1561,7 @@
       material: "sendzimir",
       cover: "snap",
       septums: 0,
+      septumPositions: [],
       earth: "gv16",
       clearance: 150,
       reiCount: 0,
@@ -1439,7 +1575,7 @@
       showLoadChart: true,
       showBOM: true,
       showCartiglio: true,
-      tb: { client: "PROGETTO ESECUTIVO", docCode: "PE-IMP-EL-PART-02", author: "STUDIO TECNICO", scaleRev: "Scala 1:1 - Rev.00" },
+      tb: { client: "PROGETTO ESECUTIVO", project: "IMPIANTI ELETTRICI E SPECIALI", docCode: "PE-IMP-EL-PART-02", author: "STUDIO TECNICO", checker: "RESPONSABILE TECNICO", rev: "Rev. 00", date: new Date().toLocaleDateString("it-IT"), scaleRev: "Scala 1:1 - Rev.00" },
       cables: []
     };
 
@@ -1575,6 +1711,12 @@
       state.reducers = 0;
       state.title = "NUOVA CANALINA 01 - L=200mm H=75mm";
       state.cables = [];
+      state.septums = 0;
+      state.septumPositions = [];
+      state.showIso3D = true;
+      state.showLoadChart = true;
+      state.showBOM = true;
+      state.showCartiglio = true;
       pushStateToUI();
       recalculateAll();
       fitAll();
@@ -1608,6 +1750,19 @@
       if (elScale) elScale.value = state.scale || "1:1";
       const elDxfScale = document.getElementById("selDxfScale");
       if (elDxfScale) elDxfScale.value = state.scale || "1:1";
+      const elCfgScale = document.getElementById("cfgScale");
+      if (elCfgScale) elCfgScale.value = state.scale || "1:1";
+
+      const chkChart = document.getElementById("chkExportChart"); if (chkChart) chkChart.checked = state.showLoadChart !== false;
+      const chkMChart = document.getElementById("menuChkChart"); if (chkMChart) chkMChart.checked = state.showLoadChart !== false;
+      const chkBOM = document.getElementById("chkExportBOM"); if (chkBOM) chkBOM.checked = state.showBOM !== false;
+      const chkMBOM = document.getElementById("menuChkBOM"); if (chkMBOM) chkMBOM.checked = state.showBOM !== false;
+      const chkIso = document.getElementById("chkExportIso3D"); if (chkIso) chkIso.checked = state.showIso3D !== false;
+      const chkMIso = document.getElementById("menuChk3D"); if (chkMIso) chkMIso.checked = state.showIso3D !== false;
+      const chkIso3 = document.getElementById("chkIso3D"); if (chkIso3) chkIso3.checked = state.showIso3D !== false;
+      const chkCart = document.getElementById("chkExportCartiglio"); if (chkCart) chkCart.checked = state.showCartiglio !== false;
+      const chkMCart = document.getElementById("menuChkCartiglio"); if (chkMCart) chkMCart.checked = state.showCartiglio !== false;
+
       document.getElementById("inpWidth").value = state.width;
       document.getElementById("inpHeight").value = state.height;
       document.getElementById("inpThk").value = String(state.thk);
@@ -1617,18 +1772,20 @@
       document.getElementById("inpPlanTag").value = state.planTag;
       document.getElementById("chkEdge").checked = state.edgeGuard;
       document.getElementById("chkClamps").checked = state.clamps;
-      document.getElementById("chkIso3D").checked = state.showIso3D;
+      document.getElementById("chkIso3D").checked = state.showIso3D !== false;
       document.getElementById("chkPlanTag").checked = state.showPlanTag;
       document.getElementById("inpBrand").value = state.brand;
       document.getElementById("inpMaterial").value = state.material;
       document.getElementById("inpCover").value = state.cover;
-      document.getElementById("inpSeptums").value = String(state.septums);
+      document.getElementById("inpSeptums").value = String(state.septums || 0);
+      updateSeptumUI();
       document.getElementById("inpEarth").value = state.earth;
       document.getElementById("inpClearance").value = String(state.clearance);
       document.getElementById("inpRei").value = state.reiCount;
       document.getElementById("inpSupport").value = state.support;
       document.getElementById("inpSpan").value = state.spanM;
-      document.getElementById("lblSpan").textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
+      const elLblSpan = document.getElementById("lblSpan");
+      if (elLblSpan) elLblSpan.textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
       document.getElementById("inpSeismic").value = state.seismic;
       document.getElementById("inpBends").value = state.bends90;
       document.getElementById("inpTees").value = state.tees;
@@ -1654,7 +1811,13 @@
       state.seriesId = document.getElementById("inpSeries").value;
       state.material = document.getElementById("inpMaterial").value;
       state.cover = document.getElementById("inpCover").value;
+      const prevSeptums = state.septums || 0;
       state.septums = parseInt(document.getElementById("inpSeptums").value, 10) || 0;
+      if (state.septums !== prevSeptums) {
+        state.septumPositions = [];
+        getSeptumXList();
+      }
+      updateSeptumUI();
       state.earth = document.getElementById("inpEarth").value;
       state.clearance = parseInt(document.getElementById("inpClearance").value, 10) || 0;
       state.reiCount = Math.max(0, parseInt(document.getElementById("inpRei").value, 10) || 0);
@@ -1664,30 +1827,144 @@
       state.bends90 = Math.max(0, parseInt(document.getElementById("inpBends").value, 10) || 0);
       state.tees = Math.max(0, parseInt(document.getElementById("inpTees").value, 10) || 0);
       state.reducers = Math.max(0, parseInt(document.getElementById("inpReducers").value, 10) || 0);
-      state.tb.client = document.getElementById("inpClient").value || "PROGETTO ESECUTIVO";
-      state.tb.docCode = document.getElementById("inpDocCode").value || "PE-IMP-EL-PART-02";
-      state.tb.author = document.getElementById("inpAuthor").value || "STUDIO TECNICO";
-      state.tb.scaleRev = document.getElementById("inpScaleRev").value || "Scala 1:1 - Rev.00";
+
+      const elClient = document.getElementById("inpClient"); if (elClient) state.tb.client = elClient.value;
+      const elDoc = document.getElementById("inpDocCode"); if (elDoc) state.tb.docCode = elDoc.value;
+      const elAuthor = document.getElementById("inpAuthor"); if (elAuthor) state.tb.author = elAuthor.value;
+      const elScaleRev = document.getElementById("inpScaleRev"); if (elScaleRev) state.tb.scaleRev = elScaleRev.value;
       const elScale = document.getElementById("inpScale");
       if (elScale) state.scale = elScale.value || "1:1";
 
       state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`).replace(/H=\s*\d+\s*mm/i, `H=${state.height}mm`);
       document.getElementById("inpTitle").value = state.title;
-      document.getElementById("headerTitle").textContent = state.title;
+      const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
       document.title = state.title + " — Constructive Cable Tray Studio v16.2";
-      document.getElementById("lblSpan").textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
+      const elSpanTxt = document.getElementById("lblSpan"); if (elSpanTxt) elSpanTxt.textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
       document.getElementById("exportName").value = state.title.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "") + "_Costruttivo";
 
       recalculateAll();
     }
 
     // ============================================================================
-    // 3. MOTORE DI COLLISIONE FISICA RIGIDA 1:1 E POSIZIONAMENTO CAVI
+    // 3. MOTORE DI COLLISIONE FISICA RIGIDA 1:1 E POSIZIONAMENTO CAVI & SETTI
     // ============================================================================
     function getSeptumXList() {
-      if (state.septums === 1) return [state.width * 0.6];
-      if (state.septums >= 2) return [state.width * 0.34, state.width * 0.68];
-      return [];
+      const n = state.septums || 0;
+      if (n <= 0) {
+        state.septumPositions = [];
+        return [];
+      }
+      const W = state.width;
+      if (!Array.isArray(state.septumPositions) || state.septumPositions.length !== n) {
+        if (n === 1) {
+          state.septumPositions = [Math.round(W * 0.6)];
+        } else if (n === 2) {
+          state.septumPositions = [Math.round(W * 0.34), Math.round(W * 0.68)];
+        } else {
+          state.septumPositions = [];
+          for (let i = 1; i <= n; i++) {
+            state.septumPositions.push(Math.round((W * i) / (n + 1)));
+          }
+        }
+      }
+      for (let i = 0; i < state.septumPositions.length; i++) {
+        const minX = i === 0 ? 15 : state.septumPositions[i - 1] + 15;
+        const maxX = i === state.septumPositions.length - 1 ? W - 15 : state.septumPositions[i + 1] - 15;
+        if (state.septumPositions[i] < minX) state.septumPositions[i] = minX;
+        if (state.septumPositions[i] > maxX) state.septumPositions[i] = maxX;
+        state.septumPositions[i] = Math.round(state.septumPositions[i]);
+      }
+      return state.septumPositions;
+    }
+
+    function moveSeptum(idx, targetX) {
+      if (idx < 0 || idx >= (state.septums || 0)) return;
+      const W = state.width;
+      const seps = getSeptumXList();
+      const minX = idx === 0 ? 15 : seps[idx - 1] + 15;
+      const maxX = idx === seps.length - 1 ? W - 15 : seps[idx + 1] - 15;
+      const clampedX = Math.round(Math.max(minX, Math.min(maxX, targetX)));
+      state.septumPositions[idx] = clampedX;
+
+      // Mantieni i cavi distanziati dal setto per evitare sovrapposizioni grafiche
+      const thkHalf = (state.thk || 1.5) / 2;
+      state.cables.forEach(c => {
+        if (c.x < 0) return;
+        const r = c.d / 2;
+        const safeD = r + thkHalf + 0.4;
+        if (Math.abs(c.x - clampedX) < safeD) {
+          if (c.x < clampedX) c.x = Math.max(r + 0.4, clampedX - safeD);
+          else c.x = Math.min(W - r - 0.4, clampedX + safeD);
+          c.origX = c.x;
+        }
+      });
+
+      recalculateAll();
+      drawScene();
+      updateSeptumUI();
+    }
+
+    function updateSeptumUI() {
+      const box = document.getElementById("septumPosControls");
+      if (!box) return;
+      if (!state.septums || state.septums <= 0) {
+        box.classList.add("hidden");
+        box.innerHTML = "";
+        return;
+      }
+      box.classList.remove("hidden");
+      const seps = getSeptumXList();
+      const W = state.width;
+
+      const existingInputs = box.querySelectorAll(".septum-range-input");
+      if (existingInputs.length === seps.length) {
+        seps.forEach((sx, idx) => {
+          const rng = document.getElementById(`septumRange_${idx}`);
+          const num = document.getElementById(`septumNum_${idx}`);
+          const lbl = document.getElementById(`septumDimLabel_${idx}`);
+          const minX = idx === 0 ? 15 : seps[idx - 1] + 15;
+          const maxX = idx === seps.length - 1 ? W - 15 : seps[idx + 1] - 15;
+          const wSx = idx === 0 ? sx : sx - seps[idx - 1];
+          const wDx = idx === seps.length - 1 ? W - sx : seps[idx + 1] - sx;
+
+          if (rng) {
+            rng.min = minX; rng.max = maxX;
+            if (document.activeElement !== rng) rng.value = sx;
+          }
+          if (num) {
+            num.min = minX; num.max = maxX;
+            if (document.activeElement !== num) num.value = sx;
+          }
+          if (lbl) {
+            lbl.innerHTML = `SX: <strong class="text-white">${Math.round(wSx)}</strong>mm | DX: <strong class="text-white">${Math.round(wDx)}</strong>mm`;
+          }
+        });
+        return;
+      }
+
+      let html = `<div class="text-[10px] font-semibold text-cyan-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+        <span>Regolazione Posizione Setti (Trascina nel CAD o Regola)</span>
+      </div>`;
+      seps.forEach((sx, idx) => {
+        const minX = idx === 0 ? 15 : seps[idx - 1] + 15;
+        const maxX = idx === seps.length - 1 ? W - 15 : seps[idx + 1] - 15;
+        const wSx = idx === 0 ? sx : sx - seps[idx - 1];
+        const wDx = idx === seps.length - 1 ? W - sx : seps[idx + 1] - sx;
+        html += `
+          <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+            <div class="flex items-center justify-between text-[10px] text-slate-300 mb-1">
+              <span class="font-bold text-cyan-300">Setto #${idx + 1}</span>
+              <span id="septumDimLabel_${idx}" class="mono text-slate-400">SX: <strong class="text-white">${Math.round(wSx)}</strong>mm | DX: <strong class="text-white">${Math.round(wDx)}</strong>mm</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <input type="range" id="septumRange_${idx}" class="septum-range-input flex-1 accent-cyan-400 h-1.5 bg-slate-700 rounded cursor-pointer" min="${minX}" max="${maxX}" value="${sx}" oninput="moveSeptum(${idx}, parseFloat(this.value))">
+              <input type="number" id="septumNum_${idx}" class="w-16 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] mono text-cyan-300 text-center font-bold" min="${minX}" max="${maxX}" value="${sx}" oninput="moveSeptum(${idx}, parseFloat(this.value))">
+              <span class="text-[10px] text-slate-400">mm</span>
+            </div>
+          </div>
+        `;
+      });
+      box.innerHTML = html;
     }
 
     function isSpotFree(cable, x, y) {
@@ -1844,16 +2121,41 @@
       } else {
         const seps = getSeptumXList();
         const hasSpecialElv = state.cables.some(c => c.sys === "SPECIAL_ELV");
-        if (seps.length === 0 || !hasSpecialElv) {
-          // In assenza di cavi di segnale, posa naturale uniforme senza segregazione forzata
+        const tHalf = (state.thk || 1.5) / 2;
+        if (seps.length === 0) {
           packByGravity(state.cables, 0, W);
-        } else if (seps.length === 1) {
-          packByGravity(state.cables.filter(c => c.sys !== "SPECIAL_ELV"), 0, seps[0]);
-          packByGravity(state.cables.filter(c => c.sys === "SPECIAL_ELV"), seps[0], W);
+        } else if (hasSpecialElv) {
+          if (seps.length === 1) {
+            packByGravity(state.cables.filter(c => c.sys !== "SPECIAL_ELV"), 0, seps[0] - tHalf);
+            packByGravity(state.cables.filter(c => c.sys === "SPECIAL_ELV"), seps[0] + tHalf, W);
+          } else {
+            packByGravity(state.cables.filter(c => c.sys === "BT_POWER"), 0, seps[0] - tHalf);
+            packByGravity(state.cables.filter(c => c.sys === "BT_FIRE"), seps[0] + tHalf, seps[1] - tHalf);
+            packByGravity(state.cables.filter(c => c.sys === "SPECIAL_ELV"), seps[1] + tHalf, W);
+          }
         } else {
-          packByGravity(state.cables.filter(c => c.sys === "BT_POWER"), 0, seps[0]);
-          packByGravity(state.cables.filter(c => c.sys === "BT_FIRE"), seps[0], seps[1]);
-          packByGravity(state.cables.filter(c => c.sys === "SPECIAL_ELV"), seps[1], W);
+          // Presenza di setti con soli cavi BT: rispetta la segregazione fisica dei setti
+          if (seps.length === 1) {
+            const leftCables = state.cables.filter(c => c.x >= 0 && c.x < seps[0]);
+            const rightCables = state.cables.filter(c => c.x >= seps[0]);
+            if (leftCables.length === 0 && rightCables.length === 0) {
+              packByGravity(state.cables, 0, seps[0] - tHalf);
+            } else {
+              packByGravity(leftCables, 0, seps[0] - tHalf);
+              packByGravity(rightCables, seps[0] + tHalf, W);
+            }
+          } else {
+            const c1 = state.cables.filter(c => c.x >= 0 && c.x < seps[0]);
+            const c2 = state.cables.filter(c => c.x >= seps[0] && c.x < seps[1]);
+            const c3 = state.cables.filter(c => c.x >= seps[1]);
+            if (c1.length === 0 && c2.length === 0 && c3.length === 0) {
+              packByGravity(state.cables, 0, seps[0] - tHalf);
+            } else {
+              packByGravity(c1, 0, seps[0] - tHalf);
+              packByGravity(c2, seps[0] + tHalf, seps[1] - tHalf);
+              packByGravity(c3, seps[1] + tHalf, W);
+            }
+          }
         }
       }
 
@@ -1966,16 +2268,20 @@
       state.metrics = metrics;
       if (typeof window !== "undefined") window.metrics = metrics;
 
-      document.getElementById("kpiAreaUsed").textContent = Math.round(usedArea);
-      document.getElementById("kpiAreaTot").textContent = Math.round(trayArea);
-      document.getElementById("kpiFill").textContent = `${fillPct}%`;
-      document.getElementById("kpiSpare").textContent = `Riserva +${sparePct}%`;
-      document.getElementById("kpiLoadPct").textContent = `${loadPct}%`;
-      document.getElementById("kpiSpan").textContent = `${state.spanM.toFixed(2)}m`;
-      document.getElementById("kpiLoadTxt").textContent = loadPct <= 100 ? `${pointLoad} kg / ${maxPoint} kg OK` : `SOVRACCARICO (${pointLoad}/${maxPoint} kg)!`;
-      document.getElementById("kpiLoadTxt").className = loadPct <= 100 ? "text-[10px] text-emerald-400" : "text-[10px] text-red-400 font-bold";
-      document.getElementById("kpiPull").textContent = pullDaN;
-      document.getElementById("kpiBendR").textContent = maxBendR;
+      const safeSetText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      safeSetText("kpiAreaUsed", Math.round(usedArea));
+      safeSetText("kpiAreaTot", Math.round(trayArea));
+      safeSetText("kpiFill", `${fillPct}%`);
+      safeSetText("kpiSpare", `Riserva +${sparePct}%`);
+      safeSetText("kpiLoadPct", `${loadPct}%`);
+      safeSetText("kpiSpan", `${state.spanM.toFixed(2)}m`);
+      const kpiLoadEl = document.getElementById("kpiLoadTxt");
+      if (kpiLoadEl) {
+        kpiLoadEl.textContent = loadPct <= 100 ? `${pointLoad} kg / ${maxPoint} kg OK` : `SOVRACCARICO (${pointLoad}/${maxPoint} kg)!`;
+        kpiLoadEl.className = loadPct <= 100 ? "text-[10px] text-emerald-400" : "text-[10px] text-red-400 font-bold";
+      }
+      safeSetText("kpiPull", pullDaN);
+      safeSetText("kpiBendR", maxBendR);
       const pullOk = pullDaN <= maxPullDaN;
       const pullTxtEl = document.getElementById("kpiPullTxt");
       if (pullTxtEl) {
@@ -1984,7 +2290,7 @@
           : `TIRO ECCESSIVO (> ${maxPullDaN} daN)!`;
         pullTxtEl.className = pullOk ? "text-[10px] text-emerald-400" : "text-[10px] text-red-400 font-bold";
       }
-      document.getElementById("kpiReiTxt").textContent = state.reiCount > 0 ? `${state.reiCount} Varchi EI120 (${nSacchettiRei} cuscini)` : "0 Varchi EI120";
+      safeSetText("kpiReiTxt", state.reiCount > 0 ? `${state.reiCount} Varchi EI120 (${nSacchettiRei} cuscini)` : "0 Varchi EI120");
       const seisTxtEl = document.getElementById("kpiSeisTxt");
       if (seisTxtEl) {
         seisTxtEl.textContent = state.seismic === "none" ? "NTC 2018: Standard" : `NTC 2018: ${ Math.max(1, Math.ceil(state.lengthM / (state.seismic === "cable_9m" ? 9 : 6))) } Kit Sismici`;
@@ -1992,8 +2298,8 @@
       }
 
       if (state.pdfLoaded) {
-        document.getElementById("kpiJoule").textContent = metrics.jouleWm;
-        document.getElementById("kpiDv").textContent = `${metrics.maxDv}%`;
+        safeSetText("kpiJoule", metrics.jouleWm);
+        safeSetText("kpiDv", `${metrics.maxDv}%`);
         const deratEl = document.getElementById("kpiDeratTxt");
         if (deratEl) {
           deratEl.textContent = deratingFailCode ? `ATTENZIONE: Iz' < Ib su ${deratingFailCode} (Kr=${kr})` : `Kr=${kr} (${nLayers} str.) • Iz'=Iz·Kr >= Ib OK`;
@@ -2127,17 +2433,20 @@
       lcCtx.fill();
       lcCtx.strokeStyle = "#0f172a"; lcCtx.lineWidth = 1.5; lcCtx.stroke();
 
-      document.getElementById("lblChartQtot").textContent = `${metrics.totalKgM} kg/m`;
-      document.getElementById("lblChartQamm").textContent = `${metrics.qMaxKgM} kg/m`;
-      document.getElementById("lblChartDefl").textContent = `${metrics.deflectionMm} / ${metrics.maxDeflectionMm} mm`;
+      const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setEl("lblChartQtot", `${metrics.totalKgM} kg/m`);
+      setEl("lblChartQamm", `${metrics.qMaxKgM} kg/m`);
+      setEl("lblChartDefl", `${metrics.deflectionMm} / ${metrics.maxDeflectionMm} mm`);
 
       const badge = document.getElementById("curveStatusBadge");
-      if (isOk) {
-        badge.textContent = `OK (${metrics.loadPct}%)`;
-        badge.className = "text-[10px] mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold";
-      } else {
-        badge.textContent = `SOVRACCARICO (${metrics.loadPct}%)`;
-        badge.className = "text-[10px] mono px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 font-bold";
+      if (badge) {
+        if (isOk) {
+          badge.textContent = `OK (${metrics.loadPct}%)`;
+          badge.className = "text-[10px] mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold";
+        } else {
+          badge.textContent = `SOVRACCARICO (${metrics.loadPct}%)`;
+          badge.className = "text-[10px] mono px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 font-bold";
+        }
       }
     }
 
@@ -2150,8 +2459,8 @@
       const frac = Math.max(0, Math.min(1, (mx - padL) / gw));
       const newSpan = +(1.0 + frac * 2.0).toFixed(2);
       state.spanM = Math.round(newSpan * 20) / 20;
-      document.getElementById("inpSpan").value = state.spanM;
-      document.getElementById("lblSpan").textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
+      const inpSpanEl = document.getElementById("inpSpan"); if (inpSpanEl) inpSpanEl.value = state.spanM;
+      const lblSpanEl = document.getElementById("lblSpan"); if (lblSpanEl) lblSpanEl.textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
       recalculateAll();
     }
 
@@ -2269,6 +2578,16 @@
       fitAll();
     }
 
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     function updateTableUI() {
       const head = document.getElementById("tblHead");
       const body = document.getElementById("tblBody");
@@ -2296,16 +2615,16 @@
         tr.className = "hover:bg-slate-800/50 transition";
         tr.innerHTML = `
           <td class="py-1 px-2 text-amber-400 font-bold">#${i + 1}</td>
-          <td class="py-1 px-2"><input type="text" value="${c.code}" onchange="updateCableField(${i}, 'code', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-cyan-300 font-semibold w-32"></td>
+          <td class="py-1 px-2"><input type="text" id="codeInp_${i}" value="${escapeHtml(c.code)}" oninput="onCableCodeInput(${i}, this.value)" onchange="updateCableField(${i}, 'code', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-cyan-300 font-semibold w-32 focus:border-cyan-400 focus:outline-none"></td>
           <td class="py-1 px-2"><input type="number" value="${c.d}" step="0.5" min="4" max="90" onchange="updateCableField(${i}, 'd', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-white w-14 text-center"></td>
           <td class="py-1 px-2 text-slate-300">${c.w.toFixed(2)}</td>
           <td class="py-1 px-2 text-purple-300">${Math.round(c.d * (c.bendK || 10))}mm</td>
           <td class="py-1 px-2 text-slate-400">(${c.x.toFixed(1)}, ${c.y.toFixed(1)})</td>
-          <td class="py-1 px-2"><input type="text" value="${c.desc}" onchange="updateCableField(${i}, 'desc', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-white font-sans w-48"></td>
-          <td class="py-1 px-2"><input type="text" value="${getDisplayCableType(c, state.cables)}" onchange="updateCableField(${i}, 'type', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-amber-300 w-32" title="Tipo cavo fase / PE"></td>
+          <td class="py-1 px-2"><input type="text" id="descInp_${i}" value="${escapeHtml(c.desc)}" oninput="onCableDescInput(${i}, this.value)" onchange="updateCableField(${i}, 'desc', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-white font-sans w-64 focus:border-amber-400 focus:outline-none" title="Descrizione Utenza"></td>
+          <td class="py-1 px-2"><input type="text" value="${escapeHtml(getDisplayCableType(c, state.cables))}" onchange="updateCableField(${i}, 'type', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-amber-300 w-32" title="Tipo cavo fase / PE"></td>
           <td class="py-1 px-2">
             <div class="flex items-center gap-1">
-              <input type="text" value="${c.form}" onchange="updateCableField(${i}, 'form', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-emerald-300 w-28">
+              <input type="text" value="${escapeHtml(c.form)}" onchange="updateCableField(${i}, 'form', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-emerald-300 w-28">
               ${isUni ? `<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 rounded font-bold" title="Cavo Unipolare 1X">1X</span>` : ``}
               ${c.trefoil ? `<span class="text-[9px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-1 rounded font-bold" title="Posa a Trifoglio">🔺3F</span>` : ``}
             </div>
@@ -2313,6 +2632,56 @@
           <td class="py-1 px-2 text-right"><button type="button" onclick="deleteCable(${i})" class="text-slate-500 hover:text-red-400 px-1.5 font-bold">&times;</button></td>`;
         body.appendChild(tr);
       });
+    }
+
+    function onCableDescInput(idx, val) {
+      const c = state.cables[idx];
+      if (!c) return;
+      c.desc = val;
+      const base = getBaseCircuitCode(c.code);
+      if (base && !base.startsWith("CAVO-")) {
+        state.cables.forEach((other, oIdx) => {
+          if (other !== c && getBaseCircuitCode(other.code) === base) {
+            other.desc = val;
+            const oEl = document.getElementById(`descInp_${oIdx}`);
+            if (oEl && oEl.value !== val) oEl.value = val;
+          }
+        });
+      }
+      drawScene();
+    }
+
+    function onCableCodeInput(idx, val) {
+      const c = state.cables[idx];
+      if (!c) return;
+      c.code = val.trim();
+      const u = findInUnifilareDict(c.code) || findInUnifilareDict(getBaseCircuitCode(c.code));
+      if (u) {
+        if (u.desc) {
+          c.desc = u.desc;
+          const descEl = document.getElementById(`descInp_${idx}`);
+          if (descEl && descEl.value !== u.desc) descEl.value = u.desc;
+        }
+        if (u.cable) c.type = u.cable;
+        if (u.form) {
+          c.form = u.form;
+          c.sec = parseSectionFromForm(u.form, c.sec);
+          c.cores = isUnipolarCable(c) ? 1 : (u.form.includes("5G") || u.form.includes("4G") ? 3 : 2);
+        }
+        const base = getBaseCircuitCode(c.code);
+        if (base && !base.startsWith("CAVO-")) {
+          state.cables.forEach((other, oIdx) => {
+            if (other !== c && getBaseCircuitCode(other.code) === base) {
+              if (u.desc) {
+                other.desc = u.desc;
+                const oEl = document.getElementById(`descInp_${oIdx}`);
+                if (oEl && oEl.value !== u.desc) oEl.value = u.desc;
+              }
+            }
+          });
+        }
+      }
+      drawScene();
     }
 
     function updateCableField(idx, field, val) {
@@ -2328,7 +2697,7 @@
         c.cores = inferred.cores;
       } else if (field === "code") {
         c.code = val.trim();
-        const u = findInUnifilareDict(c.code);
+        const u = findInUnifilareDict(c.code) || findInUnifilareDict(getBaseCircuitCode(c.code));
         if (u) {
           c.desc = u.desc || c.desc;
           c.type = u.cable || c.type;
@@ -2366,16 +2735,14 @@
         c.sec = parseSectionFromForm(val, c.sec);
         c.cores = isUnipolarCable(c) ? 1 : (val.includes("5G") || val.includes("4G") ? 3 : 2);
       } else if (field === "desc") {
-        c.desc = val;
-        if (isUnipolarCable(c)) {
-          const base = getBaseCircuitCode(c.code);
-          if (base && !base.startsWith("CAVO-")) {
-            state.cables.forEach(other => {
-              if (other !== c && getBaseCircuitCode(other.code) === base) {
-                other.desc = val;
-              }
-            });
-          }
+        c.desc = cleanUtenzaDescription(val, c.code);
+        const base = getBaseCircuitCode(c.code);
+        if (base && !base.startsWith("CAVO-")) {
+          state.cables.forEach(other => {
+            if (other !== c && getBaseCircuitCode(other.code) === base) {
+              other.desc = c.desc;
+            }
+          });
         }
       } else {
         c[field] = val;
@@ -2415,7 +2782,7 @@
       if (!file) return;
       const banner = document.getElementById("statusBanner");
       const inspBox = document.getElementById("dwgInspectorContent");
-      banner.textContent = `Decompressione binaria di "${file.name}" in corso...`;
+      if (banner) banner.textContent = `Decompressione binaria di "${file.name}" in corso...`;
 
       try {
         const buf = await file.arrayBuffer();
@@ -2425,9 +2792,11 @@
 
         if (file.name.toLowerCase().endsWith(".dxf") || (rawAscii.includes("SECTION") && rawAscii.includes("ENTITIES"))) {
           const log = parseDXFTextContent(rawAscii, file.name);
-          inspBox.textContent = log;
-          banner.textContent = `✓ File DXF "${file.name}" letto: L=${state.width}xH=${state.height}mm (${state.cables.length} cavi geometrici reali)`;
-          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+          if (inspBox) inspBox.textContent = log;
+          if (banner) {
+            banner.textContent = `✓ File DXF "${file.name}" letto: L=${state.width}xH=${state.height}mm (${state.cables.length} cavi geometrici reali)`;
+            banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+          }
           return;
         }
 
@@ -2459,18 +2828,23 @@
 
         if (allEntities.length > 0) {
           const log = processRealWasmEntities(allEntities, file.name, headerVer);
-          inspBox.textContent = log;
-          document.getElementById("dwgInspectorModal").classList.remove("hidden");
-          banner.textContent = `✓ DWG "${file.name}" (${headerVer}) decompresso via LibreDWG: L=${state.width}xH=${state.height}mm — ${state.cables.length} cavi estratti!`;
-          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+          if (inspBox) inspBox.textContent = log;
+          const inspModal = document.getElementById("dwgInspectorModal");
+          if (inspModal) inspModal.classList.remove("hidden");
+          if (banner) {
+            banner.textContent = `✓ DWG "${file.name}" (${headerVer}) decompresso via LibreDWG: L=${state.width}xH=${state.height}mm — ${state.cables.length} cavi estratti!`;
+            banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+          }
           return;
         } else {
           throw new Error(`Lettura completata, ma 0 entità visibili estratte dal DWG (${headerVer}).`);
         }
       } catch (err) {
         console.error("Errore decompressione DWG:", err);
-        banner.textContent = `Errore lettura DWG: ${err.message || err}`;
-        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold";
+        if (banner) {
+          banner.textContent = `Errore lettura DWG: ${err.message || err}`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold";
+        }
       } finally {
         inputEl.value = "";
       }
@@ -2645,7 +3019,7 @@
       document.getElementById("inpTitle").value = state.title;
       const qTitleWasm = document.getElementById("inpTitleQuick");
       if (qTitleWasm) qTitleWasm.value = state.title;
-      document.getElementById("headerTitle").textContent = state.title;
+      const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
       document.title = state.title + " — Constructive Cable Tray Studio v16.2";
 
       // Default modalità di posa: Gravità & Scomparti (salvando le coordinate DWG in origX/origY)
@@ -2989,10 +3363,12 @@
           const items = tc.items.map(it => ({ str: it.str.trim(), x: it.transform[4], y: it.transform[5] })).filter(it => it.str.length > 0);
           // Riconosce qualsiasi intestazione colonna di schema unifilare (es. "QGBT-P C-22", "QP1-DX-N C-4", ecc.)
           const headers = items.filter(it => /^[A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+C-\d+/i.test(it.str));
+          const descLabels = items.filter(it => /^(?:Descrizione(?:\s*(?:utenza|circuito|linea))?|Designazione|Utenza|Oggetto)\s*:?$/i.test(it.str.trim()));
+
           headers.forEach(ch => {
             const rawCode = ch.str.replace(/\s+/g, " ").trim();
             const normCode = normalizeLineKey(rawCode);
-            const colItems = items.filter(it => Math.abs(it.x - ch.x) < 46 && it.y < ch.y).sort((a, b) => b.y - a.y);
+            const colItems = items.filter(it => Math.abs(it.x - ch.x) < 48 && it.y < ch.y).sort((a, b) => b.y - a.y);
             const colTexts = colItems.map(c => c.str);
 
             const cableMatch = colTexts.find(t => /FG16|FTG18|H1Z2Z2|FS17|FG17|RG16|H07/i.test(t)) || null;
@@ -3003,43 +3379,78 @@
             const ibMatch = colTexts.find(t => /^\d+(?:[.,]\d+)?\s*\/\s*0[.,]\d+$/.test(t));
             const parsedIb = ibMatch ? parseFloat(ibMatch.split("/")[0].replace(",", ".")) : 10;
 
-            // Filtro rigoroso per estrarre ESCLUSIVAMENTE la sola descrizione testuale dell'utenza (es. "Alimentazione Boiler")
+            // Estrazione mirata e pulita della sola descrizione utenza dalla riga Descrizione
             let descStr = null;
-            for (const it of colItems) {
-              if (ch.y - it.y <= 2 || ch.y - it.y >= 75) continue;
-              const s = it.str.trim();
-              if (s.length < 3) continue;
-              if (/^\d+(?:[.,]\d+)?$/.test(s)) continue;
-              if (s === cableMatch || s === formMatch || s === peMatch) continue;
-              if (/^C-\d+$/i.test(s)) continue;
-              if (/\b(?:400|230|110|24)\s*V\b/i.test(s)) continue;
-              if (/\b\d+(?:[.,]\d+)?\s*(?:k?W|k?VA|k?VAR|Hz)\b/i.test(s) || /^P\s*=/i.test(s)) continue;
-              if (/\b\d+(?:[.,]\d+)?\s*(?:kA|mA|A)\b/i.test(s) || /^(?:In|Ib|Idn|Icu|Ics)\s*=/i.test(s)) continue;
-              if (/\b(?:3F\+N|3P\+N|1F\+N|1P\+N|[1-4]P)\b/i.test(s)) continue;
-              if (/\b\d+(?:[.,]\d+)?\s*m\b/i.test(s) || /^L\s*=/i.test(s)) continue;
-              if (/\b\d+(?:[.,]\d+)?\s*%/i.test(s) || /^d[vV]\s*=/i.test(s) || /^Δ[vV]\s*=/i.test(s)) continue;
-              if (/\bcos\s*[\u03c6phi]\b/i.test(s)) continue;
-              if (/\b[BCD]\d{1,3}\b/i.test(s)) continue;
-              if (/\b(?:iC60[A-Z]?|NSX\d*|Tmax|S200|DS200|Curva\s*[BCD]|Curve\s*[BCD])\b/i.test(s)) continue;
-              if (/\b(?:FG16|FTG18|FS17|FG17|H07|0[.,]6\/1\s*kV|1\s*kV|LSZH|CPR)\b/i.test(s)) continue;
-              if (/^(?:Descrizione|Utenza|Sigla|Quadro|Linea|Cavo|Formazione|Sezione|Potenza|Corrente|Interruttore|Modello|Lungh|Caduta)\b/i.test(s)) continue;
+            let targetLabel = descLabels.filter(dl => dl.y < ch.y).sort((a, b) => (ch.y - a.y) - (ch.y - b.y))[0];
+            if (!targetLabel && descLabels.length > 0) {
+              targetLabel = descLabels.slice().sort((a, b) => Math.abs(a.y - ch.y) - Math.abs(b.y - ch.y))[0];
+            }
 
-              const cleaned = cleanUtenzaDescription(s);
-              if (cleaned && cleaned.length >= 3 && !/^\d+$/.test(cleaned)) {
-                descStr = cleaned;
-                break;
+            const isCircuitCodeToken = (s) => {
+              const t = String(s || "").trim();
+              if (!t) return false;
+              if (t === rawCode || t === ch.str.trim()) return true;
+              if (/^(?:[A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+)?C-?\d+$/i.test(t)) return true;
+              if (/^[A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*$/i.test(t) && rawCode.includes(t)) return true;
+              return false;
+            };
+
+            const isElectricalRatingToken = (s) => {
+              const t = String(s || "").trim();
+              if (!t) return false;
+              if (/^\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?$/.test(t)) return true;
+              if (/^\d+(?:[.,]\d+)?\s*(?:k?W|k?VA|k?VAR|Hz|V|A|kA|mA)$/i.test(t)) return true;
+              if (/^(?:P|In|Ib|Idn|Icu|Ics)\s*=/i.test(t)) return true;
+              return false;
+            };
+
+            if (targetLabel) {
+              const descItems = items.filter(it =>
+                Math.abs(it.x - ch.x) < 48 &&
+                Math.abs(it.y - targetLabel.y) <= 10 &&
+                it !== targetLabel &&
+                !isCircuitCodeToken(it.str) &&
+                !isElectricalRatingToken(it.str) &&
+                it.str.trim() !== cableMatch &&
+                it.str.trim() !== formMatch &&
+                it.str.trim() !== peCableMatch &&
+                it.str.trim() !== peMatch
+              ).sort((a, b) => (Math.abs(b.y - a.y) > 3 ? (b.y - a.y) : (a.x - b.x)));
+
+              if (descItems.length > 0) {
+                const merged = descItems.map(it => it.str.trim()).join(" ");
+                descStr = cleanUtenzaDescription(merged, rawCode);
               }
             }
+
             if (!descStr) {
-              const rawDescFallback = colItems
-                .filter(it => ch.y - it.y > 2 && ch.y - it.y < 75 && !/^\d+$/.test(it.str.trim()))
-                .map(it => it.str.trim())
-                .join(" ");
-              descStr = cleanUtenzaDescription(rawDescFallback) || null;
+              const fallbackItems = colItems.filter(it =>
+                it.y < ch.y &&
+                (ch.y - it.y) < 85 &&
+                !isCircuitCodeToken(it.str) &&
+                !isElectricalRatingToken(it.str) &&
+                it.str.trim() !== cableMatch &&
+                it.str.trim() !== formMatch &&
+                it.str.trim() !== peCableMatch &&
+                it.str.trim() !== peMatch &&
+                !/^\d+$/.test(it.str.trim())
+              ).sort((a, b) => (Math.abs(b.y - a.y) > 3 ? (b.y - a.y) : (a.x - b.x)));
+
+              if (fallbackItems.length > 0) {
+                const merged = fallbackItems.map(it => it.str.trim()).join(" ");
+                descStr = cleanUtenzaDescription(merged, rawCode) || null;
+              }
             }
 
             unifilareDict[normCode] = { rawCode, desc: descStr, cable: cableMatch, peCable: peCableMatch, form: formMatch, ib: parsedIb };
-            // Registra anche eventuale alias QGBT <-> OGBT per sicurezza OCR nei PDF
+            // Registra anche indicizzazioni aggiuntive per numero circuito (es. "C-21", "C21")
+            const mC = rawCode.match(/\b(C-?\d+)\b/i);
+            if (mC) {
+              const cTag = normalizeLineKey(mC[1]);
+              if (!unifilareDict[cTag]) unifilareDict[cTag] = unifilareDict[normCode];
+              const cNoHyphen = cTag.replace("-", "");
+              if (!unifilareDict[cNoHyphen]) unifilareDict[cNoHyphen] = unifilareDict[normCode];
+            }
             if (normCode.startsWith("OGBT")) unifilareDict[normCode.replace(/^OGBT/, "QGBT")] = unifilareDict[normCode];
           });
         }
@@ -3050,7 +3461,7 @@
 
         let matchedCount = 0;
         state.cables.forEach(c => {
-          const u = findInUnifilareDict(c.code);
+          const u = findInUnifilareDict(c.code) || findInUnifilareDict(getBaseCircuitCode(c.code));
           if (u) {
             matchedCount++;
             if (u.desc) c.desc = u.desc;
@@ -3076,6 +3487,8 @@
                 }
               });
             }
+          } else {
+            if (c.desc) c.desc = cleanUtenzaDescription(c.desc, c.code);
           }
         });
 
@@ -3090,21 +3503,24 @@
           document.getElementById("inpTitle").value = state.title;
           const qTitlePdf = document.getElementById("inpTitleQuick");
           if (qTitlePdf) qTitlePdf.value = state.title;
-          document.getElementById("headerTitle").textContent = state.title;
+          const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
           document.getElementById("exportName").value = pdfTrayName.exportFile;
         } else if (state.title.startsWith("NUOVA CANALINA") && file.name) {
           const pdfBase = file.name.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_-]+/g, " ").trim();
           if (pdfBase && !/schema|unifilare/i.test(pdfBase)) {
             state.title = `${pdfBase} - L=${state.width}mm H=${state.height}mm`;
             document.getElementById("inpTitle").value = state.title;
-            document.getElementById("headerTitle").textContent = state.title;
+            const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
             const cleanTag = pdfBase.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
             document.getElementById("exportName").value = `${cleanTag}_${state.width}x${state.height}_Costruttivo`;
           }
         }
-        banner.textContent = `✓ PDF Unifilare sincronizzato: ${matchedCount}/${state.cables.length} cavi DWG abbinati per Sigla Utenza, Descrizione e Formazione!`;
-        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/40 font-bold";
+        if (banner) {
+          banner.textContent = `✓ PDF Unifilare sincronizzato: ${matchedCount}/${state.cables.length} cavi DWG abbinati per Sigla Utenza, Descrizione e Formazione!`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/40 font-bold";
+        }
         recalculateAll();
+        updateTableUI();
       } catch (err) {
         console.error(err);
       } finally {
@@ -3117,31 +3533,42 @@
     // 5B. FUNZIONI AUSILIARIE DI SUPPORTO: DESCRIZIONI PULITE, SCALE, NOMI, CAVI PE
     // ============================================================================
 
-    function cleanUtenzaDescription(raw) {
+    function cleanUtenzaDescription(raw, codeToStrip = "") {
       if (!raw) return "";
       let s = String(raw).replace(/\r?\n/g, " ").trim();
-      s = s.replace(/^(?:Descrizione(?:\s*utenza)?|Utenza|Linea|Nome\s*circuito)\s*[:=-]\s*/i, "");
-      // Rimuove riferimenti parentetici a circuiti es. (C-3), (C-22), (QGBT-C)
+
+      // 1. Rimuove prefissi di etichetta (es. "Descrizione:", "Descrizione utenza:", "Designazione:")
+      s = s.replace(/^(?:Descrizione(?:\s*(?:utenza|circuito|linea))?|Designazione|Utenza|Oggetto)\s*[:=-]\s*/i, "");
+
+      // 2. Rimuove la sigla specifica del circuito passata come argomento se presente all'inizio o alla fine
+      if (codeToStrip) {
+        const esc = String(codeToStrip).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        s = s.replace(new RegExp(`^${esc}\\s*[-:–—]?\\s*`, "i"), "");
+        s = s.replace(new RegExp(`\\s*[-:–—]?\\s*${esc}$`, "i"), "");
+      }
+
+      // 3. Rimuove qualsiasi sigla utenza / codice quadro-circuito all'inizio o alla fine (es. "QPT-DX-N C-21", "QGBT-P C-22", "C-21")
+      const panelPrefix = `(?:(?:[QO][A-Z0-9._-]*|[A-Z0-9]+-[A-Z0-9._-]+)\\s+)?`;
+      s = s.replace(new RegExp(`^${panelPrefix}C-?\\d+\\b\\s*[-:–—]?\\s*`, "i"), "");
+      s = s.replace(new RegExp(`\\s*[-:–—]?\\s*${panelPrefix}C-?\\d+\\b\\s*$`, "i"), "");
       s = s.replace(/\([A-Z0-9_.-]*C-?\d+[A-Z0-9_.-]*\)/gi, "");
-      s = s.replace(/\b(?:Q[A-Z0-9_.-]+\s+)?C-?\d+\b/gi, "");
+
+      // 4. Rimuove rapporti di potenza / corrente (es. "1 / 1,053", "15 / 24,5", "10 / 0,4")
+      s = s.replace(/\b\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?\b/g, "");
+
+      // 5. Rimuove grandezze elettriche pure isolate (potenza, tensione, frequenza, corrente, cosphi)
       s = s.replace(/\b(?:P\s*=\s*)?\d+(?:[.,]\d+)?\s*(?:k?W|k?VA|k?VAR)\b/gi, "");
-      s = s.replace(/\b(?:I[nbd]|Idn|Icu|Ics|Icn)\s*=?\s*\d+(?:[.,]\d+)?\s*(?:m?A|kA)?\b/gi, "");
-      s = s.replace(/\b\d+(?:[.,]\d+)?\s*(?:kA|mA|A)\b/gi, "");
       s = s.replace(/\b(?:400|230|110|24)\s*V\b/gi, "");
-      s = s.replace(/\b50\s*Hz\b/gi, "");
-      s = s.replace(/\b(?:3F\+N|3P\+N|1F\+N|1P\+N|[1-4]P)\b/gi, "");
-      s = s.replace(/\b(?:L\s*=\s*)?\d+(?:[.,]\d+)?\s*m\b/gi, "");
-      s = s.replace(/\b(?:d[vV]|Δ[vV])?\s*=?\s*\d+(?:[.,]\d+)?\s*%/gi, "");
-      s = s.replace(/\bcos\s*(?:[\u03c6\u03a6φΦ]|phi)?\s*=?\s*\d*(?:[.,]\d+)?\b/gi, "");
-      s = s.replace(/\b[BCD]\d{1,3}\b/g, "");
-      s = s.replace(/\b(?:Curva|Curve)\s*[BCD]\b/gi, "");
-      s = s.replace(/\b(?:iC60[A-Z]?|NSX\d*|Tmax(?:\s*XT\d?)?|S200|DS200)\b/gi, "");
+      s = s.replace(/\b\d+(?:[.,]\d+)?\s*Hz\b/gi, "");
+      s = s.replace(/\b(?:cos\s*phi|cos\s*φ)\s*=?\s*\d+(?:[.,]\d+)?\b/gi, "");
+      s = s.replace(/\b(?:I[nbd]|Idn|Icu|Ics|Icn)\s*=?\s*\d+(?:[.,]\d+)?\s*(?:m?A|kA)?\b/gi, "");
+
+      // 6. Rimuove formazioni cavi e tipi cavo residui
       s = s.replace(/\b(?:FG16[A-Z0-9]*|FTG18[A-Z0-9]*|FS17|FG17|H07[A-Z0-9-]*|H1Z2Z2-K|RG16[A-Z0-9]*)\b/gi, "");
-      s = s.replace(/\b(?:0[.,]6\/1\s*kV|1\s*kV|LSZH|CPR|Cca|Eca|B2ca)\b/gi, "");
       s = s.replace(/\b\d+\s*\([0-9xXGg,+]+\)|\b[1-5][xXGg]\d+(?:[.,]\d+)?\b/g, "");
-      s = s.replace(/\(\s*\)|\[\s*\]/g, "");
-      s = s.replace(/^[-\s|/,.:;]+|[-\s|/,.:;]+$/g, "");
-      s = s.replace(/\s*\|\s*/g, " - ");
+
+      // 7. Pulizia punteggiatura e spazi residui
+      s = s.replace(/^[-\s|/,.:;–—]+|[-\s|/,.:;–—]+$/g, "");
       s = s.replace(/\s{2,}/g, " ").trim();
       return s;
     }
@@ -3166,41 +3593,58 @@
       return cable.type || "FG16M16";
     }
 
-    function extractTrayNameFromInput(rawTexts, fileName, width = 200, height = 75) {
+        function extractTrayNameFromInput(rawTexts, fileName, width = 200, height = 75) {
       let foundName = null;
       let isExplicit = false;
 
       if (Array.isArray(rawTexts) && rawTexts.length > 0) {
-        // REGEX PRIORITARIA ASSOLUTA: cerca diciture come "Dati caratteristici della canalina (Anello PT - Lato DX)"
-        // Estraendo rigorosamente il nome tra parentesi come specificato dall'utente
-        for (const t of rawTexts) {
-          const s = String(t.str || "").trim();
-          const mParen = s.match(/(?:Dati\s+caratteristici\s+(?:della\s+)?(?:canalina|passerella|canale)|(?:canalina|passerella|canale|condotto|sezione))\s*[^(]*\(([^)]+)\)/i);
-          if (mParen && mParen[1] && mParen[1].trim().length >= 2) {
-            foundName = mParen[1].trim();
-            isExplicit = true;
-            break;
+        const cleanedItems = rawTexts.map(t => ({
+          str: cleanAcadMText(t.str || ""),
+          x: t.x || 0,
+          y: t.y || 0
+        })).filter(t => t.str.length > 0);
+
+        // REGOLA 1: Cerca nei singoli testi diciture con parentesi
+        // Es. "Dati caratteristici della canalina (Anello PT - Lato DX)" o "Dati (Anello PT - Lato DX)"
+        for (const t of cleanedItems) {
+          const s = t.str;
+          const mParen = s.match(/(?:Dati\s+caratteristici|Dati\s+tecnici|Dati|Canalina|Canale|Passerella|Condotto|Tratta|Tronco|Sezione|Particolare)[^(]*\(([^)]+)\)/i);
+          if (mParen && mParen[1]) {
+            const candidate = mParen[1].trim();
+            if (!/^\d+\s*[xX]\s*\d+/i.test(candidate) && !/^C-\d+$/i.test(candidate) && candidate.length >= 2) {
+              foundName = candidate;
+              isExplicit = true;
+              break;
+            }
           }
         }
 
-        // Se non trovato nel singolo elemento, cerca nel testo unito (nel caso sia stato spezzato in due entità CAD contigue)
+        // REGOLA 2: Cerca nel testo unito se spezzato in più entità
         if (!foundName) {
-          const allJoined = rawTexts.map(t => t.str || "").join(" ");
-          const mJoined = allJoined.match(/(?:Dati\s+caratteristici\s+(?:della\s+)?(?:canalina|passerella|canale)|(?:canalina|passerella|canale|condotto|sezione))\s*[^(]*\(([^)]+)\)/i);
-          if (mJoined && mJoined[1] && mJoined[1].trim().length >= 2) {
-            foundName = mJoined[1].trim();
-            isExplicit = true;
+          const allJoined = cleanedItems.map(t => t.str).join(" ");
+          const mJoined = allJoined.match(/(?:Dati\s+caratteristici|Dati\s+tecnici|Dati|Canalina|Canale|Passerella|Condotto|Tratta|Tronco|Sezione|Particolare)[^(]*\(([^)]+)\)/i);
+          if (mJoined && mJoined[1]) {
+            const candidate = mJoined[1].trim();
+            if (!/^\d+\s*[xX]\s*\d+/i.test(candidate) && !/^C-\d+$/i.test(candidate) && candidate.length >= 2) {
+              foundName = candidate;
+              isExplicit = true;
+            }
           }
         }
 
-        // Cerca qualsiasi parentesi descrittiva non numerica associata a canalina/passerella
+        // REGOLA 3: Cerca qualsiasi entità testuale con testo tra parentesi (...) non numerico
+        // Es. l'utente ha inserito direttamente un'etichetta "(Anello PT - Lato DX)"
         if (!foundName) {
-          for (const t of rawTexts) {
-            const s = String(t.str || "").trim();
-            if (/canalina|passerella|canale/i.test(s) && !/distinta|tabella|particolare\s+costruttivo|legenda|materiale/i.test(s)) {
-              const mAnyParen = s.match(/\(([A-Za-z0-9\s-_/.]+)\)/);
-              if (mAnyParen && mAnyParen[1] && !/^\d+[xX]\d+/i.test(mAnyParen[1]) && mAnyParen[1].trim().length >= 3) {
-                foundName = mAnyParen[1].trim();
+          for (const t of cleanedItems) {
+            const s = t.str;
+            if (/distinta|tabella|legenda|materiale|revisione/i.test(s)) continue;
+            const mAnyParen = s.match(/\(([^)]+)\)/);
+            if (mAnyParen && mAnyParen[1]) {
+              const candidate = mAnyParen[1].trim();
+              const isCableForm = /^\d+\s*[xX]\s*\d+/i.test(candidate) || /^[1-5][xXGg]\d+/i.test(candidate) || /^C-\d+$/i.test(candidate);
+              const hasLetters = /[A-Za-z]{2,}/.test(candidate);
+              if (!isCableForm && hasLetters && candidate.length >= 3) {
+                foundName = candidate;
                 isExplicit = true;
                 break;
               }
@@ -3208,34 +3652,36 @@
           }
         }
 
+        // REGOLA 4: Diciture con due punti o trattino
         if (!foundName) {
-          const p1 = rawTexts.find(t => /^(?:CANALINA|CANALE|PASSERELLA|CONDOTTO|TRONCO)\s+([A-Za-z0-9_\-./\s]{2,40})/i.test((t.str || "").trim()));
+          for (const t of cleanedItems) {
+            const s = t.str;
+            const mColon = s.match(/(?:Dati\s+caratteristici(?:\s+della)?\s+(?:canalina|passerella|canale)|(?:canalina|passerella|canale))\s*[:=-]\s*([A-Za-z0-9_\-./\s]{3,50})/i);
+            if (mColon && mColon[1]) {
+              const candidate = mColon[1].trim();
+              if (!/^\d+\s*[xX]\s*\d+/i.test(candidate)) {
+                foundName = candidate;
+                isExplicit = true;
+                break;
+              }
+            }
+          }
+        }
+
+        // REGOLA 5: Header convenzionali canalina/passerella
+        if (!foundName) {
+          const p1 = cleanedItems.find(t => /^(?:CANALINA|CANALE|PASSERELLA|CONDOTTO|TRONCO)\s+([A-Za-z0-9_\-./\s]{2,40})/i.test(t.str));
           if (p1) {
             foundName = p1.str.trim();
             isExplicit = true;
           }
         }
 
+        // REGOLA 6: Sezione o Oggetto cartiglio
         if (!foundName) {
-          const p2 = rawTexts.find(t => /SEZ(?:IONE|\.)?.*(?:CANALINA|CANALE|PASSERELLA)/i.test((t.str || "").trim()));
-          if (p2) {
-            foundName = p2.str.trim();
-            isExplicit = true;
-          }
-        }
-
-        if (!foundName) {
-          const p3 = rawTexts.find(t => /CANALINA|CANALE|PASSERELLA/i.test(t.str || "") && !/DISTINTA|TABELLA|PARTICOLARE\s+COSTRUTTIVO|LEGENDA/i.test(t.str));
-          if (p3) {
-            foundName = p3.str.trim();
-            isExplicit = true;
-          }
-        }
-
-        if (!foundName) {
-          const p4 = rawTexts.find(t => /^(?:OGGETTO|TITOLO|ELABORATO)\s*[:=-]\s*(.+)/i.test((t.str || "").trim()));
+          const p4 = cleanedItems.find(t => /^(?:OGGETTO|TITOLO|ELABORATO)\s*[:=-]\s*(.+)/i.test(t.str));
           if (p4) {
-            const m = p4.str.trim().match(/^(?:OGGETTO|TITOLO|ELABORATO)\s*[:=-]\s*(.+)/i);
+            const m = p4.str.match(/^(?:OGGETTO|TITOLO|ELABORATO)\s*[:=-]\s*(.+)/i);
             if (m && m[1]) {
               foundName = m[1].trim();
               isExplicit = true;
@@ -3250,10 +3696,10 @@
                           .replace(/\b\d+\s*[xX]\s*\d+(?:\s*mm)?\b/gi, "")
                           .replace(/L=\s*\d+\s*mm/i, "")
                           .replace(/H=\s*\d+\s*mm/i, "")
+                          .replace(/^[\"'\s]+|[\"'\s]+$/g, "")
                           .trim();
       if (!cleanBase) cleanBase = "CANALINA 01";
 
-      // Se il nome è stato specificato esplicitamente (es. tra parentesi), il titolo è ESATTAMENTE quello
       const title = cleanBase;
       const exportFile = cleanBase.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
       return { title, exportFile, cleanBase, isExplicit };
@@ -3261,31 +3707,50 @@
 
     function onScaleChange(val) {
       state.scale = val || "1:1";
-      state.tb.scaleRev = `Scala ${state.scale} - Rev.00`;
+      state.tb.scaleRev = `Scala ${state.scale} - ${state.tb.rev || "Rev. 00"}`;
       const elInp = document.getElementById("inpScale");
       if (elInp) elInp.value = state.scale;
       const elDxf = document.getElementById("selDxfScale");
       if (elDxf) elDxf.value = state.scale;
+      const elCfg = document.getElementById("cfgScale");
+      if (elCfg) elCfg.value = state.scale;
       const elRev = document.getElementById("inpScaleRev");
       if (elRev) elRev.value = state.tb.scaleRev;
       drawScene();
     }
 
     function toggleSectionExport(sec, enabled) {
-      if (sec === "chart") state.showLoadChart = enabled;
-      else if (sec === "bom") state.showBOM = enabled;
-      else if (sec === "iso3d") state.showIso3D = enabled;
-      else if (sec === "cartiglio") state.showCartiglio = enabled;
+      if (sec === "chart") {
+        state.showLoadChart = enabled;
+        const c1 = document.getElementById("chkExportChart"); if (c1) c1.checked = enabled;
+        const c2 = document.getElementById("menuChkChart"); if (c2) c2.checked = enabled;
+      } else if (sec === "bom") {
+        state.showBOM = enabled;
+        const c1 = document.getElementById("chkExportBOM"); if (c1) c1.checked = enabled;
+        const c2 = document.getElementById("menuChkBOM"); if (c2) c2.checked = enabled;
+      } else if (sec === "iso3d") {
+        state.showIso3D = enabled;
+        const c1 = document.getElementById("chkExportIso3D"); if (c1) c1.checked = enabled;
+        const c2 = document.getElementById("menuChk3D"); if (c2) c2.checked = enabled;
+        const c3 = document.getElementById("chkIso3D"); if (c3) c3.checked = enabled;
+      } else if (sec === "cartiglio") {
+        state.showCartiglio = enabled;
+        const c1 = document.getElementById("chkExportCartiglio"); if (c1) c1.checked = enabled;
+        const c2 = document.getElementById("menuChkCartiglio"); if (c2) c2.checked = enabled;
+      }
       drawScene();
     }
 
     function build3DIsoScene(prims, leftBoxX, lowestY, leftBoxW, W, H, thk, mat, sup) {
-      const isoH = 114;
+      const isoH = 126;
       const isoY = lowestY - isoH - 12;
-      const boxBg = state.theme === "light" ? "#f1f5f9" : "#0f172a";
+      const isLight = state.theme === "light";
+      const boxBg = isLight ? "#f8fafc" : "#0f172a";
+      const boxBorder = isLight ? "#cbd5e1" : "#38bdf8";
 
       const line = (layer, x1, y1, x2, y2, color, lw = 0.4, alpha = 1) => prims.push({ t: "line", layer, x1, y1, x2, y2, color, lw, alpha });
       const rect = (layer, x, y, w, h, color, fill, solid = false) => prims.push({ t: "rect", layer, x, y, w, h, color, fill, solid });
+      const poly = (layer, pts, color, fill = null, lw = 0.4, alpha = 1) => prims.push({ t: "poly", layer, pts, color, fill, lw, alpha });
       const text = (layer, x, y, h, str, color, align = "left", maxW = null) => {
         let s = String(str || "");
         if (maxW) {
@@ -3295,7 +3760,8 @@
         prims.push({ t: "text", layer, x, y, h, str: s, color, align });
       };
 
-      rect("VISTA_3D_ISO", leftBoxX, isoY, leftBoxW, isoH, "#38bdf8", boxBg, true);
+      // Riquadro contenitore
+      rect("VISTA_3D_ISO", leftBoxX, isoY, leftBoxW, isoH, boxBorder, boxBg, true);
 
       const trayLabels = {
         solid: "Canale Chiuso Cieco",
@@ -3306,194 +3772,365 @@
       const trayTypeStr = trayLabels[state.trayType] || "Passerella Portacavi";
 
       text("VISTA_3D_ISO", leftBoxX + 6, isoY + isoH - 7, 2.3,
-        `ASSONOMETRIA 3D — ${trayTypeStr.toUpperCase()} (PASSO MENSOLE Ls = ${state.spanM.toFixed(2)} m)`,
+        `ASSONOMETRIA 3D COSTRUTTIVA — ${trayTypeStr.toUpperCase()} (PASSO MENSOLE Ls = ${state.spanM.toFixed(2)} m)`,
         "#38bdf8", "left", leftBoxW - 12);
       text("VISTA_3D_ISO", leftBoxX + 6, isoY + isoH - 12, 1.85,
-        `Supporto: ${sup.name} | Carico Limite SWL: ${metrics.qMaxKgM} kg/m | Freccia f = ${metrics.deflectionMm} mm (Lim. ${metrics.maxDeflectionMm} mm)`,
-        "#94a3b8", "left", leftBoxW - 12);
+        `Supporto: ${sup.name} | Portata Limite SWL: ${metrics.qMaxKgM} kg/m | Freccia f = ${metrics.deflectionMm} mm (Amm. ${metrics.maxDeflectionMm} mm)`,
+        isLight ? "#475569" : "#94a3b8", "left", leftBoxW - 12);
 
-      // Area di proiezione normalizzata e rigorosamente contenuta nel box
-      const uMinX = leftBoxX + 18;
-      const uMaxX = leftBoxX + leftBoxW - 18;
-      const uMinY = isoY + 12;
-      const uMaxY = isoY + isoH - 24;
-      const uW = uMaxX - uMinX;
-      const uH = uMaxY - uMinY;
+      // Area interna utile per proiezione 3D
+      const padX = 14, padY = 10;
+      const uMinX = leftBoxX + padX;
+      const uMaxX = leftBoxX + leftBoxW - padX;
+      const uMinY = isoY + padY;
+      const uMaxY = isoY + isoH - padY - 14;
+      const availW = uMaxX - uMinX;
+      const availH = uMaxY - uMinY;
 
-      // Coordinate normalizzate:
-      // nx: [0 (fronte destro), 1 (lato parete sinistro)]
-      // ny: [-0.22 (livello inferiore mensole/tiranti), 0.70 (soffitto/ancoraggi a parete)]
-      // nz: [0 (fronte sezione), 1 (retro assonometrico)]
-      const iso = (nx, ny, nz) => ({
-        px: uMinX + (0.36 + 0.52 * nz - 0.32 * nx) * uW,
-        py: uMinY + (0.14 + 0.26 * nz + 0.14 * nx + 0.36 * ny) * uH
+      // Geometria assonometrica calibrata
+      const angZ = 18 * Math.PI / 180;
+      const angX = 34 * Math.PI / 180;
+      const cosZ = Math.cos(angZ), sinZ = Math.sin(angZ);
+      const cosX = Math.cos(angX), sinX = Math.sin(angX);
+
+      const zMax = 6.4;
+      const z1 = 1.4, z2 = 5.0;
+
+      const keyPts = [
+        { x: 1.25, y: -0.42, z: z1 },
+        { x: -0.20, y: -0.42, z: z1 },
+        { x: 1.25, y: 0.65, z: z2 },
+        { x: -0.20, y: 0.65, z: z2 },
+        { x: 0, y: 0, z: 0 },
+        { x: 1, y: 0, z: 0 },
+        { x: 0, y: 0.45, z: 0 },
+        { x: 1, y: 0.45, z: 0 },
+        { x: 0, y: 0, z: zMax },
+        { x: 1, y: 0, z: zMax },
+        { x: 0, y: 0.45, z: zMax },
+        { x: 1, y: 0.45, z: zMax },
+        { x: 0.5, y: -0.32, z: z1 },
+        { x: 0.5, y: -0.32, z: z2 }
+      ];
+
+      const rawProj = keyPts.map(p => ({
+        u: p.z * cosZ - p.x * cosX,
+        v: p.z * sinZ + p.x * sinX + p.y * 1.05
+      }));
+
+      const minU = Math.min(...rawProj.map(p => p.u));
+      const maxU = Math.max(...rawProj.map(p => p.u));
+      const minV = Math.min(...rawProj.map(p => p.v));
+      const maxV = Math.max(...rawProj.map(p => p.v));
+      const uSpan = maxU - minU;
+      const vSpan = maxV - minV;
+
+      const scale = Math.min((availW - 6) / uSpan, (availH - 4) / vSpan);
+      const fittedW = uSpan * scale;
+      const fittedH = vSpan * scale;
+      const offsetX = uMinX + (availW - fittedW) / 2 - minU * scale;
+      const offsetY = uMinY + (availH - fittedH) / 2 - minV * scale;
+
+      const iso = (x, y, z) => ({
+        x: +(offsetX + (z * cosZ - x * cosX) * scale).toFixed(2),
+        y: +(offsetY + (z * sinZ + x * sinX + y * 1.05) * scale).toFixed(2)
       });
 
-      const iLine = (nx1, ny1, nz1, nx2, ny2, nz2, c = mat.stroke || "#94a3b8", lw = 0.45, alpha = 1) => {
-        const p1 = iso(nx1, ny1, nz1), p2 = iso(nx2, ny2, nz2);
-        line("VISTA_3D_ISO", p1.px, p1.py, p2.px, p2.py, c, lw, alpha);
+      const iLine = (x1, y1, z1, x2, y2, z2, c, lw = 0.4, alpha = 1) => {
+        const p1 = iso(x1, y1, z1), p2 = iso(x2, y2, z2);
+        line("VISTA_3D_ISO", p1.x, p1.y, p2.x, p2.y, c, lw, alpha);
       };
 
-      // 1. SUPPORTO / MENSOLE (zSupports = [0.20, 0.80])
-      const zSupports = [0.20, 0.80];
-      zSupports.forEach(zs => {
+      const iPoly = (pts3d, cStroke, cFill, lw = 0.4, alpha = 1) => {
+        const pts2d = pts3d.map(p => iso(p.x, p.y, p.z));
+        poly("VISTA_3D_ISO", pts2d, cStroke, cFill, lw, alpha);
+      };
+
+      // Palette cromatica materiali e finiture
+      const colSteelStroke = isLight ? "#64748b" : "#94a3b8";
+      const colWallPlateFill = isLight ? "#e2e8f0" : "#1e293b";
+      const colArmTop = isLight ? "#f1f5f9" : "#475569";
+      const colArmSide = isLight ? "#cbd5e1" : "#334155";
+      const colTrayRear = isLight ? "#e2e8f0" : "#1e293b";
+      const colTrayFloor = isLight ? "#f8fafc" : "#0f172a";
+      const colTrayFront = isLight ? "#f1f5f9" : "#1e293b";
+
+      // 1. PARETE DI FONDO (Linea guida e retino)
+      iLine(1.18, -0.42, 0.3, 1.18, -0.42, zMax - 0.1, isLight ? "#cbd5e1" : "#334155", 0.35);
+      iLine(1.18, 0.60, 0.3, 1.18, 0.60, zMax - 0.1, isLight ? "#cbd5e1" : "#334155", 0.35);
+
+      // 2. SUPPORTI E MENSOLE A SBALZO (z1 = 1.4, z2 = 5.0)
+      [z1, z2].forEach(zs => {
         if (state.support.startsWith("wall_")) {
-          // Parete verticale posteriore
-          iLine(1.05, -0.22, zs, 1.05, 0.65, zs, "#475569", 0.4);
-          // Piastra mensola a parete
-          iLine(1.03, -0.20, zs, 1.03, 0.45, zs, "#94a3b8", 0.7);
-          // Braccio orizzontale mensola sotto la canalina
-          iLine(1.03, -0.05, zs, -0.06, -0.05, zs, "#94a3b8", 0.85);
-          iLine(1.03, -0.09, zs, -0.06, -0.09, zs, "#64748b", 0.5);
-          iLine(-0.06, -0.05, zs, -0.06, -0.09, zs, "#94a3b8", 0.6);
-          // Puntone diagonale (wall_med e wall_heavy)
+          // Piastra profilata di ancoraggio a parete
+          iPoly([
+            { x: 1.18, y: -0.40, z: zs - 0.07 },
+            { x: 1.18, y: 0.50, z: zs - 0.07 },
+            { x: 1.18, y: 0.50, z: zs + 0.07 },
+            { x: 1.18, y: -0.40, z: zs + 0.07 }
+          ], colSteelStroke, colWallPlateFill, 0.6);
+          // Tasselli M10 / Asola piastra
+          iLine(1.18, 0.38, zs - 0.03, 1.18, 0.38, zs + 0.03, "#38bdf8", 0.8);
+          iLine(1.18, -0.32, zs - 0.03, 1.18, -0.32, zs + 0.03, "#38bdf8", 0.8);
+
+          // Braccio mensola a sbalzo (profilato sagomato a C con spessore e sbalzo)
+          iPoly([
+            { x: 1.18, y: -0.05, z: zs - 0.05 },
+            { x: -0.12, y: -0.05, z: zs - 0.05 },
+            { x: -0.12, y: -0.12, z: zs - 0.05 },
+            { x: 1.18, y: -0.12, z: zs - 0.05 }
+          ], colSteelStroke, colArmSide, 0.65);
+          iPoly([
+            { x: 1.18, y: -0.05, z: zs - 0.05 },
+            { x: -0.12, y: -0.05, z: zs - 0.05 },
+            { x: -0.12, y: -0.05, z: zs + 0.05 },
+            { x: 1.18, y: -0.05, z: zs + 0.05 }
+          ], "#cbd5e1", colArmTop, 0.5);
+
+          // Puntone diagonale di scarico a 45°
           if (state.support !== "wall_light") {
-            iLine(1.03, -0.18, zs, 0.35, -0.05, zs, "#94a3b8", 0.75);
+            iPoly([
+              { x: 1.18, y: -0.35, z: zs },
+              { x: 0.35, y: -0.12, z: zs },
+              { x: 0.42, y: -0.12, z: zs },
+              { x: 1.18, y: -0.29, z: zs }
+            ], colSteelStroke, colArmSide, 0.6);
           }
         } else if (state.support === "ceiling_trap") {
           // Traversa orizzontale a trapezio sotto canalina
-          iLine(-0.08, -0.06, zs, 1.08, -0.06, zs, "#94a3b8", 0.85);
-          // Barre filettate M8/M10 verticali verso soffitto
-          iLine(-0.06, -0.06, zs, -0.06, 0.68, zs, "#cbd5e1", 0.5);
-          iLine(1.06, -0.06, zs, 1.06, 0.68, zs, "#cbd5e1", 0.5);
-          // Piastrine di ancoraggio a soffitto
-          iLine(-0.09, 0.68, zs, -0.03, 0.68, zs, "#94a3b8", 0.7);
-          iLine(1.03, 0.68, zs, 1.09, 0.68, zs, "#94a3b8", 0.7);
+          iPoly([
+            { x: -0.14, y: -0.06, z: zs - 0.04 },
+            { x: 1.14, y: -0.06, z: zs - 0.04 },
+            { x: 1.14, y: -0.12, z: zs - 0.04 },
+            { x: -0.14, y: -0.12, z: zs - 0.04 }
+          ], colSteelStroke, colArmSide, 0.65);
+          // Tiranti verticali M8/M10 verso soffitto
+          iLine(-0.10, -0.06, zs, -0.10, 0.68, zs, "#cbd5e1", 0.7);
+          iLine(1.10, -0.06, zs, 1.10, 0.68, zs, "#cbd5e1", 0.7);
+          // Morsetti di ancoraggio a soffitto
+          iPoly([
+            { x: -0.14, y: 0.68, z: zs - 0.05 },
+            { x: -0.06, y: 0.68, z: zs - 0.05 },
+            { x: -0.06, y: 0.68, z: zs + 0.05 },
+            { x: -0.14, y: 0.68, z: zs + 0.05 }
+          ], "#38bdf8", colArmSide, 0.6);
+          iPoly([
+            { x: 1.06, y: 0.68, z: zs - 0.05 },
+            { x: 1.14, y: 0.68, z: zs - 0.05 },
+            { x: 1.14, y: 0.68, z: zs + 0.05 },
+            { x: 1.06, y: 0.68, z: zs + 0.05 }
+          ], "#38bdf8", colArmSide, 0.6);
         } else if (state.support === "ceiling_single") {
           // Pendino singolo centrale
-          iLine(0.50, -0.06, zs, 0.50, 0.68, zs, "#cbd5e1", 0.75);
-          iLine(-0.05, -0.06, zs, 1.05, -0.06, zs, "#94a3b8", 0.8);
-          iLine(0.45, 0.68, zs, 0.55, 0.68, zs, "#94a3b8", 0.7);
+          iLine(0.50, -0.06, zs, 0.50, 0.68, zs, "#cbd5e1", 0.85);
+          iPoly([
+            { x: -0.08, y: -0.06, z: zs - 0.04 },
+            { x: 1.08, y: -0.06, z: zs - 0.04 },
+            { x: 1.08, y: -0.12, z: zs - 0.04 },
+            { x: -0.08, y: -0.12, z: zs - 0.04 }
+          ], colSteelStroke, colArmSide, 0.65);
         } else {
           // Supporto a pavimento omega
-          iLine(-0.04, -0.05, zs, -0.04, -0.22, zs, "#94a3b8", 0.75);
-          iLine(1.04, -0.05, zs, 1.04, -0.22, zs, "#94a3b8", 0.75);
-          iLine(-0.08, -0.22, zs, 1.08, -0.22, zs, "#64748b", 0.5);
+          iPoly([
+            { x: -0.06, y: -0.05, z: zs },
+            { x: -0.06, y: -0.32, z: zs },
+            { x: 0.02, y: -0.32, z: zs },
+            { x: 0.02, y: -0.05, z: zs }
+          ], colSteelStroke, colArmSide, 0.65);
+          iPoly([
+            { x: 0.98, y: -0.05, z: zs },
+            { x: 0.98, y: -0.32, z: zs },
+            { x: 1.06, y: -0.32, z: zs },
+            { x: 1.06, y: -0.05, z: zs }
+          ], colSteelStroke, colArmSide, 0.65);
+          iLine(-0.10, -0.32, zs, 1.10, -0.32, "#64748b", 0.5);
         }
       });
 
-      // 2. CORPO DELLA CANALINA STILIZZATO PER TIPOLOGIA
-      const trayStroke = mat.stroke || "#cbd5e1";
-      if (state.trayType === "solid") {
-        // Canale Chiuso Cieco
-        iLine(0, 0, 0, 1, 0, 0, trayStroke, 0.7);
-        iLine(1, 0, 0, 1, 0, 1, trayStroke, 0.7);
-        iLine(1, 0, 1, 0, 0, 1, "#64748b", 0.45);
-        iLine(0, 0, 1, 0, 0, 0, trayStroke, 0.7);
-        // Parete frontale
-        iLine(0, 0, 0, 0, 0.40, 0, trayStroke, 0.75);
-        iLine(0, 0.40, 0, 0, 0.40, 1, trayStroke, 0.75);
-        iLine(0, 0.40, 1, 0, 0, 1, "#64748b", 0.45);
-        // Parete posteriore
-        iLine(1, 0, 0, 1, 0.40, 0, trayStroke, 0.75);
-        iLine(1, 0.40, 0, 1, 0.40, 1, trayStroke, 0.75);
-        iLine(1, 0.40, 1, 1, 0, 1, "#64748b", 0.45);
-        // Bordini di ritorno a C
-        iLine(0, 0.40, 0, 0.05, 0.40, 0, "#94a3b8", 0.5);
-        iLine(0.05, 0.40, 0, 0.05, 0.40, 1, "#94a3b8", 0.4);
-        iLine(1, 0.40, 0, 0.95, 0.40, 0, "#94a3b8", 0.5);
-        iLine(0.95, 0.40, 0, 0.95, 0.40, 1, "#94a3b8", 0.4);
+      // 3. CANALINA — PARETE POSTERIORE E FONDO IN 3D
+      // Parete posteriore solida (x = 1.0)
+      iPoly([
+        { x: 1.0, y: 0, z: 0 },
+        { x: 1.0, y: 0.45, z: 0 },
+        { x: 1.0, y: 0.45, z: zMax },
+        { x: 1.0, y: 0, z: zMax }
+      ], colSteelStroke, colTrayRear, 0.65);
+      // Bordino superiore posteriore a C
+      iLine(1.0, 0.45, 0, 0.95, 0.45, 0, "#94a3b8", 0.5);
+      iLine(0.95, 0.45, 0, 0.95, 0.45, zMax, "#94a3b8", 0.45);
+      iLine(0.95, 0.45, zMax, 1.0, 0.45, zMax, "#94a3b8", 0.5);
 
-        if (state.cover !== "none") {
-          iLine(-0.02, 0.43, 0, 1.02, 0.43, 0, "#38bdf8", 0.7);
-          iLine(1.02, 0.43, 0, 1.02, 0.43, 1, "#38bdf8", 0.7);
-          iLine(1.02, 0.43, 1, -0.02, 0.43, 1, "#0284c7", 0.45);
-          iLine(-0.02, 0.43, 1, -0.02, 0.43, 0, "#38bdf8", 0.7);
-        }
-      } else if (state.trayType === "perforated") {
-        // Canale Asolato con Feritoie
-        iLine(0, 0, 0, 1, 0, 0, trayStroke, 0.7);
-        iLine(1, 0, 0, 1, 0, 1, trayStroke, 0.7);
-        iLine(1, 0, 1, 0, 0, 1, "#64748b", 0.45);
-        iLine(0, 0, 1, 0, 0, 0, trayStroke, 0.7);
-        iLine(0, 0, 0, 0, 0.40, 0, trayStroke, 0.75);
-        iLine(0, 0.40, 0, 0, 0.40, 1, trayStroke, 0.75);
-        iLine(0, 0.40, 1, 0, 0, 1, "#64748b", 0.45);
-        iLine(1, 0, 0, 1, 0.40, 0, trayStroke, 0.75);
-        iLine(1, 0.40, 0, 1, 0.40, 1, trayStroke, 0.75);
-        iLine(1, 0.40, 1, 1, 0, 1, "#64748b", 0.45);
-        // Feritoie asolate longitudinali lungo fondo e pareti
-        for (let z = 0.08; z <= 0.92; z += 0.12) {
-          iLine(0.25, 0, z, 0.25, 0, z + 0.05, "#f59e0b", 0.4);
-          iLine(0.75, 0, z, 0.75, 0, z + 0.05, "#f59e0b", 0.4);
-          iLine(0, 0.20, z, 0, 0.20, z + 0.05, "#f59e0b", 0.4);
-          iLine(1, 0.20, z, 1, 0.20, z + 0.05, "#f59e0b", 0.4);
-        }
-      } else if (state.trayType === "mesh") {
-        // Passerella a Filo Rete (Cablofil)
-        iLine(0, 0.40, 0, 0, 0.40, 1, "#38bdf8", 0.7);
-        iLine(1, 0.40, 0, 1, 0.40, 1, "#38bdf8", 0.7);
-        iLine(0, 0, 0, 0, 0, 1, "#38bdf8", 0.7);
-        iLine(1, 0, 0, 1, 0, 1, "#38bdf8", 0.7);
-        iLine(0.33, 0, 0, 0.33, 0, 1, "#0284c7", 0.45);
-        iLine(0.66, 0, 0, 0.66, 0, 1, "#0284c7", 0.45);
-        for (let z = 0.05; z <= 0.95; z += 0.10) {
-          iLine(0, 0.40, z, 0, 0, z, "#0284c7", 0.5);
-          iLine(0, 0, z, 1, 0, z, "#0284c7", 0.5);
-          iLine(1, 0, z, 1, 0.40, z, "#0284c7", 0.5);
+      // Piano del fondo canalina solido (y = 0, da x=0 a x=1)
+      iPoly([
+        { x: 0, y: 0, z: 0 },
+        { x: 1.0, y: 0, z: 0 },
+        { x: 1.0, y: 0, z: zMax },
+        { x: 0, y: 0, z: zMax }
+      ], colSteelStroke, colTrayFloor, 0.65);
+
+      // 4. STILIZZAZIONE CARATTERISTICA DELLA TIPOLOGIA DI PASSERELLA
+      if (state.trayType === "perforated") {
+        // Canale asolato con file di forature regolari
+        for (let z = 0.45; z <= zMax - 0.45; z += 0.55) {
+          iLine(0.25, 0.005, z, 0.25, 0.005, z + 0.28, "#f59e0b", 0.5);
+          iLine(0.50, 0.005, z, 0.50, 0.005, z + 0.28, "#f59e0b", 0.5);
+          iLine(0.75, 0.005, z, 0.75, 0.005, z + 0.28, "#f59e0b", 0.5);
+          iLine(1.0, 0.22, z, 1.0, 0.22, z + 0.25, "#f59e0b", 0.45);
         }
       } else if (state.trayType === "ladder") {
-        // Passerella a Pioli / Scaletta
-        iLine(0, 0.40, 0, 0, 0.40, 1, "#f59e0b", 0.75);
-        iLine(0, 0, 0, 0, 0, 1, "#f59e0b", 0.75);
-        iLine(0, 0, 0, 0, 0.40, 0, "#f59e0b", 0.75);
-        iLine(0, 0, 1, 0, 0.40, 1, "#b45309", 0.5);
-
-        iLine(1, 0.40, 0, 1, 0.40, 1, "#f59e0b", 0.75);
-        iLine(1, 0, 0, 1, 0, 1, "#f59e0b", 0.75);
-        iLine(1, 0, 0, 1, 0.40, 0, "#f59e0b", 0.75);
-        iLine(1, 0, 1, 1, 0.40, 1, "#b45309", 0.5);
-
-        for (let z = 0.08; z <= 0.92; z += 0.16) {
-          iLine(0, 0.02, z, 1, 0.02, z, "#f59e0b", 0.85);
-          iLine(0, 0.02, z + 0.03, 1, 0.02, z + 0.03, "#f59e0b", 0.85);
-          iLine(0, 0.04, z + 0.015, 1, 0.04, z + 0.015, "#fbbf24", 0.5);
+        // Passerella a pioli (traversine sagomate a C con spessore ogni passo)
+        for (let z = 0.35; z <= zMax - 0.35; z += 0.65) {
+          iPoly([
+            { x: 0, y: 0.03, z: z },
+            { x: 1.0, y: 0.03, z: z },
+            { x: 1.0, y: 0.03, z: z + 0.12 },
+            { x: 0, y: 0.03, z: z + 0.12 }
+          ], "#f59e0b", isLight ? "#fef3c7" : "#78350f", 0.65);
+          iLine(0, 0.035, z + 0.06, 1.0, 0.035, z + 0.06, "#fbbf24", 0.5);
         }
+      } else if (state.trayType === "mesh") {
+        // Passerella a filo / rete (Cablofil)
+        [0.25, 0.50, 0.75].forEach(rx => {
+          iLine(rx, 0.01, 0, rx, 0.01, zMax, "#0284c7", 0.55);
+        });
+        for (let z = 0.25; z <= zMax - 0.25; z += 0.45) {
+          iLine(0, 0.40, z, 0, 0, z, "#38bdf8", 0.6);
+          iLine(0, 0, z, 1.0, 0, z, "#38bdf8", 0.6);
+          iLine(1.0, 0, z, 1.0, 0.40, z, "#38bdf8", 0.6);
+        }
+      } else if (state.trayType === "solid") {
+        // Canale cieco liscio con pieghe di irrigidimento
+        iLine(0.33, 0.005, 0, 0.33, 0.005, zMax, isLight ? "#cbd5e1" : "#334155", 0.45);
+        iLine(0.67, 0.005, 0, 0.67, 0.005, zMax, isLight ? "#cbd5e1" : "#334155", 0.45);
       }
 
-      // 3. CAVI CHE CORRONO NELLA CANALINA (Fasci ben definiti e puliti)
-      const cableRuns = [
-        { nx: 0.22, ny: 0.05, col: "#38bdf8" },
-        { nx: 0.48, ny: 0.05, col: "#fbbf24" },
-        { nx: 0.76, ny: 0.05, col: "#4ade80" }
-      ];
-      cableRuns.forEach(c => {
-        iLine(c.nx, c.ny, 0, c.nx, c.ny, 1, c.col, 0.8);
-      });
+      // Coperchio superiore 3D a scatto se abilitato
+      if (state.cover !== "none") {
+        iPoly([
+          { x: -0.04, y: 0.48, z: 0 },
+          { x: 1.04, y: 0.48, z: 0 },
+          { x: 1.04, y: 0.48, z: zMax },
+          { x: -0.04, y: 0.48, z: zMax }
+        ], "#38bdf8", isLight ? "#e0f2fe" : "#0c4a6e", 0.65, 0.85);
+      }
 
-      // 4. FASCETTE ANCORAGGIO CAVI IN 3D (alle mensole)
+      // 5. FASCI CAVI 3D REALI CON SEGREGAZIONE & COLORI NORMATIVI
+      // Cavo Potenza BT Principale (Blu elettrico / Azzurro)
+      iPoly([
+        { x: 0.14, y: 0.05, z: 0 },
+        { x: 0.28, y: 0.05, z: 0 },
+        { x: 0.28, y: 0.05, z: zMax },
+        { x: 0.14, y: 0.05, z: zMax }
+      ], "#0284c7", "#38bdf8", 0.65);
+      iLine(0.21, 0.08, 0, 0.21, 0.08, zMax, "#7dd3fc", 0.5);
+
+      // Cavo di Fase / Neutro secondario (Ambra / Oro)
+      iPoly([
+        { x: 0.40, y: 0.05, z: 0 },
+        { x: 0.54, y: 0.05, z: 0 },
+        { x: 0.54, y: 0.05, z: zMax },
+        { x: 0.40, y: 0.05, z: zMax }
+      ], "#d97706", "#fbbf24", 0.65);
+      iLine(0.47, 0.08, 0, 0.47, 0.08, zMax, "#fde68a", 0.5);
+
+      // Conduttore di Protezione PE (Giallo/Verde)
+      iPoly([
+        { x: 0.66, y: 0.05, z: 0 },
+        { x: 0.78, y: 0.05, z: 0 },
+        { x: 0.78, y: 0.05, z: zMax },
+        { x: 0.66, y: 0.05, z: zMax }
+      ], "#65a30d", "#84cc16", 0.65);
+      iLine(0.72, 0.08, 0, 0.72, 0.08, zMax, "#fef08a", 0.5);
+
+      // Circuito Speciale / Segnale / Antincendio (se presente cavo speciale)
+      const hasSpecial = state.cables.some(c => c.sys === "SPECIAL_ELV" || c.sys === "BT_FIRE");
+      if (hasSpecial) {
+        iPoly([
+          { x: 0.86, y: 0.05, z: 0 },
+          { x: 0.96, y: 0.05, z: 0 },
+          { x: 0.96, y: 0.05, z: zMax },
+          { x: 0.86, y: 0.05, z: zMax }
+        ], "#dc2626", "#ef4444", 0.65);
+      }
+
+      // 6. FASCETTE DI ANCORAGGIO CAVI IN 3D ALLE MENSOLE
       if (state.clamps) {
-        zSupports.forEach(zs => {
-          iLine(-0.02, 0.07, zs, 1.02, 0.07, zs, "#06b6d4", 0.75);
+        [z1, z2].forEach(zs => {
+          iPoly([
+            { x: 0.08, y: 0.09, z: zs - 0.04 },
+            { x: 0.94, y: 0.09, z: zs - 0.04 },
+            { x: 0.94, y: 0.09, z: zs + 0.04 },
+            { x: 0.08, y: 0.09, z: zs + 0.04 }
+          ], "#0891b2", "#06b6d4", 0.75);
         });
       }
 
-      // 5. SETTO TAGLIAFUOCO EI120 (se reiCount > 0)
-      if (state.reiCount > 0) {
-        const midZ = (zSupports[0] + zSupports[1]) / 2;
-        iLine(-0.05, -0.05, midZ, -0.05, 0.48, midZ, "#ef4444", 0.75);
-        iLine(-0.05, 0.48, midZ, 1.05, 0.48, midZ, "#ef4444", 0.75);
-        iLine(1.05, 0.48, midZ, 1.05, -0.05, midZ, "#ef4444", 0.75);
-        iLine(1.05, -0.05, midZ, -0.05, -0.05, midZ, "#ef4444", 0.75);
-        const pRei = iso(1.06, 0.22, midZ);
-        text("VISTA_3D_ISO", pRei.px + 2, pRei.py, 1.85, `SETTO EI120 (${state.reiCount}x)`, "#f87171", "left");
+      // 7. SETTI SEPARATORI METALLICI LONGITUDINALI (Se presenti)
+      if (state.septums > 0) {
+        getSeptumXList().forEach((sx, sIdx) => {
+          const normX = +(sx / state.width).toFixed(3);
+          iPoly([
+            { x: normX, y: 0, z: 0 },
+            { x: normX, y: 0.42, z: 0 },
+            { x: normX, y: 0.42, z: zMax },
+            { x: normX, y: 0, z: zMax }
+          ], colSteelStroke, isLight ? "#cbd5e1" : "#475569", 0.6, 0.85);
+          iLine(normX, 0.42, 0, normX, 0.42, zMax, "#38bdf8", 0.75);
+          const pSep = iso(normX, 0.45, 0);
+          text("VISTA_3D_ISO", pSep.x, pSep.y - 1.5, 1.6, `SETTO #${sIdx + 1}`, "#38bdf8", "center");
+        });
       }
 
-      // 6. QUOTA DELLA DISTANZA TRA LE MENSOLE (Passo Ls)
-      const dimNy = -0.16;
-      const pZ1 = iso(0.50, dimNy, zSupports[0]);
-      const pZ2 = iso(0.50, dimNy, zSupports[1]);
-      // Linee di testimone
-      iLine(0.50, -0.06, zSupports[0], 0.50, dimNy - 0.03, zSupports[0], "#38bdf8", 0.35);
-      iLine(0.50, -0.06, zSupports[1], 0.50, dimNy - 0.03, zSupports[1], "#38bdf8", 0.35);
-      // Linea di quota
-      line("VISTA_3D_ISO", pZ1.px, pZ1.py, pZ2.px, pZ2.py, "#f59e0b", 0.55);
-      // Trattini terminali a 45°
-      line("VISTA_3D_ISO", pZ1.px - 1.5, pZ1.py - 1.5, pZ1.px + 1.5, pZ1.py + 1.5, "#f59e0b", 0.6);
-      line("VISTA_3D_ISO", pZ2.px - 1.5, pZ2.py - 1.5, pZ2.px + 1.5, pZ2.py + 1.5, "#f59e0b", 0.6);
+      // 8. BARRIERA TAGLIAFUOCO EI120 (Se reiCount > 0)
+      if (state.reiCount > 0) {
+        const midZ = (z1 + z2) / 2;
+        iPoly([
+          { x: -0.06, y: -0.06, z: midZ },
+          { x: 1.06, y: -0.06, z: midZ },
+          { x: 1.06, y: 0.50, z: midZ },
+          { x: -0.06, y: 0.50, z: midZ }
+        ], "#b91c1c", "#ef4444", 0.8, 0.75);
+        const pRei = iso(1.08, 0.25, midZ);
+        text("VISTA_3D_ISO", pRei.x + 2, pRei.y, 1.85, `SETTO EI120 (${state.reiCount}x)`, "#f87171", "left");
+      }
 
-      const midPt = iso(0.50, dimNy, (zSupports[0] + zSupports[1]) / 2);
-      text("VISTA_3D_ISO", midPt.px, midPt.py - 3.5, 2.15,
+      // 9. PARETE ANTERIORE DELLA CANALINA (Visibilità trasparente dei cavi interni)
+      iPoly([
+        { x: 0, y: 0, z: 0 },
+        { x: 0, y: 0.35, z: 0 },
+        { x: 0, y: 0.35, z: zMax },
+        { x: 0, y: 0, z: zMax }
+      ], colSteelStroke, colTrayFront, 0.65, 0.55);
+      iLine(0, 0.35, 0, 0, 0.35, zMax, "#38bdf8", 0.8);
+      iLine(0.04, 0.35, 0, 0.04, 0.35, zMax, "#0284c7", 0.45);
+
+      // 10. TESTATA SEZIONE FRONTALE A Z = 0 (Sagoma a C in evidenza con spessore)
+      iPoly([
+        { x: -0.02, y: 0.36, z: 0 },
+        { x: -0.02, y: -0.02, z: 0 },
+        { x: 1.02, y: -0.02, z: 0 },
+        { x: 1.02, y: 0.46, z: 0 },
+        { x: 0.96, y: 0.46, z: 0 },
+        { x: 0.96, y: 0.02, z: 0 },
+        { x: 0.04, y: 0.02, z: 0 },
+        { x: 0.04, y: 0.36, z: 0 }
+      ], "#38bdf8", isLight ? "#e0f2fe" : "#0c4a6e", 0.85);
+
+      // 11. QUOTA ASSONOMETRICA DEL PASSO TRA LE MENSOLE Ls
+      const dimY = -0.28;
+      const pZ1 = iso(0.50, dimY, z1);
+      const pZ2 = iso(0.50, dimY, z2);
+      // Linee di testimone
+      iLine(0.50, -0.10, z1, 0.50, dimY - 0.02, z1, "#38bdf8", 0.35);
+      iLine(0.50, -0.10, z2, 0.50, dimY - 0.02, z2, "#38bdf8", 0.35);
+      // Linea di quota
+      line("VISTA_3D_ISO", pZ1.x, pZ1.y, pZ2.x, pZ2.y, "#f59e0b", 0.6);
+      // Ticks a 45°
+      line("VISTA_3D_ISO", pZ1.x - 1.5, pZ1.y - 1.5, pZ1.x + 1.5, pZ1.y + 1.5, "#f59e0b", 0.65);
+      line("VISTA_3D_ISO", pZ2.x - 1.5, pZ2.y - 1.5, pZ2.x + 1.5, pZ2.y + 1.5, "#f59e0b", 0.65);
+
+      const midPt = iso(0.50, dimY, (z1 + z2) / 2);
+      text("VISTA_3D_ISO", midPt.x, midPt.y - 3.5, 2.15,
         `PASSO MENSOLE Ls = ${state.spanM.toFixed(2)} m (SWL = ${metrics.qMaxKgM} kg/m)`,
         "#fbbf24", "center");
 
@@ -3550,10 +4187,40 @@
         line("Canalina", -thk - 2, cy - 4, -thk - 2, cy, mat.stroke, 0.6);
         line("Canalina", W + thk + 2, cy - 4, W + thk + 2, cy, mat.stroke, 0.6);
       }
-      getSeptumXList().forEach(sx => {
-        rect("Canalina", sx - thk / 2, 0, thk, H - 3, "#38bdf8", "#0e7490", true);
+      // Setti Separatori con maniglia di presa ergonomica salvacavi
+      getSeptumXList().forEach((sx, sIdx) => {
+        // Piede di fissaggio inferiore al fondo canalina
         rect("Canalina", sx - 6, 0, 12, thk, "#38bdf8", "#0e7490", true);
+        circle("Canalina", sx, thk * 0.5, 0.8, "#38bdf8", "#38bdf8", true);
+
+        // Lama verticale del setto
+        rect("Canalina", sx - thk / 2, 0, thk, H - 3, "#38bdf8", "#0e7490", true);
+
+        // Maniglia/Bordino superiore arrotondato salvacavi (CEI 64-8) e grip di trascinamento
+        rect("Canalina", sx - 3.5, H - 3, 7, 3.5, "#38bdf8", "#0284c7", true);
+        circle("Canalina", sx - 3.5, H - 1.25, 1.75, "#38bdf8", "#0284c7", true);
+        circle("Canalina", sx + 3.5, H - 1.25, 1.75, "#38bdf8", "#0284c7", true);
+
+        // Frecce interattive trascinamento / maniglia visibile '◄ ►'
+        text("Canalina", sx, H + 2.8, 2.0, "◄ ►", "#38bdf8", "center");
+        text("Canalina", sx, H + 5.5, 1.7, `SETTO #${sIdx + 1} (${Math.round(sx)}mm)`, "#06b6d4", "center");
       });
+
+      // Quotatura larghezze scomparti generati dai setti
+      if (state.septums > 0) {
+        const sepXList = [0, ...getSeptumXList(), W];
+        for (let sIdx = 0; sIdx < sepXList.length - 1; sIdx++) {
+          const x0 = sepXList[sIdx], x1 = sepXList[sIdx + 1];
+          const cMid = (x0 + x1) / 2;
+          const dimY = -thk - 10;
+          line("Quote", x0 + 1, dimY, x1 - 1, dimY, "#0284c7", 0.35);
+          line("Quote", x0, dimY - 1.5, x0, dimY + 1.5, "#0284c7", 0.4);
+          line("Quote", x1, dimY - 1.5, x1, dimY + 1.5, "#0284c7", 0.4);
+          line("Quote", x0 - 1, dimY - 1, x0 + 1, dimY + 1, "#0284c7", 0.4);
+          line("Quote", x1 - 1, dimY - 1, x1 + 1, dimY + 1, "#0284c7", 0.4);
+          text("Quote", cMid, dimY - 2.5, 2.0, `L${sIdx + 1} = ${Math.round(x1 - x0)} mm`, "#38bdf8", "center");
+        }
+      }
 
       // Staffaggi
       let lowestY = -thk - 18;
@@ -3922,6 +4589,7 @@
     const ctx = canvas.getContext("2d");
     let camScale = 1.4, camX = 260, camY = 260;
     let draggedCable = null, panning = false, panOrigin = { x: 0, y: 0 };
+    let draggedSeptumIdx = null;
     let rulerActive = false, rulerP1 = null, rulerP2 = null;
 
     function screenToWorld(sx, sy) { return { x: (sx - camX) / camScale, y: (camY - sy) / camScale }; }
@@ -3957,6 +4625,18 @@
         } else if (p.t === "circle" && p.fill) {
           ctx.beginPath(); ctx.arc(p.cx, -p.cy, p.r, 0, Math.PI * 2);
           ctx.fillStyle = p.fill; ctx.fill();
+        } else if (p.t === "poly" && p.fill && p.pts && p.pts.length >= 3) {
+          ctx.save();
+          if (p.alpha) ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          p.pts.forEach((pt, idx) => {
+            if (idx === 0) ctx.moveTo(pt.x, -pt.y);
+            else ctx.lineTo(pt.x, -pt.y);
+          });
+          ctx.closePath();
+          ctx.fillStyle = p.fill;
+          ctx.fill();
+          ctx.restore();
         }
       });
 
@@ -3973,6 +4653,18 @@
         } else if (p.t === "circle") {
           ctx.beginPath(); ctx.arc(p.cx, -p.cy, p.r, 0, Math.PI * 2);
           ctx.strokeStyle = p.color; ctx.lineWidth = 0.45; ctx.stroke();
+        } else if (p.t === "poly" && p.color && p.pts && p.pts.length >= 2) {
+          ctx.save();
+          if (p.alpha) ctx.globalAlpha = p.alpha;
+          ctx.strokeStyle = p.color; ctx.lineWidth = p.lw || 0.4;
+          ctx.beginPath();
+          p.pts.forEach((pt, idx) => {
+            if (idx === 0) ctx.moveTo(pt.x, -pt.y);
+            else ctx.lineTo(pt.x, -pt.y);
+          });
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
         } else if (p.t === "text") {
           ctx.font = `500 ${(p.h || 2.2) * 0.88}px 'JetBrains Mono', monospace`;
           ctx.fillStyle = p.color; ctx.textAlign = p.align || "left";
@@ -3986,6 +4678,32 @@
         ctx.beginPath(); ctx.moveTo(rulerP1.x, -rulerP1.y); ctx.lineTo(rulerP2.x, -rulerP2.y); ctx.stroke();
         ctx.fillStyle = "#67e8f9"; ctx.font = "bold 3px 'JetBrains Mono'";
         ctx.fillText(`${dist.toFixed(1)} mm`, (rulerP1.x + rulerP2.x) / 2, -(rulerP1.y + rulerP2.y) / 2 - 2);
+      }
+
+      // Guida visiva dinamica durante il trascinamento del setto
+      if (draggedSeptumIdx !== null && state.septums > 0) {
+        const sx = (state.septumPositions || [])[draggedSeptumIdx];
+        if (typeof sx === "number") {
+          ctx.save();
+          ctx.strokeStyle = "#38bdf8";
+          ctx.lineWidth = 0.8;
+          ctx.setLineDash([2, 2]);
+          ctx.beginPath();
+          ctx.moveTo(sx, 40);
+          ctx.lineTo(sx, -(state.height + 30));
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = "#0284c7";
+          ctx.fillRect(sx - 20, -(state.height + 25), 40, 8);
+          ctx.strokeStyle = "#38bdf8";
+          ctx.strokeRect(sx - 20, -(state.height + 25), 40, 8);
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 3.2px 'JetBrains Mono', monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(`X = ${Math.round(sx)} mm`, sx, -(state.height + 19.5));
+          ctx.restore();
+        }
       }
 
       ctx.restore();
@@ -4039,10 +4757,41 @@
         if (!rulerP1 || (rulerP1 && rulerP2)) { rulerP1 = pt; rulerP2 = pt; } else { rulerP2 = pt; }
         drawScene(); return;
       }
+
+      // 1. Controlla click su setto separatore (maniglia superiore o lama verticale)
+      let hitSeptum = -1;
+      const seps = getSeptumXList();
+      const H = state.height;
+      for (let i = 0; i < seps.length; i++) {
+        const sx = seps[i];
+        const inHandle = Math.abs(pt.x - sx) <= 8 && pt.y >= H - 6 && pt.y <= H + 10;
+        const inStem = Math.abs(pt.x - sx) <= 4.5 && pt.y >= -3 && pt.y <= H;
+        if (inHandle || inStem) {
+          hitSeptum = i;
+          break;
+        }
+      }
+
+      // 2. Controlla click su cavo
+      let hitCable = null;
       for (let i = state.cables.length - 1; i >= 0; i--) {
         const c = state.cables[i];
-        if (Math.hypot(pt.x - c.x, pt.y - c.y) <= c.d / 2 + 1) { draggedCable = c; return; }
+        if (Math.hypot(pt.x - c.x, pt.y - c.y) <= c.d / 2 + 1) {
+          hitCable = c;
+          break;
+        }
       }
+
+      // Priorità al setto se cliccato sulla maniglia superiore o in assenza di cavo diretto
+      if (hitSeptum >= 0 && (!hitCable || pt.y >= H * 0.45 || Math.abs(pt.x - seps[hitSeptum]) < 3.0)) {
+        draggedSeptumIdx = hitSeptum;
+        return;
+      }
+      if (hitCable) {
+        draggedCable = hitCable;
+        return;
+      }
+
       panning = true;
       panOrigin = { x: e.clientX - camX, y: e.clientY - camY };
     });
@@ -4051,6 +4800,13 @@
       const r = canvas.getBoundingClientRect();
       const pt = screenToWorld(e.clientX - r.left, e.clientY - r.top);
       if (rulerActive && rulerP1) { rulerP2 = pt; drawScene(); return; }
+
+      if (draggedSeptumIdx !== null) {
+        moveSeptum(draggedSeptumIdx, pt.x);
+        canvas.style.cursor = "ew-resize";
+        return;
+      }
+
       if (draggedCable) {
         const oldX = draggedCable.x, oldY = draggedCable.y;
         const pos = resolveNonOverlappingPosition(draggedCable, pt.x, pt.y);
@@ -4072,10 +4828,42 @@
         camX = e.clientX - panOrigin.x;
         camY = e.clientY - panOrigin.y;
         drawScene();
+      } else {
+        // Feedback visivo del cursore al passaggio su setto o cavo
+        let hoverSeptum = false;
+        const seps = getSeptumXList();
+        const H = state.height;
+        for (let i = 0; i < seps.length; i++) {
+          const sx = seps[i];
+          if ((Math.abs(pt.x - sx) <= 8 && pt.y >= H - 6 && pt.y <= H + 10) ||
+              (Math.abs(pt.x - sx) <= 4.5 && pt.y >= -3 && pt.y <= H)) {
+            hoverSeptum = true;
+            break;
+          }
+        }
+        if (hoverSeptum) {
+          canvas.style.cursor = "ew-resize";
+        } else {
+          let hoverCable = false;
+          for (let i = state.cables.length - 1; i >= 0; i--) {
+            const c = state.cables[i];
+            if (Math.hypot(pt.x - c.x, pt.y - c.y) <= c.d / 2 + 1) {
+              hoverCable = true;
+              break;
+            }
+          }
+          canvas.style.cursor = hoverCable ? "grab" : (rulerActive ? "crosshair" : "default");
+        }
       }
     });
 
     window.addEventListener("mouseup", () => {
+      if (draggedSeptumIdx !== null) {
+        draggedSeptumIdx = null;
+        recalculateAll();
+        drawScene();
+        updateSeptumUI();
+      }
       if (draggedCable) { draggedCable = null; updateTableUI(); }
       panning = false;
     });
@@ -4093,6 +4881,7 @@
     let touchStartScale = 1;
     let touchStartMidpoint = { x: 0, y: 0 };
     let touchDraggingCable = null;
+    let touchDraggingSeptumIdx = null;
     let touchPanning = false;
     let touchPanOrigin = { x: 0, y: 0 };
     let lastTapTime = 0;
@@ -4120,6 +4909,24 @@
           return;
         }
 
+        // Controlla tocco su setto separatore
+        touchDraggingSeptumIdx = null;
+        const seps = getSeptumXList();
+        const H = state.height;
+        for (let i = 0; i < seps.length; i++) {
+          const sx = seps[i];
+          if ((Math.abs(pt.x - sx) <= 10 && pt.y >= H - 8 && pt.y <= H + 12) ||
+              (Math.abs(pt.x - sx) <= 6 && pt.y >= -4 && pt.y <= H)) {
+            touchDraggingSeptumIdx = i;
+            break;
+          }
+        }
+
+        if (touchDraggingSeptumIdx !== null) {
+          e.preventDefault();
+          return;
+        }
+
         // Cerca cavo sotto il tocco
         touchDraggingCable = null;
         for (let i = state.cables.length - 1; i >= 0; i--) {
@@ -4140,6 +4947,7 @@
         // Pinch-to-zoom fluido con 2 dita
         e.preventDefault();
         touchDraggingCable = null;
+        touchDraggingSeptumIdx = null;
         touchPanning = false;
         const t0 = e.touches[0], t1 = e.touches[1];
         touchStartDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
@@ -4162,6 +4970,12 @@
           rulerP2 = pt;
           drawScene();
           e.preventDefault();
+          return;
+        }
+
+        if (touchDraggingSeptumIdx !== null) {
+          e.preventDefault();
+          moveSeptum(touchDraggingSeptumIdx, pt.x);
           return;
         }
 
@@ -4206,6 +5020,12 @@
     }, { passive: false });
 
     canvas.addEventListener("touchend", e => {
+      if (touchDraggingSeptumIdx !== null) {
+        touchDraggingSeptumIdx = null;
+        recalculateAll();
+        drawScene();
+        updateSeptumUI();
+      }
       if (touchDraggingCable) {
         touchDraggingCable = null;
         updateTableUI();
@@ -4221,6 +5041,7 @@
     });
 
     canvas.addEventListener("touchcancel", () => {
+      touchDraggingSeptumIdx = null;
       touchDraggingCable = null;
       touchPanning = false;
       touchStartDist = 0;
@@ -4266,9 +5087,14 @@
       }
     }
 
-    function toggleDatabaseModal() {
+    function toggleDatabaseModal(forceOpen) {
       const modal = document.getElementById("databaseCatalogModal");
       if (!modal) return;
+      if (forceOpen === true) {
+        modal.classList.remove("hidden");
+        renderDatabaseItems();
+        return;
+      }
       const isHidden = modal.classList.contains("hidden");
       if (isHidden) {
         modal.classList.remove("hidden");
@@ -4657,11 +5483,13 @@
       const chkBg = document.getElementById("chkDxfBg");
       const chkLw = document.getElementById("chkDxfLw");
       const chkUni = document.getElementById("chkDxfUnicode");
+      const selSc = document.getElementById("selDxfScale");
       if (selFmt) exportDxfOptions.format = selFmt.value;
       if (selFnt) exportDxfOptions.fontFamily = selFnt.value;
       if (chkBg) exportDxfOptions.includeBackgrounds = chkBg.checked;
       if (chkLw) exportDxfOptions.includeLineweights = chkLw.checked;
       if (chkUni) exportDxfOptions.includeUnicode = chkUni.checked;
+      if (selSc) onScaleChange(selSc.value);
     }
 
     // Tabella palette standard ACI AutoCAD (1-255) per calcolo distanza euclidea RGB esatta
@@ -4788,9 +5616,21 @@
       "SFONDI_RIEMPIMENTI": { aci: 250, tc: 0x1e293b, lw: 0,  desc: "Sfondi colorati e retini" }
     };
 
+    function getScaleFactor(scaleStr) {
+      if (!scaleStr) return 1.0;
+      const parts = String(scaleStr).split(":");
+      if (parts.length === 2) {
+        const num = parseFloat(parts[0]) || 1;
+        const den = parseFloat(parts[1]) || 1;
+        if (den > 0) return num / den;
+      }
+      return 1.0;
+    }
+
     function exportAutoCADDXF() {
       const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg)$/i, "");
       const { prims, bounds } = buildCADScene();
+      const s = getScaleFactor(state.scale);
 
       const dxf = [];
       const add = (c, v) => dxf.push(String(c), String(v));
@@ -4801,16 +5641,16 @@
       add(9, "$ACADVER");
       add(1, "AC1009");
       add(9, "$INSUNITS");
-      add(70, 4); // 4 = Millimetri (Scala 1:1 rigorosa)
+      add(70, 4); // 4 = Millimetri (Scala Reale secondo fattore di scala)
       add(9, "$MEASUREMENT");
       add(70, 1); // 1 = Sistema Metrico Decimale
       add(9, "$EXTMIN");
-      add(10, bounds.minX.toFixed(2));
-      add(20, bounds.minY.toFixed(2));
+      add(10, (bounds.minX * s).toFixed(3));
+      add(20, (bounds.minY * s).toFixed(3));
       add(30, "0.0");
       add(9, "$EXTMAX");
-      add(10, bounds.maxX.toFixed(2));
-      add(20, bounds.maxY.toFixed(2));
+      add(10, (bounds.maxX * s).toFixed(3));
+      add(20, (bounds.maxY * s).toFixed(3));
       add(30, "0.0");
       add(0, "ENDSEC");
 
@@ -4887,18 +5727,18 @@
         add(0, "LINE");
         add(8, lay);
         add(62, aci);
-        add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
-        add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
+        add(10, (x1 * s).toFixed(3)); add(20, (y1 * s).toFixed(3)); add(30, "0.0");
+        add(11, (x2 * s).toFixed(3)); add(21, (y2 * s).toFixed(3)); add(31, "0.0");
       };
 
       const addSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, aci = 7) => {
         add(0, "SOLID");
         add(8, lay);
         add(62, aci);
-        add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
-        add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
-        add(12, x4.toFixed(3)); add(22, y4.toFixed(3)); add(32, "0.0");
-        add(13, x3.toFixed(3)); add(23, y3.toFixed(3)); add(33, "0.0");
+        add(10, (x1 * s).toFixed(3)); add(20, (y1 * s).toFixed(3)); add(30, "0.0");
+        add(11, (x2 * s).toFixed(3)); add(21, (y2 * s).toFixed(3)); add(31, "0.0");
+        add(12, (x4 * s).toFixed(3)); add(22, (y4 * s).toFixed(3)); add(32, "0.0");
+        add(13, (x3 * s).toFixed(3)); add(23, (y3 * s).toFixed(3)); add(33, "0.0");
       };
 
       const addSolidDisk = (lay, cx, cy, r, aci = 7) => {
@@ -4922,8 +5762,8 @@
         add(0, "CIRCLE");
         add(8, lay);
         add(62, aci);
-        add(10, cx.toFixed(3)); add(20, cy.toFixed(3)); add(30, "0.0");
-        add(40, r.toFixed(3));
+        add(10, (cx * s).toFixed(3)); add(20, (cy * s).toFixed(3)); add(30, "0.0");
+        add(40, (r * s).toFixed(3));
       };
 
       // 4A. Primitive di riempimento / sfondi colorati dei cavi, anime e canalina
@@ -4940,6 +5780,8 @@
           addSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, fillAci);
         } else if (p.t === "circle") {
           addSolidDisk(fillLay, p.cx, p.cy, p.r, fillAci);
+        } else if (p.t === "poly" && p.pts && p.pts.length === 4) {
+          addSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.pts[3].x, p.pts[3].y, fillAci);
         }
       });
 
@@ -4958,23 +5800,29 @@
           addLine(lay, x1, y2, x1, y1, aci);
         } else if (p.t === "circle") {
           addCircle(lay, p.cx, p.cy, p.r, aci);
+        } else if (p.t === "poly" && p.pts && p.pts.length >= 2) {
+          for (let i = 0; i < p.pts.length; i++) {
+            const pt1 = p.pts[i];
+            const pt2 = p.pts[(i + 1) % p.pts.length];
+            addLine(lay, pt1.x, pt1.y, pt2.x, pt2.y, aci);
+          }
         } else if (p.t === "text") {
-          const s = cleanCADStr(p.str);
-          if (!s) return;
-          const th = Math.max(1.2, +(p.h || 2.2).toFixed(3));
+          const sText = cleanCADStr(p.str);
+          if (!sText) return;
+          const th = Math.max(0.05, +(p.h * s || 2.2 * s).toFixed(3));
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
 
           add(0, "TEXT");
           add(8, lay);
           add(62, aci);
-          add(10, p.x.toFixed(3)); add(20, p.y.toFixed(3)); add(30, "0.0");
+          add(10, (p.x * s).toFixed(3)); add(20, (p.y * s).toFixed(3)); add(30, "0.0");
           add(40, th.toFixed(3));
           add(41, "1.0"); // Width factor 1.0 (naturale, non compresso)
-          add(1, s);
+          add(1, sText);
           add(7, "MONO_CAD");
           if (hAlign !== 0) {
             add(72, hAlign);
-            add(11, p.x.toFixed(3)); add(21, p.y.toFixed(3)); add(31, "0.0");
+            add(11, (p.x * s).toFixed(3)); add(21, (p.y * s).toFixed(3)); add(31, "0.0");
           }
         }
       });
@@ -4996,6 +5844,7 @@
     function exportAutoLISPDWG() {
       const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg|scr)$/i, "");
       const { prims } = buildCADScene();
+      const s = getScaleFactor(state.scale);
       const fontFam = exportDxfOptions.fontFamily || "consolas";
       const monoFont = fontFam === "jetbrains" ? "JetBrains Mono,Consolas" : "Consolas";
       const titleFont = fontFam === "jetbrains" ? "Inter,Arial" : "Arial";
@@ -5007,19 +5856,19 @@
       const emitL = (lay, x1, y1, x2, y2, hex, lwMm) => {
         const aci = hexToClosestACI(hex), tc = hexToTrueColorInt(hex);
         const lwVal = Math.max(0, Math.min(211, Math.round((lwMm || 0.35) * 100)));
-        scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tc !== null ? ` '(420 . ${tc})` : ""} '(370 . ${lwVal}) '(10 ${x1.toFixed(3)} ${y1.toFixed(3)} 0.0) '(11 ${x2.toFixed(3)} ${y2.toFixed(3)} 0.0)))\n`;
+        scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tc !== null ? ` '(420 . ${tc})` : ""} '(370 . ${lwVal}) '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0)))\n`;
       };
 
       const emitSolidTri = (lay, x1, y1, x2, y2, x3, y3, hex) => {
         const aci = hexToClosestACI(hex), tc = hexToTrueColorInt(hex);
         const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
-        scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${x1.toFixed(3)} ${y1.toFixed(3)} 0.0) '(11 ${x2.toFixed(3)} ${y2.toFixed(3)} 0.0) '(12 ${x3.toFixed(3)} ${y3.toFixed(3)} 0.0) '(13 ${x3.toFixed(3)} ${y3.toFixed(3)} 0.0)))\n`;
+        scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(12 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0) '(13 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0)))\n`;
       };
 
       const emitSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, hex) => {
         const aci = hexToClosestACI(hex), tc = hexToTrueColorInt(hex);
         const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
-        scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${x1.toFixed(3)} ${y1.toFixed(3)} 0.0) '(11 ${x2.toFixed(3)} ${y2.toFixed(3)} 0.0) '(12 ${x4.toFixed(3)} ${y4.toFixed(3)} 0.0) '(13 ${x3.toFixed(3)} ${y3.toFixed(3)} 0.0)))\n`;
+        scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(12 ${(x4 * s).toFixed(3)} ${(y4 * s).toFixed(3)} 0.0) '(13 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0)))\n`;
       };
 
       prims.forEach(p => {
@@ -5042,6 +5891,8 @@
               p.fill
             );
           }
+        } else if (p.t === "poly" && p.fill && p.pts && p.pts.length === 4) {
+          emitSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.pts[3].x, p.pts[3].y, p.fill);
         }
       });
 
@@ -5058,19 +5909,25 @@
           emitL(lay, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.color, p.lw);
           emitL(lay, p.x, p.y + p.h, p.x, p.y, p.color, p.lw);
         } else if (p.t === "circle") {
-          scr += `  (entmake (list '(0 . "CIRCLE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . ${lwVal}) '(10 ${p.cx.toFixed(3)} ${p.cy.toFixed(3)} 0.0) '(40 . ${p.r.toFixed(3)})))\n`;
+          scr += `  (entmake (list '(0 . "CIRCLE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . ${lwVal}) '(10 ${(p.cx * s).toFixed(3)} ${(p.cy * s).toFixed(3)} 0.0) '(40 . ${(p.r * s).toFixed(3)})))\n`;
+        } else if (p.t === "poly" && p.pts && p.pts.length >= 2) {
+          for (let i = 0; i < p.pts.length; i++) {
+            const pt1 = p.pts[i];
+            const pt2 = p.pts[(i + 1) % p.pts.length];
+            emitL(lay, pt1.x, pt1.y, pt2.x, pt2.y, p.color, p.lw);
+          }
         } else if (p.t === "text") {
-          const s = formatCADText(p.str, exportDxfOptions.includeUnicode).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-          if (!s) return;
-          const th = +((p.h || 2.2) * 0.88).toFixed(3);
+          const sText = formatCADText(p.str, exportDxfOptions.includeUnicode).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+          if (!sText) return;
+          const th = Math.max(0.05, +((p.h || 2.2) * 0.88 * s).toFixed(3));
           const isTitle = (p.layer === "CORNICE" && p.h >= 2.3) ||
                           p.layer === "ETICHETTA_PIANTA" ||
                           (p.layer === "TABELLA" && /^[0-9]\./.test(p.str)) ||
                           (p.layer === "CURVA_CARICO" && /^[0-9]\./.test(p.str));
           const styleName = isTitle ? "TITLE_CAD" : "MONO_CAD";
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
-          const alignStr = hAlign !== 0 ? ` '(72 . ${hAlign}) '(11 ${p.x.toFixed(3)} ${p.y.toFixed(3)} 0.0) '(73 . 0)` : "";
-          scr += `  (entmake (list '(0 . "TEXT") '(8 . "${lay}") '(7 . "${styleName}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${p.x.toFixed(3)} ${p.y.toFixed(3)} 0.0) '(40 . ${th.toFixed(3)}) '(41 . 1.0) '(1 . "${s}")${alignStr}))\n`;
+          const alignStr = hAlign !== 0 ? ` '(72 . ${hAlign}) '(11 ${(p.x * s).toFixed(3)} ${(p.y * s).toFixed(3)} 0.0) '(73 . 0)` : "";
+          scr += `  (entmake (list '(0 . "TEXT") '(8 . "${lay}") '(7 . "${styleName}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.x * s).toFixed(3)} ${(p.y * s).toFixed(3)} 0.0) '(40 . ${th.toFixed(3)}) '(41 . 1.0) '(1 . "${sText}")${alignStr}))\n`;
         }
       });
       scr += `  (command "_ZOOM" "_E")\n  (princ)\n)\n(c:CREACANALINA)\n`;
@@ -5111,6 +5968,219 @@
       document.querySelectorAll(".win-menu-btn").forEach(b => b.classList.remove("bg-slate-800", "text-white"));
     }
 
+    // ============================================================================
+    // GESTIONE SCORCIATOIE PERSONALIZZABILI & IMPOSTAZIONI CARTIGLIO
+    // ============================================================================
+    const DEFAULT_KEY_SHORTCUTS = {
+      openDwg: { key: 'o', ctrl: true, shift: false, alt: false, label: 'Apri / Importa DWG' },
+      openPdf: { key: 'u', ctrl: true, shift: false, alt: false, label: 'Importa PDF Unifilare' },
+      exportDxf: { key: 'e', ctrl: true, shift: false, alt: false, label: 'Scarica DXF 1:1' },
+      fitAll: { key: 'Home', ctrl: false, shift: false, alt: false, label: 'Zoom Tutto (Centra)' },
+      swapDims: { key: 'i', ctrl: true, shift: false, alt: false, label: 'Inverti Base L e H' },
+      clearTray: { key: 'Delete', ctrl: false, shift: false, alt: false, label: 'Svuota Canalina' },
+      recalculate: { key: 'F5', ctrl: false, shift: false, alt: false, label: 'Ricalcola Portate' },
+      cartiglio: { key: 'F2', ctrl: false, shift: false, alt: false, label: 'Dati Cartiglio & Committente' },
+      openDb: { key: 'F3', ctrl: false, shift: false, alt: false, label: 'Catalogo Tecnico Database' },
+      shortcuts: { key: 'F4', ctrl: false, shift: false, alt: false, label: 'Personalizza Scorciatoie' },
+      help: { key: 'F1', ctrl: false, shift: false, alt: false, label: 'Guida Rapida' },
+      saveJson: { key: 's', ctrl: true, shift: false, alt: false, label: 'Salva Progetto JSON' }
+    };
+
+    let userShortcuts = Object.assign({}, DEFAULT_KEY_SHORTCUTS);
+    let rebindingAction = null;
+
+    function loadUserShortcuts() {
+      try {
+        const saved = localStorage.getItem("canaloCAD_userShortcuts");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          Object.keys(parsed).forEach(k => {
+            if (userShortcuts[k]) userShortcuts[k] = parsed[k];
+          });
+        }
+      } catch (e) {}
+      updateMenuBadges();
+    }
+
+    function saveUserShortcuts() {
+      try {
+        localStorage.setItem("canaloCAD_userShortcuts", JSON.stringify(userShortcuts));
+      } catch (e) {}
+      updateMenuBadges();
+    }
+
+    function formatShortcutLabel(s) {
+      if (!s || !s.key) return "-";
+      const parts = [];
+      if (s.ctrl) parts.push("Ctrl");
+      if (s.alt) parts.push("Alt");
+      if (s.shift) parts.push("Shift");
+      let k = s.key;
+      if (k === " ") k = "Spazio";
+      else if (k.length === 1) k = k.toUpperCase();
+      parts.push(k);
+      return parts.join("+");
+    }
+
+    function matchShortcutEvent(e, s) {
+      if (!s || !s.key) return false;
+      const ctrlMatch = !!s.ctrl === !!(e.ctrlKey || e.metaKey);
+      const altMatch = !!s.alt === !!e.altKey;
+      const shiftMatch = !!s.shift === !!e.shiftKey;
+      const keyMatch = s.key.toLowerCase() === (e.key || "").toLowerCase();
+      return ctrlMatch && altMatch && shiftMatch && keyMatch;
+    }
+
+    function updateMenuBadges() {
+      const bDwg = document.getElementById("badgeMenuDwg"); if (bDwg) bDwg.textContent = formatShortcutLabel(userShortcuts.openDwg);
+      const bPdf = document.getElementById("badgeMenuPdf"); if (bPdf) bPdf.textContent = formatShortcutLabel(userShortcuts.openPdf);
+      const bDxf = document.getElementById("badgeMenuDxf"); if (bDxf) bDxf.textContent = formatShortcutLabel(userShortcuts.exportDxf);
+      const bSwap = document.getElementById("badgeMenuSwap"); if (bSwap) bSwap.textContent = formatShortcutLabel(userShortcuts.swapDims);
+      const bDb = document.getElementById("badgeMenuDb"); if (bDb) bDb.textContent = formatShortcutLabel(userShortcuts.openDb);
+      const bCart = document.getElementById("badgeMenuCartiglio"); if (bCart) bCart.textContent = formatShortcutLabel(userShortcuts.cartiglio);
+      const bSc = document.getElementById("badgeMenuShortcuts"); if (bSc) bSc.textContent = formatShortcutLabel(userShortcuts.shortcuts);
+      const bHelp = document.getElementById("badgeMenuHelp"); if (bHelp) bHelp.textContent = formatShortcutLabel(userShortcuts.help);
+    }
+
+    function renderShortcutsTable() {
+      const container = document.getElementById("shortcutsTableBody");
+      if (!container) return;
+      container.innerHTML = "";
+      Object.entries(userShortcuts).forEach(([actionId, sc]) => {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between p-2.5 hover:bg-slate-900 transition";
+        row.innerHTML = `
+          <div>
+            <div class="font-bold text-white text-[11px]">${sc.label}</div>
+            <div class="text-[10px] text-slate-400 mono">Azione: ${actionId}</div>
+          </div>
+          <button type="button" onclick="startRebinding('${actionId}')" id="scBtn_${actionId}" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-400/60 rounded text-amber-300 mono text-xs font-bold transition flex items-center gap-1.5" title="Clicca per riassegnare">
+            <span>${formatShortcutLabel(sc)}</span>
+            <span class="text-[9px] text-slate-400">✏️</span>
+          </button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function startRebinding(actionId) {
+      rebindingAction = actionId;
+      const banner = document.getElementById("rebindBanner");
+      if (banner) {
+        banner.classList.remove("hidden");
+        banner.textContent = `In ascolto per "${userShortcuts[actionId].label}"... Premi la nuova combinazione di tasti sulla tastiera (o Esc per annullare)`;
+      }
+      const btn = document.getElementById(`scBtn_${actionId}`);
+      if (btn) btn.className = "px-2.5 py-1 bg-amber-500 text-slate-950 font-bold border border-amber-400 rounded text-xs animate-pulse";
+    }
+
+    function resetDefaultShortcuts() {
+      userShortcuts = JSON.parse(JSON.stringify(DEFAULT_KEY_SHORTCUTS));
+      saveUserShortcuts();
+      renderShortcutsTable();
+      const banner = document.getElementById("statusBanner");
+      if (banner) {
+        banner.textContent = "✓ Scorciatoie ripristinate ai valori predefiniti!";
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+      }
+    }
+
+    function openShortcutsModal() {
+      closeAllMenus();
+      rebindingAction = null;
+      renderShortcutsTable();
+      const m = document.getElementById("keyboardShortcutsModal");
+      if (m) m.classList.remove("hidden");
+    }
+
+    function closeShortcutsModal() {
+      rebindingAction = null;
+      const b = document.getElementById("rebindBanner");
+      if (b) b.classList.add("hidden");
+      const m = document.getElementById("keyboardShortcutsModal");
+      if (m) m.classList.add("hidden");
+    }
+
+    function openCartiglioSettingsModal() {
+      closeAllMenus();
+      const elClient = document.getElementById("cfgClient"); if (elClient) elClient.value = state.tb.client || "PROGETTO ESECUTIVO";
+      const elProj = document.getElementById("cfgProject"); if (elProj) elProj.value = state.tb.project || "IMPIANTI ELETTRICI E SPECIALI";
+      const elAuth = document.getElementById("cfgAuthor"); if (elAuth) elAuth.value = state.tb.author || "STUDIO TECNICO";
+      const elCheck = document.getElementById("cfgChecker"); if (elCheck) elCheck.value = state.tb.checker || "RESPONSABILE TECNICO";
+      const elDoc = document.getElementById("cfgDocCode"); if (elDoc) elDoc.value = state.tb.docCode || "PE-IMP-EL-PART-02";
+      const elRev = document.getElementById("cfgRev"); if (elRev) elRev.value = state.tb.rev || "Rev. 00";
+      const elScale = document.getElementById("cfgScale"); if (elScale) elScale.value = state.scale || "1:1";
+      const elPlan = document.getElementById("cfgPlanTag"); if (elPlan) elPlan.value = state.planTag || "SEZ. A-A | H=+3.20m";
+      const m = document.getElementById("cartiglioSettingsModal");
+      if (m) m.classList.remove("hidden");
+    }
+
+    function closeCartiglioSettingsModal() {
+      const m = document.getElementById("cartiglioSettingsModal");
+      if (m) m.classList.add("hidden");
+    }
+
+    function saveCartiglioSettings() {
+      state.tb.client = (document.getElementById("cfgClient").value || "PROGETTO ESECUTIVO").trim();
+      state.tb.project = (document.getElementById("cfgProject").value || "IMPIANTI ELETTRICI").trim();
+      state.tb.author = (document.getElementById("cfgAuthor").value || "STUDIO TECNICO").trim();
+      state.tb.checker = (document.getElementById("cfgChecker").value || "").trim();
+      state.tb.docCode = (document.getElementById("cfgDocCode").value || "PE-IMP-EL-PART-02").trim();
+      state.tb.rev = (document.getElementById("cfgRev").value || "Rev. 00").trim();
+      state.tb.scaleRev = `Scala ${document.getElementById("cfgScale").value || state.scale || "1:1"} - ${state.tb.rev}`;
+      state.scale = document.getElementById("cfgScale").value || state.scale || "1:1";
+      state.planTag = (document.getElementById("cfgPlanTag").value || "SEZ. A-A | H=+3.20m").trim();
+
+      const elClient = document.getElementById("inpClient"); if (elClient) elClient.value = state.tb.client;
+      const elDoc = document.getElementById("inpDocCode"); if (elDoc) elDoc.value = state.tb.docCode;
+      const elAuth = document.getElementById("inpAuthor"); if (elAuth) elAuth.value = state.tb.author;
+      const elRev = document.getElementById("inpScaleRev"); if (elRev) elRev.value = state.tb.scaleRev;
+      const elScale = document.getElementById("inpScale"); if (elScale) elScale.value = state.scale;
+      const elDxfScale = document.getElementById("selDxfScale"); if (elDxfScale) elDxfScale.value = state.scale;
+      const elPlan = document.getElementById("inpPlanTag"); if (elPlan) elPlan.value = state.planTag;
+
+      const saveDef = document.getElementById("cfgSaveDefaults")?.checked;
+      if (saveDef) {
+        try {
+          localStorage.setItem("canaloCAD_cartiglioDefaults", JSON.stringify({
+            client: state.tb.client,
+            project: state.tb.project,
+            author: state.tb.author,
+            checker: state.tb.checker,
+            docCode: state.tb.docCode,
+            rev: state.tb.rev,
+            planTag: state.planTag,
+            scale: state.scale
+          }));
+        } catch (e) {}
+      }
+
+      closeCartiglioSettingsModal();
+      drawScene();
+      const banner = document.getElementById("statusBanner");
+      if (banner) {
+        banner.textContent = `✓ Dati cartiglio e committente aggiornati: ${state.tb.client} | ${state.tb.author}`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
+      }
+    }
+
+    function loadCartiglioDefaults() {
+      try {
+        const saved = localStorage.getItem("canaloCAD_cartiglioDefaults");
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.client) state.tb.client = data.client;
+          if (data.project) state.tb.project = data.project;
+          if (data.author) state.tb.author = data.author;
+          if (data.checker) state.tb.checker = data.checker;
+          if (data.docCode) state.tb.docCode = data.docCode;
+          if (data.rev) state.tb.rev = data.rev;
+          if (data.planTag) state.planTag = data.planTag;
+          if (data.scale) state.scale = data.scale;
+        }
+      } catch (e) {}
+    }
+
     function initWindowsMenuBar() {
       const menuBar = document.getElementById("winMenuBar");
       if (!menuBar) return;
@@ -5147,21 +6217,90 @@
       });
 
       document.addEventListener("keydown", (e) => {
+        // Se stiamo riassegnando una scorciatoia nella modale
+        if (rebindingAction) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.key === "Escape") {
+            rebindingAction = null;
+            const b = document.getElementById("rebindBanner");
+            if (b) b.classList.add("hidden");
+            renderShortcutsTable();
+            return;
+          }
+          if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
+          userShortcuts[rebindingAction] = {
+            key: e.key,
+            ctrl: !!(e.ctrlKey || e.metaKey),
+            shift: !!e.shiftKey,
+            alt: !!e.altKey,
+            label: userShortcuts[rebindingAction].label
+          };
+          saveUserShortcuts();
+          rebindingAction = null;
+          const b = document.getElementById("rebindBanner");
+          if (b) b.classList.add("hidden");
+          renderShortcutsTable();
+          return;
+        }
+
+        // Se l'utente sta digitando in un campo di testo, non intercettare lettere/numeri
+        const activeTag = (document.activeElement && document.activeElement.tagName) || "";
+        const isInput = activeTag === "INPUT" || activeTag === "TEXTAREA" || activeTag === "SELECT";
+        if (isInput && !e.key.startsWith("F") && e.key !== "Escape") return;
+
         if (e.key === "Escape") {
           closeAllMenus();
           closeQuickHelpModal();
           closePwaOfflineModal();
+          closeCartiglioSettingsModal();
+          closeShortcutsModal();
           const dbM = document.getElementById("databaseCatalogModal");
           if (dbM && !dbM.classList.contains("hidden")) toggleDatabaseModal();
           const expM = document.getElementById("exportOptionsModal");
           if (expM && !expM.classList.contains("hidden")) toggleExportOptionsModal();
-        } else if (e.key === "F1") {
-          e.preventDefault();
-          showQuickHelpModal();
-        } else if ((e.ctrlKey || e.metaKey) && (e.key === "o" || e.key === "O")) {
+          return;
+        }
+
+        // Valutazione scorciatoie personalizzate
+        if (matchShortcutEvent(e, userShortcuts.openDwg)) {
           e.preventDefault();
           const dwgInp = document.getElementById("dwgInput");
           if (dwgInp) dwgInp.click();
+        } else if (matchShortcutEvent(e, userShortcuts.openPdf)) {
+          e.preventDefault();
+          const pdfInp = document.getElementById("pdfInput");
+          if (pdfInp) pdfInp.click();
+        } else if (matchShortcutEvent(e, userShortcuts.exportDxf)) {
+          e.preventDefault();
+          exportAutoCADDXF();
+        } else if (matchShortcutEvent(e, userShortcuts.fitAll)) {
+          e.preventDefault();
+          fitAll();
+        } else if (matchShortcutEvent(e, userShortcuts.swapDims)) {
+          e.preventDefault();
+          swapDimensions();
+        } else if (matchShortcutEvent(e, userShortcuts.clearTray)) {
+          e.preventDefault();
+          resetProject();
+        } else if (matchShortcutEvent(e, userShortcuts.recalculate)) {
+          e.preventDefault();
+          recalculateAll();
+        } else if (matchShortcutEvent(e, userShortcuts.cartiglio)) {
+          e.preventDefault();
+          openCartiglioSettingsModal();
+        } else if (matchShortcutEvent(e, userShortcuts.openDb)) {
+          e.preventDefault();
+          toggleDatabaseModal(true);
+        } else if (matchShortcutEvent(e, userShortcuts.shortcuts)) {
+          e.preventDefault();
+          openShortcutsModal();
+        } else if (matchShortcutEvent(e, userShortcuts.help)) {
+          e.preventDefault();
+          showQuickHelpModal();
+        } else if (matchShortcutEvent(e, userShortcuts.saveJson)) {
+          e.preventDefault();
+          exportProjectJSON();
         }
       });
     }
@@ -5205,6 +6344,8 @@
     }
 
     window.addEventListener("DOMContentLoaded", () => {
+      loadCartiglioDefaults();
+      loadUserShortcuts();
       initWindowsMenuBar();
       initPwaOffline();
       initCatalogDropdown();
