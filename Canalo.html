@@ -1789,21 +1789,24 @@
       const rawTexts = [];
       const bandierineSegments = [];
 
+      const isTrayLay = (lay) => /CANAL|PASSERELL|TRAY|PROFIL|SEZION|CONDOTT|BORDO|CONTORN/i.test(lay);
+      const isLeaderLay = (lay) => /BANDIERINE|LEADER|RICHIAM/i.test(lay);
+
       entities.forEach(ent => {
         const lay = String(ent.layer || "0").trim();
         const t = String(ent.type || "").toUpperCase();
 
         if (t === "LINE" && ent.startPoint && ent.endPoint) {
-          if (/CANALINA/i.test(lay)) {
+          if (isTrayLay(lay)) {
             traySegments.push({ x1: ent.startPoint.x, y1: ent.startPoint.y, x2: ent.endPoint.x, y2: ent.endPoint.y, lay });
-          } else if (/BANDIERINE|LEADER|RICHIAM/i.test(lay)) {
+          } else if (isLeaderLay(lay)) {
             bandierineSegments.push({ x1: ent.startPoint.x, y1: ent.startPoint.y, x2: ent.endPoint.x, y2: ent.endPoint.y });
           }
         } else if ((t === "LWPOLYLINE" || t === "POLYLINE") && Array.isArray(ent.vertices)) {
           for (let i = 0; i < ent.vertices.length - 1; i++) {
             const seg = { x1: ent.vertices[i].x, y1: ent.vertices[i].y, x2: ent.vertices[i + 1].x, y2: ent.vertices[i + 1].y, lay };
-            if (/CANALINA/i.test(lay)) traySegments.push(seg);
-            else if (/BANDIERINE|LEADER|RICHIAM/i.test(lay)) bandierineSegments.push(seg);
+            if (isTrayLay(lay)) traySegments.push(seg);
+            else if (isLeaderLay(lay)) bandierineSegments.push(seg);
           }
         } else if (t === "CIRCLE" && ent.center && typeof ent.radius === "number") {
           const d = +(ent.radius * 2).toFixed(1);
@@ -1821,6 +1824,22 @@
         }
       });
 
+      // Se non abbiamo trovato segmenti su layer specifici, recuperiamo le linee non-cavi e non-testi (es. layer '0' o generico)
+      if (traySegments.length === 0) {
+        entities.forEach(ent => {
+          const lay = String(ent.layer || "0").trim();
+          const t = String(ent.type || "").toUpperCase();
+          if (/CAVI|ANIME|BANDIERINE|LEADER|RICHIAM|QUOTE|DIM|CORNICE|CARTIGLIO|TABELLA/i.test(lay)) return;
+          if (t === "LINE" && ent.startPoint && ent.endPoint) {
+            traySegments.push({ x1: ent.startPoint.x, y1: ent.startPoint.y, x2: ent.endPoint.x, y2: ent.endPoint.y, lay });
+          } else if ((t === "LWPOLYLINE" || t === "POLYLINE") && Array.isArray(ent.vertices)) {
+            for (let i = 0; i < ent.vertices.length - 1; i++) {
+              traySegments.push({ x1: ent.vertices[i].x, y1: ent.vertices[i].y, x2: ent.vertices[i + 1].x, y2: ent.vertices[i + 1].y, lay });
+            }
+          }
+        });
+      }
+
       // Filtra eventuali cerchi concentrici (es. guaina interna disegnata sul layer Cavi dentro il cavo esterno)
       rawCircles.sort((a, b) => b.r - a.r);
       const outerCircles = [];
@@ -1829,10 +1848,74 @@
         if (!isInsideExisting) outerCircles.push(c);
       });
 
-      // 1. Calcola Origine (minX, minY) e Dimensioni Reali (Base L, Altezza H) dalle linee sul layer 'Canalina'
-      let origX = 0, origY = 0;
-      let geomW = state.width, geomH = state.height;
+      // =========================================================================
+      // 1. ESTRAZIONE DIMENSIONI CANALINA (L, H) - LETTURA DIRETTA DAL FILE DI INPUT
+      // Convenzione passerelle/canaline: se legge "75x300", 75 è l'altezza H e 300 la base L.
+      // La dimensione maggiore è sempre la base (larghezza L), la minore è l'altezza (sponda H).
+      // =========================================================================
+      const allTextCorpus = rawTexts.map(t => t.str).join(" | ");
+      let detectedW = null, detectedH = null;
 
+      // Helper di assegnazione corretta (base L = maggiore, altezza H = minore)
+      function assignTrayDims(dimA, dimB) {
+        if (!dimA || !dimB) return;
+        const d1 = parseInt(dimA, 10), d2 = parseInt(dimB, 10);
+        if (isNaN(d1) || isNaN(d2)) return;
+        detectedW = Math.max(d1, d2); // 300 è sempre la base
+        detectedH = Math.min(d1, d2); // 75 è sempre l'altezza
+      }
+
+      // Priorità A: Ricerca esplicita "L=... H=..." o "B=... H=..." o "W=... H=..."
+      const mExplicitLH = allTextCorpus.match(/(?:L|B|W|BASE|LARGHEZZA)\s*[:=]?\s*(\d{2,4})\s*(?:mm)?\s*[,;\s|/-]+\s*(?:H|ALT|ALTEZZA)\s*[:=]?\s*(\d{2,4})\s*(?:mm)?/i)
+                       || allTextCorpus.match(/(?:H|ALT|ALTEZZA)\s*[:=]?\s*(\d{2,4})\s*(?:mm)?\s*[,;\s|/-]+\s*(?:L|B|W|BASE|LARGHEZZA)\s*[:=]?\s*(\d{2,4})\s*(?:mm)?/i);
+      if (mExplicitLH) {
+        const v1 = parseInt(mExplicitLH[1], 10), v2 = parseInt(mExplicitLH[2], 10);
+        if (/H|ALT/i.test(mExplicitLH[0].split(/[,;\s|/-]+/)[0])) {
+          assignTrayDims(v2, v1);
+        } else {
+          assignTrayDims(v1, v2);
+        }
+      }
+
+      // Priorità B: Parola chiave canalina seguita da WxH o HxW (es. "CANALINA 75x300", "CANALE 400x75", "P31 75x300")
+      if (!detectedW || !detectedH) {
+        const mTrayKeyword = allTextCorpus.match(/(?:CANALINA|CANALE|PASSERELLA|TRAY|P31|CF|RKS|MKS)\b[^\d\n\r]*(\d{2,4})\s*[xX×*]\s*(\d{2,4})/i);
+        if (mTrayKeyword) {
+          assignTrayDims(mTrayKeyword[1], mTrayKeyword[2]);
+        }
+      }
+
+      // Priorità C: Dimensioni isolate presenti nei testi del disegno (es. "75x300", "300x100", "75 x 300mm")
+      if (!detectedW || !detectedH) {
+        const allMatches = [...allTextCorpus.matchAll(/\b(\d{2,4})\s*[xX×*]\s*(\d{2,4})\s*(?:mm)?\b/gi)];
+        for (const m of allMatches) {
+          const d1 = parseInt(m[1], 10), d2 = parseInt(m[2], 10);
+          const maxD = Math.max(d1, d2), minD = Math.min(d1, d2);
+          if (maxD >= 40 && maxD <= 1200 && minD >= 20 && minD <= 300) {
+            assignTrayDims(d1, d2);
+            break;
+          }
+        }
+      }
+
+      // Priorità D: Nome del file di input (es. "Canale_75x300.dxf", "Passerella_400x75.dwg")
+      if (!detectedW || !detectedH) {
+        const mFile = fileName.match(/(\d{2,4})\s*[xX×*_-]\s*(\d{2,4})/);
+        if (mFile) {
+          const d1 = parseInt(mFile[1], 10), d2 = parseInt(mFile[2], 10);
+          const maxD = Math.max(d1, d2), minD = Math.min(d1, d2);
+          if (maxD >= 40 && maxD <= 1200 && minD >= 20 && minD <= 300) {
+            assignTrayDims(d1, d2);
+          }
+        }
+      }
+
+      // Priorità E: Calcolo geometrico dai segmenti rilevati
+      const VALID_WIDTHS = [50, 60, 75, 100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000, 1200];
+      const VALID_HEIGHTS = [25, 30, 35, 40, 50, 60, 75, 80, 85, 100, 110, 120, 150, 200];
+      const snapToStandard = (val, list) => list.reduce((prev, curr) => Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev);
+
+      let origX = 0, origY = 0;
       if (traySegments.length > 0) {
         const xs = traySegments.flatMap(s => [s.x1, s.x2]);
         const ys = traySegments.flatMap(s => [s.y1, s.y2]);
@@ -1840,43 +1923,31 @@
         origY = Math.min(...ys);
         const spanX = Math.max(...xs) - origX;
         const spanY = Math.max(...ys) - origY;
-        // Arrotonda alla misura nominale standard più vicina (multiplo di 5mm) sottraendo spessore parete (≈3mm lato, ≈1.5mm h)
-        const nomW = Math.round((spanX - 3) / 5) * 5;
-        const nomH = Math.round((spanY - 1.5) / 5) * 5;
-        if (nomW >= 40 && nomW <= 1200) geomW = nomW;
-        else if (spanX >= 40 && spanX <= 1200) geomW = Math.round(spanX);
-        if (nomH >= 30 && nomH <= 400) geomH = nomH;
-        else if (spanY >= 30 && spanY <= 400) geomH = Math.round(spanY);
+        if (!detectedW && spanX >= 40 && spanX <= 1200) detectedW = snapToStandard(spanX - 3, VALID_WIDTHS);
+        if (!detectedH && spanY >= 20 && spanY <= 400)  detectedH = snapToStandard(spanY - 1.5, VALID_HEIGHTS);
       } else if (outerCircles.length > 0) {
         origX = Math.min(...outerCircles.map(c => c.cx - c.r)) - 12;
         origY = Math.min(...outerCircles.map(c => c.cy - c.r));
       }
 
-      // 2. Verifica titolo della canalina nei testi del DWG
-      const allTextCorpus = rawTexts.map(t => t.str).join(" | ");
-      const mTitle = allTextCorpus.match(/CANALINA\s*([0-9A-Z_.-]+)\s*-\s*L\s*=\s*(\d+)\s*mm\s*H\s*=\s*(\d+)\s*mm/i);
-      if (mTitle) {
-        geomW = parseInt(mTitle[2], 10);
-        geomH = parseInt(mTitle[3], 10);
-        state.title = mTitle[0].trim();
-      } else {
-        // Cerca pattern generico L=NNNmm H=NNNmm anche senza "CANALINA" (es. DXF esterni o titoli diversi)
-        const mDims = allTextCorpus.match(/L\s*=\s*(\d+)\s*mm.*?H\s*=\s*(\d+)\s*mm/i)
-                   || allTextCorpus.match(/W\s*=\s*(\d+)\s*mm.*?H\s*=\s*(\d+)\s*mm/i)
-                   || allTextCorpus.match(/(\d{2,4})\s*[xX×]\s*(\d{2,3})\s*mm/);
-        if (mDims) {
-          const fw = parseInt(mDims[1], 10), fh = parseInt(mDims[2], 10);
-          if (fw >= 40 && fw <= 1200 && fh >= 20 && fh <= 400) {
-            geomW = fw;
-            geomH = fh;
-          }
-        }
-        const mAnyTitle = rawTexts.find(t => /CANALINA/i.test(t.str) && !/DISTINTA|TABELLA|PARTICOLARE/i.test(t.str));
-        state.title = mAnyTitle ? mAnyTitle.str.trim() : `${fileName.replace(/\.[^.]+$/, "").toUpperCase()} - L=${geomW}mm H=${geomH}mm`;
+      // Assicurazione finale: se detectedW < detectedH, inverti (base è sempre >= altezza)
+      if (detectedW && detectedH && detectedW < detectedH) {
+        const tmp = detectedW;
+        detectedW = detectedH;
+        detectedH = tmp;
       }
 
-      state.width = geomW;
-      state.height = geomH;
+      // Assegna le dimensioni finali trovate direttamente dal file di input
+      state.width = detectedW || state.width || 200;
+      state.height = detectedH || state.height || 75;
+      const geomW = state.width, geomH = state.height;
+
+      const mAnyTitle = rawTexts.find(t => /CANALINA|CANALE|PASSERELLA/i.test(t.str) && !/DISTINTA|TABELLA|PARTICOLARE/i.test(t.str));
+      state.title = mAnyTitle ? mAnyTitle.str.trim() : `${fileName.replace(/\.[^.]+$/, "").toUpperCase()} - L=${state.width}mm H=${state.height}mm`;
+
+      document.getElementById("inpWidth").value = state.width;
+      document.getElementById("inpHeight").value = state.height;
+      document.getElementById("inpTitle").value = state.title;
       state.packing = "input";
       document.getElementById("inpPacking").value = "input";
 
@@ -2067,25 +2138,54 @@
     function parseDXFTextContent(rawText, fileName) {
       const lines = rawText.split(/\r?\n/);
       const entities = [];
-      for (let i = 0; i < lines.length - 1; i++) {
-        const code = lines[i].trim(), val = (lines[i + 1] || "").trim();
-        if (code === "0" && (val === "LINE" || val === "CIRCLE" || val === "TEXT" || val === "MTEXT")) {
+      let i = 0;
+
+      while (i < lines.length - 1) {
+        const code = lines[i].trim();
+        const val = (lines[i + 1] || "").trim();
+
+        if (code === "0" && (val === "LINE" || val === "CIRCLE" || val === "ARC" || val === "TEXT" || val === "MTEXT" || val === "LWPOLYLINE" || val === "POLYLINE" || val === "DIMENSION")) {
+          const entType = val;
           let lay = "0", x1 = 0, y1 = 0, x2 = 0, y2 = 0, r = 0, txt = "";
-          for (let j = i + 2; j < Math.min(lines.length - 1, i + 40); j += 2) {
-            const c = lines[j].trim(), v = (lines[j + 1] || "").trim();
-            if (c === "0") break;
+          const polyVertices = [];
+          let curX = null, curY = null;
+          i += 2;
+
+          while (i < lines.length - 1) {
+            const c = lines[i].trim();
+            const v = (lines[i + 1] || "").trim();
+            if (c === "0") break; // Inizio nuova entità
+
             if (c === "8") lay = v;
-            if (c === "10") x1 = parseFloat(v) || 0;
-            if (c === "20") y1 = parseFloat(v) || 0;
-            if (c === "11") x2 = parseFloat(v) || 0;
-            if (c === "21") y2 = parseFloat(v) || 0;
-            if (c === "40") r = parseFloat(v) || 0;
-            if (c === "1" || c === "3") txt += v + " ";
+            else if (c === "10") {
+              x1 = parseFloat(v) || 0;
+              curX = x1;
+            } else if (c === "20") {
+              y1 = parseFloat(v) || 0;
+              curY = y1;
+              if ((entType === "LWPOLYLINE" || entType === "POLYLINE") && curX !== null) {
+                polyVertices.push({ x: curX, y: curY });
+                curX = null;
+              }
+            } else if (c === "11") x2 = parseFloat(v) || 0;
+            else if (c === "21") y2 = parseFloat(v) || 0;
+            else if (c === "40") r = parseFloat(v) || 0;
+            else if (c === "1" || c === "3") txt += (txt ? " " : "") + v;
+            i += 2;
           }
-          if (val === "LINE") entities.push({ type: "LINE", layer: lay, startPoint: { x: x1, y: y1 }, endPoint: { x: x2, y: y2 } });
-          else if (val === "CIRCLE") entities.push({ type: "CIRCLE", layer: lay, center: { x: x1, y: y1 }, radius: r });
-          else entities.push({ type: "TEXT", layer: lay, text: txt.trim(), startPoint: { x: x1, y: y1 } });
+
+          if (entType === "LINE") {
+            entities.push({ type: "LINE", layer: lay, startPoint: { x: x1, y: y1 }, endPoint: { x: x2, y: y2 } });
+          } else if (entType === "CIRCLE") {
+            entities.push({ type: "CIRCLE", layer: lay, center: { x: x1, y: y1 }, radius: r });
+          } else if ((entType === "LWPOLYLINE" || entType === "POLYLINE") && polyVertices.length >= 2) {
+            entities.push({ type: "LWPOLYLINE", layer: lay, vertices: polyVertices });
+          } else if (entType === "TEXT" || entType === "MTEXT" || entType === "DIMENSION") {
+            if (txt.trim()) entities.push({ type: "TEXT", layer: lay, text: txt.trim(), startPoint: { x: x1, y: y1 } });
+          }
+          continue;
         }
+        i += 2;
       }
       return processRealWasmEntities(entities, fileName, "DXF");
     }
@@ -3020,270 +3120,189 @@
     };
 
     function exportAutoCADDXF() {
-      syncExportOptionsFromUI();
       const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg)$/i, "");
       const { prims, bounds } = buildCADScene();
 
-      const isAc1018 = exportDxfOptions.format === "AC1018";
-      const fontFam = exportDxfOptions.fontFamily || "consolas";
-      const includeBg = exportDxfOptions.includeBackgrounds !== false;
-      const includeLw = exportDxfOptions.includeLineweights !== false;
-      const useUnicode = exportDxfOptions.includeUnicode !== false;
-
-      let handleVal = 0x20;
-      const nextH = () => (handleVal++).toString(16).toUpperCase();
       const dxf = [];
       const add = (c, v) => dxf.push(String(c), String(v));
 
-      // Handle fissi gerarchici per AC1018 (risoluzione vincoli AcDb/330 per AutoCAD LT)
-      const H_BLOCK_RECORD_TAB = "1";
-      const H_MODEL_SPACE_REC  = "2";
-      const H_PAPER_SPACE_REC  = "3";
-      const H_LTYPE_TAB        = "4";
-      const H_LTYPE_CONT       = "5";
-      const H_LTYPE_DASH       = "6";
-      const H_LAYER_TAB        = "7";
-      const H_STYLE_TAB        = "8";
-      const H_APPID_TAB        = "9";
-      const H_APPID_ACAD       = "A";
-      const H_ROOT_DICT        = "B";
-
-      // 1. SEZIONE HEADER
-      add(0, "SECTION"); add(2, "HEADER");
-      add(9, "$ACADVER"); add(1, isAc1018 ? "AC1018" : "AC1009");
-      if (isAc1018) {
-        add(9, "$HANDSEED"); add(5, "2000");
-        add(9, "$INSUNITS"); add(70, 4); // 4 = Millimetri (Scala 1:1 rigorosa)
-        add(9, "$MEASUREMENT"); add(70, 1); // 1 = Sistema Metrico Decimale
-        add(9, "$LUNITS"); add(70, 2); // Decimal
-        add(9, "$LUPREC"); add(70, 2);
-      }
-      add(9, "$EXTMIN"); add(10, bounds.minX.toFixed(2)); add(20, bounds.minY.toFixed(2)); add(30, "0.0");
-      add(9, "$EXTMAX"); add(10, bounds.maxX.toFixed(2)); add(20, bounds.maxY.toFixed(2)); add(30, "0.0");
+      // 1. SEZIONE HEADER (AutoCAD R12 / AC1009 - Massima compatibilità universale con AutoCAD LT 2021..2026)
+      add(0, "SECTION");
+      add(2, "HEADER");
+      add(9, "$ACADVER");
+      add(1, "AC1009");
+      add(9, "$INSUNITS");
+      add(70, 4); // 4 = Millimetri (Scala 1:1 rigorosa)
+      add(9, "$MEASUREMENT");
+      add(70, 1); // 1 = Sistema Metrico Decimale
+      add(9, "$EXTMIN");
+      add(10, bounds.minX.toFixed(2));
+      add(20, bounds.minY.toFixed(2));
+      add(30, "0.0");
+      add(9, "$EXTMAX");
+      add(10, bounds.maxX.toFixed(2));
+      add(20, bounds.maxY.toFixed(2));
+      add(30, "0.0");
       add(0, "ENDSEC");
 
-      // 2. SEZIONE CLASSES (solo per AC1018)
-      if (isAc1018) {
-        add(0, "SECTION"); add(2, "CLASSES"); add(0, "ENDSEC");
-      }
+      // 2. SEZIONE TABLES
+      add(0, "SECTION");
+      add(2, "TABLES");
 
-      // 3. SEZIONE TABLES
-      add(0, "SECTION"); add(2, "TABLES");
-
-      // Tabella VPORT (Viewports, solo AC1018)
-      if (isAc1018) {
-        const hVportTab = nextH();
-        add(0, "TABLE"); add(2, "VPORT"); add(5, hVportTab); add(100, "AcDbSymbolTable"); add(70, 1);
-        add(0, "VPORT"); add(5, nextH()); add(330, hVportTab); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbViewportTableRecord");
-        add(2, "*ACTIVE"); add(70, 0); add(10, "0.0"); add(20, "0.0"); add(11, "1.0"); add(21, "1.0");
-        add(12, bounds.minX.toFixed(2)); add(22, bounds.minY.toFixed(2)); add(14, "1.0"); add(15, "1.0");
-        add(0, "ENDTAB");
-      }
-
-      // Tabella LTYPE (Tipi linea)
-      add(0, "TABLE"); add(2, "LTYPE"); if (isAc1018) { add(5, H_LTYPE_TAB); add(100, "AcDbSymbolTable"); } add(70, 2);
-      add(0, "LTYPE"); if (isAc1018) { add(5, H_LTYPE_CONT); add(330, H_LTYPE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLinetypeTableRecord"); }
-      add(2, "CONTINUOUS"); add(70, 0); add(3, "Solid line"); add(72, 65); add(73, 0); add(40, "0.0");
-      add(0, "LTYPE"); if (isAc1018) { add(5, H_LTYPE_DASH); add(330, H_LTYPE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLinetypeTableRecord"); }
-      add(2, "DASHED"); add(70, 0); add(3, "Dashed __ __ __"); add(72, 65); add(73, 2); add(40, "12.0");
-      add(49, "9.0"); add(74, 0); add(49, "-3.0"); add(74, 0);
+      // Tabella LTYPE (Tipi di linea standard)
+      add(0, "TABLE");
+      add(2, "LTYPE");
+      add(70, 1);
+      add(0, "LTYPE");
+      add(2, "CONTINUOUS");
+      add(70, 64);
+      add(3, "Solid line");
+      add(72, 65);
+      add(73, 0);
+      add(40, "0.0");
       add(0, "ENDTAB");
 
-      // Tabella LAYER con colori ACI calibrati e TrueColor opzionale per AC1018
+      // Tabella STYLE (Stili tipografici conformi ISO con font isocp.shx standard AutoCAD)
+      add(0, "TABLE");
+      add(2, "STYLE");
+      add(70, 2);
+      add(0, "STYLE");
+      add(2, "STANDARD");
+      add(70, 0);
+      add(40, "0.0");
+      add(41, "1.0"); // Width factor 1.0 naturale
+      add(50, "0.0");
+      add(71, 0);
+      add(42, "2.5");
+      add(3, "isocp.shx");
+      add(4, "");
+
+      add(0, "STYLE");
+      add(2, "MONO_CAD");
+      add(70, 0);
+      add(40, "0.0");
+      add(41, "1.0"); // Width factor 1.0 naturale
+      add(50, "0.0");
+      add(71, 0);
+      add(42, "2.5");
+      add(3, "isocp.shx");
+      add(4, "");
+      add(0, "ENDTAB");
+
+      // Tabella LAYER con colori ACI calibrati identici alla preview grafica
       const layerList = Object.entries(CAD_LAYERS_SPEC);
-      add(0, "TABLE"); add(2, "LAYER"); if (isAc1018) { add(5, H_LAYER_TAB); add(100, "AcDbSymbolTable"); } add(70, layerList.length);
+      add(0, "TABLE");
+      add(2, "LAYER");
+      add(70, layerList.length);
       layerList.forEach(([layName, cfg]) => {
         add(0, "LAYER");
-        if (isAc1018) { add(5, nextH()); add(330, H_LAYER_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLayerTableRecord"); }
-        add(2, layName); add(70, 0); add(62, cfg.aci);
-        if (isAc1018) {
-          add(420, cfg.tc);
-          if (includeLw) add(370, cfg.lw);
-        }
+        add(2, layName);
+        add(70, 64);
+        add(62, cfg.aci || 7);
         add(6, "CONTINUOUS");
       });
       add(0, "ENDTAB");
 
-      // Tabella STYLE (Stili di testo tipografici identici alla preview)
-      add(0, "TABLE"); add(2, "STYLE"); if (isAc1018) { add(5, H_STYLE_TAB); add(100, "AcDbSymbolTable"); } add(70, 3);
+      add(0, "ENDSEC"); // Fine TABLES
 
-      // Stile STANDARD
-      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(330, H_STYLE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
-      add(2, "STANDARD"); add(70, 0); add(40, "0.0"); add(41, "1.0"); add(50, "0.0"); add(71, 0); add(42, "2.5");
-      add(3, "arial.ttf"); add(4, "");
-      if (isAc1018) { add(1001, "ACAD"); add(1000, "Arial"); add(1071, 0); }
+      // 3. SEZIONE BLOCKS (Obbligatoria per conformità alle tabelle in AutoCAD R12)
+      add(0, "SECTION");
+      add(2, "BLOCKS");
+      add(0, "ENDSEC");
 
-      // Stile MONO_CAD (Consolas / JetBrains Mono) con Width Factor naturale 1.0 (senza compressione 0.82)
-      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(330, H_STYLE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
-      add(2, "MONO_CAD"); add(70, 0); add(40, "0.0"); add(41, "1.0"); add(50, "0.0"); add(71, 0); add(42, "2.5");
-      if (fontFam === "jetbrains") {
-        add(3, "JetBrainsMono-Regular.ttf"); add(4, "");
-        if (isAc1018) { add(1001, "ACAD"); add(1000, "JetBrains Mono"); add(1071, 0); }
-      } else {
-        add(3, "consola.ttf"); add(4, "");
-        if (isAc1018) { add(1001, "ACAD"); add(1000, "Consolas"); add(1071, 0); }
-      }
+      // 4. SEZIONE ENTITIES
+      add(0, "SECTION");
+      add(2, "ENTITIES");
 
-      // Stile TITLE_CAD (Arial / Inter) per intestazioni tabelle, cartiglio e titoli
-      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(330, H_STYLE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
-      add(2, "TITLE_CAD"); add(70, 0); add(40, "0.0"); add(41, "1.0"); add(50, "0.0"); add(71, 0); add(42, "3.0");
-      if (fontFam === "jetbrains") {
-        add(3, "Inter-Regular.ttf"); add(4, "");
-        if (isAc1018) { add(1001, "ACAD"); add(1000, "Inter"); add(1071, 0); }
-      } else {
-        add(3, "arial.ttf"); add(4, "");
-        if (isAc1018) { add(1001, "ACAD"); add(1000, "Arial"); add(1071, 0); }
-      }
-      add(0, "ENDTAB");
-
-      // Tabelle aggiuntive e BLOCK_RECORD per AC1018
-      if (isAc1018) {
-        add(0, "TABLE"); add(2, "VIEW"); add(5, nextH()); add(330, "0"); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
-        add(0, "TABLE"); add(2, "UCS"); add(5, nextH()); add(330, "0"); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
-        add(0, "TABLE"); add(2, "APPID"); add(5, H_APPID_TAB); add(100, "AcDbSymbolTable"); add(70, 1);
-        add(0, "APPID"); add(5, H_APPID_ACAD); add(330, H_APPID_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbRegAppTableRecord");
-        add(2, "ACAD"); add(70, 0); add(0, "ENDTAB");
-        add(0, "TABLE"); add(2, "DIMSTYLE"); add(5, nextH()); add(330, "0"); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
-        add(0, "TABLE"); add(2, "BLOCK_RECORD"); add(5, H_BLOCK_RECORD_TAB); add(100, "AcDbSymbolTable"); add(70, 2);
-        add(0, "BLOCK_RECORD"); add(5, H_MODEL_SPACE_REC); add(330, H_BLOCK_RECORD_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbBlockTableRecord"); add(2, "*MODEL_SPACE");
-        add(0, "BLOCK_RECORD"); add(5, H_PAPER_SPACE_REC); add(330, H_BLOCK_RECORD_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbBlockTableRecord"); add(2, "*PAPER_SPACE");
-        add(0, "ENDTAB");
-      }
-
-      add(0, "ENDSEC"); // END TABLES
-
-      // 4. SEZIONE BLOCKS (solo AC1018)
-      if (isAc1018) {
-        add(0, "SECTION"); add(2, "BLOCKS");
-        add(0, "BLOCK"); add(5, nextH()); add(330, H_MODEL_SPACE_REC); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockBegin");
-        add(2, "*MODEL_SPACE"); add(70, 0); add(10, "0.0"); add(20, "0.0"); add(30, "0.0"); add(3, "*MODEL_SPACE"); add(1, "");
-        add(0, "ENDBLK"); add(5, nextH()); add(330, H_MODEL_SPACE_REC); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockEnd");
-
-        add(0, "BLOCK"); add(5, nextH()); add(330, H_PAPER_SPACE_REC); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockBegin");
-        add(2, "*PAPER_SPACE"); add(70, 0); add(10, "0.0"); add(20, "0.0"); add(30, "0.0"); add(3, "*PAPER_SPACE"); add(1, "");
-        add(0, "ENDBLK"); add(5, nextH()); add(330, H_PAPER_SPACE_REC); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockEnd");
-        add(0, "ENDSEC");
-      }
-
-      // 5. SEZIONE ENTITIES
-      add(0, "SECTION"); add(2, "ENTITIES");
-
-      const emitEntityHeader = (type, lay, colorHex, lwMm) => {
-        add(0, type);
-        if (isAc1018) {
-          add(5, nextH());
-          add(330, H_MODEL_SPACE_REC); // Collegamento essenziale al ModelSpace per AutoCAD LT
-          add(100, "AcDbEntity");
-        }
-        add(8, CAD_LAYERS_SPEC[lay] ? lay : "0");
-        const aci = hexToClosestACI(colorHex);
+      const addLine = (lay, x1, y1, x2, y2, aci = 7) => {
+        add(0, "LINE");
+        add(8, lay);
         add(62, aci);
-        if (isAc1018) {
-          const tc = hexToTrueColorInt(colorHex);
-          if (tc !== null) add(420, tc);
-          if (includeLw && typeof lwMm === "number") {
-            const lwVal = Math.max(0, Math.min(211, Math.round(lwMm * 100)));
-            add(370, lwVal);
-          }
-        }
+        add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
+        add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
       };
 
-      // In AutoCAD SOLID, i vertici di un quadrilatero sono ordinati per lati opposti:
-      // Lato 1: pt1 (10, 20) -> pt2 (11, 21); Lato 2: pt3 (12, 22) -> pt4 (13, 23).
-      // Per evitare farfallamenti o incroci a papillon, l'ordine dei vertici perimetrali orari è 1 -> 2 -> 4 -> 3.
-      const addSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, fillHex) => {
-        emitEntityHeader("SOLID", lay, fillHex, 0);
-        if (isAc1018) add(100, "AcDbTrace");
+      const addSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, aci = 7) => {
+        add(0, "SOLID");
+        add(8, lay);
+        add(62, aci);
         add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
         add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
         add(12, x4.toFixed(3)); add(22, y4.toFixed(3)); add(32, "0.0");
         add(13, x3.toFixed(3)); add(23, y3.toFixed(3)); add(33, "0.0");
       };
 
-      // Triangolo SOLID regolare (pt3 e pt4 coincidenti)
-      const addSolidTri = (lay, x1, y1, x2, y2, x3, y3, fillHex) => {
-        emitEntityHeader("SOLID", lay, fillHex, 0);
-        if (isAc1018) add(100, "AcDbTrace");
-        add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
-        add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
-        add(12, x3.toFixed(3)); add(22, y3.toFixed(3)); add(32, "0.0");
-        add(13, x3.toFixed(3)); add(23, y3.toFixed(3)); add(33, "0.0");
-      };
-
-      // Disco pieno circolare tassellato mediante triangoli radiali regolari (elimina buchi o vertici incrociati)
-      const addSolidDisk = (lay, cx, cy, r, fillHex) => {
-        const steps = r > 15 ? 40 : r > 5 ? 28 : 16;
-        for (let i = 0; i < steps; i++) {
+      const addSolidDisk = (lay, cx, cy, r, aci = 7) => {
+        const steps = r > 10 ? 24 : r > 4 ? 16 : 12;
+        for (let i = 0; i < steps; i += 2) {
           const a1 = (i * 2 * Math.PI) / steps;
           const a2 = ((i + 1) * 2 * Math.PI) / steps;
-          addSolidTri(
+          const a3 = ((i + 2) * 2 * Math.PI) / steps;
+          addSolidQuad(
             lay,
             cx, cy,
             cx + Math.cos(a1) * r, cy + Math.sin(a1) * r,
             cx + Math.cos(a2) * r, cy + Math.sin(a2) * r,
-            fillHex
+            cx + Math.cos(a3) * r, cy + Math.sin(a3) * r,
+            aci
           );
         }
       };
 
-      // 5A. PRIMITIVE DI RIEMPIMENTO / SFONDO (Tracciate per prime per stare sotto i wireframe e testi)
+      const addCircle = (lay, cx, cy, r, aci = 7) => {
+        add(0, "CIRCLE");
+        add(8, lay);
+        add(62, aci);
+        add(10, cx.toFixed(3)); add(20, cy.toFixed(3)); add(30, "0.0");
+        add(40, r.toFixed(3));
+      };
+
+      // 4A. Primitive di riempimento / sfondi colorati dei cavi, anime e canalina
       prims.forEach(p => {
         if (!p.fill) return;
-        const isDarkBoxBg = (p.fill === "#0f172a" || p.fill === "#04070d") && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
-        if (!includeBg && isDarkBoxBg) return;
+        const isDarkBoxBg = (p.fill === "#0f172a" || p.fill === "#04070d" || p.fill === "#1e293b") &&
+                            (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
+        if (isDarkBoxBg) return;
+
+        const fillAci = hexToClosestACI(p.fill);
         const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina") ? p.layer : "SFONDI_RIEMPIMENTI";
+
         if (p.t === "rect") {
-          addSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.fill);
+          addSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, fillAci);
         } else if (p.t === "circle") {
-          addSolidDisk(fillLay, p.cx, p.cy, p.r, p.fill);
+          addSolidDisk(fillLay, p.cx, p.cy, p.r, fillAci);
         }
       });
 
-      // 5B. PRIMITIVE VETTORIALI, CONTORNI E TESTI
+      // 4B. Primitive vettoriali wireframe e testi tecnici
       prims.forEach(p => {
         const lay = CAD_LAYERS_SPEC[p.layer] ? p.layer : "0";
+        const aci = hexToClosestACI(p.color);
+
         if (p.t === "line") {
-          emitEntityHeader("LINE", lay, p.color, p.lw || 0.4);
-          if (isAc1018) add(100, "AcDbLine");
-          add(10, p.x1.toFixed(3)); add(20, p.y1.toFixed(3)); add(30, "0.0");
-          add(11, p.x2.toFixed(3)); add(21, p.y2.toFixed(3)); add(31, "0.0");
+          addLine(lay, p.x1, p.y1, p.x2, p.y2, aci);
         } else if (p.t === "rect") {
           const x1 = p.x, y1 = p.y, x2 = p.x + p.w, y2 = p.y + p.h;
-          [
-            [x1, y1, x2, y1],
-            [x2, y1, x2, y2],
-            [x2, y2, x1, y2],
-            [x1, y2, x1, y1]
-          ].forEach(([lx1, ly1, lx2, ly2]) => {
-            emitEntityHeader("LINE", lay, p.color, p.lw || 0.4);
-            if (isAc1018) add(100, "AcDbLine");
-            add(10, lx1.toFixed(3)); add(20, ly1.toFixed(3)); add(30, "0.0");
-            add(11, lx2.toFixed(3)); add(21, ly2.toFixed(3)); add(31, "0.0");
-          });
+          addLine(lay, x1, y1, x2, y1, aci);
+          addLine(lay, x2, y1, x2, y2, aci);
+          addLine(lay, x2, y2, x1, y2, aci);
+          addLine(lay, x1, y2, x1, y1, aci);
         } else if (p.t === "circle") {
-          emitEntityHeader("CIRCLE", lay, p.color, p.lw || 0.45);
-          if (isAc1018) add(100, "AcDbCircle");
-          add(10, p.cx.toFixed(3)); add(20, p.cy.toFixed(3)); add(30, "0.0");
-          add(40, p.r.toFixed(3));
+          addCircle(lay, p.cx, p.cy, p.r, aci);
         } else if (p.t === "text") {
-          const s = formatCADText(p.str, useUnicode);
+          const s = cleanCADStr(p.str);
           if (!s) return;
-          // Calibrazione altezza testo (h * 0.88) per identità assoluta con il rendering Canvas
-          const th = +((p.h || 2.2) * 0.88).toFixed(3);
-          const isTitle = (p.layer === "CORNICE" && p.h >= 2.3) ||
-                          p.layer === "ETICHETTA_PIANTA" ||
-                          (p.layer === "TABELLA" && /^[0-9]\./.test(p.str)) ||
-                          (p.layer === "CURVA_CARICO" && /^[0-9]\./.test(p.str));
-          const styleName = isTitle ? "TITLE_CAD" : "MONO_CAD";
+          const th = Math.max(1.2, +(p.h || 2.2).toFixed(3));
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
 
-          emitEntityHeader("TEXT", lay, p.color, 0.25);
-          if (isAc1018) add(100, "AcDbText");
+          add(0, "TEXT");
+          add(8, lay);
+          add(62, aci);
           add(10, p.x.toFixed(3)); add(20, p.y.toFixed(3)); add(30, "0.0");
           add(40, th.toFixed(3));
-          add(41, "1.0"); // Width factor 1.0 (naturale, senza compressione anomala a 0.82)
+          add(41, "1.0"); // Width factor 1.0 (naturale, non compresso)
           add(1, s);
-          add(7, styleName);
+          add(7, "MONO_CAD");
           if (hAlign !== 0) {
             add(72, hAlign);
             add(11, p.x.toFixed(3)); add(21, p.y.toFixed(3)); add(31, "0.0");
@@ -3291,24 +3310,14 @@
         }
       });
 
-      add(0, "ENDSEC"); // ENTITIES
-
-      // 6. SEZIONE OBJECTS (solo AC1018)
-      if (isAc1018) {
-        add(0, "SECTION"); add(2, "OBJECTS");
-        add(0, "DICTIONARY"); add(5, H_ROOT_DICT); add(100, "AcDbDictionary"); add(281, 1);
-        add(0, "ENDSEC");
-      }
-
+      add(0, "ENDSEC"); // Fine ENTITIES
       add(0, "EOF");
 
-      // Unisce le linee DXF. Per AC1009: sanitizza ulteriormente i non-ASCII residui (AutoCAD LT accetta solo ASCII puro)
+      // Genera contenuto DXF purificato in solo ASCII standard a 7 bit (CRLF)
       let dxfContent = dxf.join("\r\n") + "\r\n";
-      if (!isAc1018) {
-        // Passaggio finale di sicurezza: rimuove qualsiasi carattere > 0x7F rimasto (non dovrebbe esserci, ma per sicurezza)
-        dxfContent = dxfContent.replace(/[^\x00-\x7F]/g, "?");
-      }
-      const blob = new Blob([dxfContent], { type: isAc1018 ? "application/dxf;charset=utf-8" : "application/dxf" });
+      dxfContent = dxfContent.replace(/[^\x00-\x7F]/g, "?");
+
+      const blob = new Blob([dxfContent], { type: "application/dxf" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `${name}.dxf`;
