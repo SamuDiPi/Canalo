@@ -2,7 +2,13 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="theme-color" content="#060911">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="application-name" content="Cable Tray Studio">
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Cable%20Tray%20Studio%22%2C%22short_name%22%3A%22Canalo%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23060911%22%2C%22theme_color%22%3A%22%23060911%22%7D">
   <title>Constructive Cable Tray Studio v16.2 — Vero Parser DWG WASM & Curva EN 61537</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -34,6 +40,9 @@
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    #cadCanvas { touch-action: none; -webkit-touch-callout: none; user-select: none; }
+    #loadCurveCanvas { touch-action: none; user-select: none; }
+    .touch-target { min-height: 42px; min-width: 42px; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
@@ -83,6 +92,11 @@
           <span>📄 2. PDF Unifilare</span>
         </button>
         <input id="pdfInput" type="file" accept=".pdf" class="hidden" onchange="importPDFFile(this)">
+
+        <!-- DATABASE COMPLETO CAVI E CANALINE -->
+        <button type="button" onclick="toggleDatabaseModal()" class="text-xs bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border border-cyan-400/50 px-3 py-1.5 rounded-md font-bold shadow-md transition flex items-center gap-1.5" title="Esplora il Database Tecnico Cavi BT, Segnali, Speciali, Canaline e Mensole">
+          <span>📚 Database DB</span>
+        </button>
 
         <!-- ISPETTORE ENTITÀ REALI ESTRATTE DAL DWG -->
         <button type="button" onclick="toggleDwgInspector()" class="text-xs bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 px-2.5 py-1.5 rounded-md font-semibold transition">
@@ -243,11 +257,29 @@
     </div>
   </div>
 
+  <!-- BARRA SWITCHER MOBILE / TOUCH (SOLO SCHERMI < 1024px) -->
+  <div class="lg:hidden px-4 pt-2.5 pb-0 max-w-[1920px] mx-auto w-full">
+    <div class="flex items-center justify-between p-1 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold gap-1 shadow">
+      <button type="button" id="mobTabBtn_controls" onclick="setMobileView('controls')" class="flex-1 py-2 text-center rounded-lg bg-amber-500/20 text-amber-300 font-bold transition">
+        ⚙️ Parametri
+      </button>
+      <button type="button" id="mobTabBtn_cad" onclick="setMobileView('cad')" class="flex-1 py-2 text-center rounded-lg text-slate-400 hover:text-white transition">
+        📐 Vista CAD 1:1
+      </button>
+      <button type="button" id="mobTabBtn_results" onclick="setMobileView('results')" class="flex-1 py-2 text-center rounded-lg text-slate-400 hover:text-white transition">
+        📊 KPI &amp; Distinta
+      </button>
+      <button type="button" onclick="toggleDatabaseModal()" class="px-3 py-2 text-center rounded-lg bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 font-bold transition" title="Apri Database Cavi">
+        📚 DB
+      </button>
+    </div>
+  </div>
+
   <!-- WORKSPACE PRINCIPALE -->
   <main class="flex-1 max-w-[1920px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 p-4">
 
     <!-- COLONNA SINISTRA: CONTROLLI + DIAGRAMMA INTERATTIVO CURVA DI CARICO -->
-    <section class="lg:col-span-4 xl:col-span-3 flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-145px)] pr-1.5">
+    <section id="leftColSection" class="lg:col-span-4 xl:col-span-3 flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-145px)] pr-1.5">
 
       <!-- SELETTORE SCHEDE -->
       <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-center text-[11px] font-semibold">
@@ -466,7 +498,16 @@
 
       <!-- SCHEDA 4: AGGIUNTA CAVI DA PORTFOLIO -->
       <div id="tabPanel_cavi" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-3 shadow space-y-2">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400">4. Aggiungi Cavi dal Portfolio</h2>
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400">4. Aggiungi Cavi alla Canalina</h2>
+          <button type="button" onclick="toggleDatabaseModal()" class="text-[10px] bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded font-bold transition">
+            📚 Sfoglia DB
+          </button>
+        </div>
+
+        <button type="button" onclick="toggleDatabaseModal()" class="w-full py-1.5 bg-gradient-to-r from-blue-600/30 to-cyan-600/30 hover:from-blue-600/50 hover:to-cyan-600/50 text-cyan-300 border border-cyan-500/50 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 mb-1">
+          <span>📚 Sfoglia Database Cavi, Segnali &amp; Mensole</span>
+        </button>
 
         <select id="selCableCatalog" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-white mono"></select>
 
@@ -553,7 +594,7 @@
     </section>
 
     <!-- AREA CENTRALE / DESTRA: KPI, VIEWPORT CAD 1:1 E TABELLA CAVI -->
-    <section class="lg:col-span-8 xl:col-span-9 flex flex-col gap-3">
+    <section id="rightColSection" class="lg:col-span-8 xl:col-span-9 flex flex-col gap-3">
 
       <!-- KPI INGEGNERISTICI -->
       <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2" id="kpiBar">
@@ -598,7 +639,8 @@
       </div>
 
       <!-- VIEWPORT GRAFICA CAD 1:1 (CON DRAG & DROP FILE) -->
-      <div id="cadDropArea" class="relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-1 min-h-[520px] flex flex-col">
+      <div id="cadViewportContainer" class="flex-1 flex flex-col">
+      <div id="cadDropArea" class="relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-1 min-h-[460px] lg:min-h-[520px] flex flex-col">
         <div class="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
           <div class="flex items-center gap-2 bg-slate-900/90 backdrop-blur border border-slate-700/80 px-3 py-1.5 rounded-lg pointer-events-auto">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -617,9 +659,10 @@
 
         <canvas id="cadCanvas" class="w-full flex-1 cad-grid-dark cursor-grab active:cursor-grabbing"></canvas>
       </div>
+      </div>
 
       <!-- TABELLA DISTINTA CAVI INTERATTIVA -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow">
+      <div id="distintaContainer" class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
           <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
             <span>Distinta Cavi Posati nella Sezione (Editabile in Tempo Reale)</span>
@@ -640,6 +683,98 @@
 
     </section>
   </main>
+
+  <!-- MODALE DATABASE TECNICO COMPLETO (CAVI BT, SEGNALI, SPECIALI, CANALINE & MENSOLE) -->
+  <div id="databaseCatalogModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-xs">
+      
+      <!-- HEADER MODALE -->
+      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 text-base">
+            📚
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+              Database Tecnico Integrato Normato
+              <span class="text-[10px] mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-semibold">CEI UNEL / EN 61537 / CPR</span>
+            </h3>
+            <p class="text-[11px] text-slate-400">Cavi Bassa Tensione (Unipolari &amp; Multipolari), Segnali/Controllo, Antincendio PH120, Dati LAN, Canaline e Mensole di Supporto</p>
+          </div>
+        </div>
+        <button type="button" onclick="toggleDatabaseModal()" class="text-slate-400 hover:text-white font-bold text-xl px-2 leading-none transition">&times;</button>
+      </div>
+
+      <!-- BARRA FILTRI E RICERCA -->
+      <div class="p-3 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-1 text-[11px]">
+          <button type="button" onclick="filterDbCategory('all')" id="dbCatBtn_all" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold transition">Tutti</button>
+          <button type="button" onclick="filterDbCategory('bt_uni')" id="dbCatBtn_bt_uni" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">⚡ BT Unipolari (1X)</button>
+          <button type="button" onclick="filterDbCategory('bt_multi')" id="dbCatBtn_bt_multi" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">🔌 BT Multipolari</button>
+          <button type="button" onclick="filterDbCategory('signal')" id="dbCatBtn_signal" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">📡 Segnali &amp; Bus KNX</button>
+          <button type="button" onclick="filterDbCategory('fire')" id="dbCatBtn_fire" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">🔥 Antincendio PH120 / EVAC</button>
+          <button type="button" onclick="filterDbCategory('data')" id="dbCatBtn_data" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">🌐 Dati LAN &amp; Fibra</button>
+          <button type="button" onclick="filterDbCategory('trays_supports')" id="dbCatBtn_trays_supports" class="px-2.5 py-1 rounded-lg text-amber-300 hover:bg-slate-800 transition">🧱 Canaline &amp; Mensole</button>
+        </div>
+
+        <div class="flex items-center gap-2 flex-1 max-w-xs">
+          <input id="dbSearchInp" type="text" oninput="renderDatabaseItems()" placeholder="Cerca es. 1x185, FTG, 5G16, KNX..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs mono text-cyan-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400">
+        </div>
+      </div>
+
+      <!-- CONTENUTO TABELLARE SCORREVOLE -->
+      <div class="flex-1 overflow-y-auto p-3" id="dbContentArea">
+        <div id="dbCablesTableView">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-[10px] uppercase text-slate-400 mono bg-slate-950/70 sticky top-0">
+                <th class="py-1.5 px-2">Cat.</th>
+                <th class="py-1.5 px-2">Tipo Normato</th>
+                <th class="py-1.5 px-2">Formazione</th>
+                <th class="py-1.5 px-2 text-center">Ø mm</th>
+                <th class="py-1.5 px-2 text-center">kg/m</th>
+                <th class="py-1.5 px-2 text-center">Cu mm²</th>
+                <th class="py-1.5 px-2 text-center">Iz0 (A)</th>
+                <th class="py-1.5 px-2 text-center">R_min</th>
+                <th class="py-1.5 px-2">Descrizione / Applicazione</th>
+                <th class="py-1.5 px-2 text-right">Azione Rapida</th>
+              </tr>
+            </thead>
+            <tbody id="dbCablesTableBody" class="divide-y divide-slate-800/60 mono text-[11px]"></tbody>
+          </table>
+        </div>
+
+        <div id="dbSupportsTableView" class="hidden space-y-4">
+          <!-- CANALINE COMMERCIALI -->
+          <div>
+            <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+              <span>🧱 Canaline &amp; Passerelle Commerciali da Catalogo (Norma CEI EN 61537)</span>
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5" id="dbBrandSeriesCards"></div>
+          </div>
+
+          <!-- MENSOLE E SISTEMI DI SOSTEGNO -->
+          <div class="pt-3 border-t border-slate-800">
+            <h4 class="text-xs font-bold text-cyan-300 uppercase tracking-wide mb-2 flex items-center gap-2">
+              <span>🛠️ Mensole &amp; Sospensioni con Curve di Carico Verificate SWL</span>
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5" id="dbSupportsCards"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER MODALE -->
+      <div class="px-4 py-2.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <div>
+          <span id="dbItemsCount" class="text-cyan-300 font-bold">51</span> articoli normati disponibili nel DB
+        </div>
+        <button type="button" onclick="toggleDatabaseModal()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition">
+          Chiudi
+        </button>
+      </div>
+
+    </div>
+  </div>
 
   <script>
     if (window.pdfjsLib) {
@@ -733,65 +868,145 @@
     };
 
     const CABLE_CATALOG = [
-      { id: "FG16_3G1.5",  code: "QGBT-P C-21", desc: "Illuminazione / Ausiliari 230V", type: "FG16OM16", form: "1(3G1,5)", d: 11.5, w: 0.18, sec: 1.5, cores: 2, iz0: 20, bendK: 8,  sys: "BT_POWER" },
-      { id: "FG16_3G2.5",  code: "QGBT-P C-22", desc: "Alimentazione Monofase 230V",   type: "FG16OM16", form: "1(3G2,5)", d: 14.0, w: 0.24, sec: 2.5, cores: 2, iz0: 27, bendK: 8,  sys: "BT_POWER" },
-      { id: "FG16_3G4",    code: "QP1-DX-N C-4",desc: "Forza Motrice Monofase 230V",   type: "FG16OM16", form: "1(3G4)",   d: 15.2, w: 0.31, sec: 4.0, cores: 2, iz0: 37, bendK: 8,  sys: "BT_POWER" },
-      { id: "FG16_5G2.5",  code: "QP1-DX-N C-5",desc: "Alimentazione Trifase 400V 16A",type: "FG16OM16", form: "1(5G2,5)", d: 15.0, w: 0.33, sec: 2.5, cores: 3, iz0: 24, bendK: 8,  sys: "BT_POWER" },
-      { id: "FG16_5G4",    code: "QP1-DX-N C-6",desc: "Alimentazione Trifase 400V 25A",type: "FG16OM16", form: "1(5G4)",   d: 16.5, w: 0.44, sec: 4.0, cores: 3, iz0: 32, bendK: 8,  sys: "BT_POWER" },
-      { id: "FG16_5G6",    code: "QP1-DX-N C-7",desc: "Alimentazione Trifase 400V 32A",type: "FG16OM16", form: "1(5G6)",   d: 18.2, w: 0.58, sec: 6.0, cores: 3, iz0: 41, bendK: 8,  sys: "BT_POWER" },
-      { id: "FG16_5G10",   code: "QGBT C-1",    desc: "Alimentazione Trifase 400V 40A",type: "FG16OM16", form: "1(5G10)",  d: 21.0, w: 0.86, sec: 10,  cores: 3, iz0: 57, bendK: 10, sys: "BT_POWER" },
-      { id: "FG16_5G16",   code: "QGBT C-2",    desc: "Dorsale Quadro Trifase 63A",    type: "FG16OM16", form: "1(5G16)",  d: 24.2, w: 1.25, sec: 16,  cores: 3, iz0: 76, bendK: 10, sys: "BT_POWER" },
-      { id: "UNI_1X10",    code: "QGBT-C C-3",  desc: "Unipolare Singolo Fase/Neutro", type: "FG16M16",  form: "1(1x10)",  d: 9.2,  w: 0.15, sec: 10,  cores: 1, iz0: 63, bendK: 10, sys: "BT_POWER" },
-      { id: "UNI_1X16",    code: "QGBT-C C-4",  desc: "Unipolare Singolo 16mm²",       type: "FG16M16",  form: "1(1x16)",  d: 10.5, w: 0.22, sec: 16,  cores: 1, iz0: 85, bendK: 10, sys: "BT_POWER" },
-      { id: "UNI_1X25",    code: "QGBT-C C-5",  desc: "Unipolare Singolo 25mm²",       type: "FG16M16",  form: "1(1x25)",  d: 12.2, w: 0.32, sec: 25,  cores: 1, iz0: 112,bendK: 10, sys: "BT_POWER" },
-      { id: "UNI_1X35",    code: "QGBT-UPS C-1",desc: "Unipolare Singolo 35mm²",       type: "FG16M16",  form: "1(1x35)",  d: 13.5, w: 0.43, sec: 35,  cores: 1, iz0: 138,bendK: 12, sys: "BT_POWER" },
-      { id: "UNI_1X50",    code: "QGBT-UPS C-2",desc: "Unipolare Singolo 50mm²",       type: "FG16M16",  form: "1(1x50)",  d: 15.4, w: 0.58, sec: 50,  cores: 1, iz0: 168,bendK: 12, sys: "BT_POWER" },
-      { id: "UNI_1X70",    code: "QGBT-UPS C-3",desc: "Unipolare Singolo 70mm²",       type: "FG16M16",  form: "1(1x70)",  d: 17.5, w: 0.80, sec: 70,  cores: 1, iz0: 213,bendK: 12, sys: "BT_POWER" },
-      { id: "UNI_1X95",    code: "QGBT-UPS C-4",desc: "Unipolare Singolo 95mm²",       type: "FG16M16",  form: "1(1x95)",  d: 19.8, w: 1.08, sec: 95,  cores: 1, iz0: 258,bendK: 12, sys: "BT_POWER" },
-      { id: "UNI_4X10_PE", code: "QGBT-C C-6",  desc: "Fascio Unipolari 10mm² + PE",   type: "FG16M16/FG17 PE", form: "4(1x10)+(1PE10)", d: 22.0, w: 0.78, sec: 10, cores: 1, iz0: 63, bendK: 10, sys: "BT_POWER" },
-      { id: "UNI_4X16_PE", code: "QGBT-C C-7",  desc: "Fascio Unipolari 16mm² + PE",   type: "FG16M16/FG17 PE", form: "4(1x16)+(1PE16)", d: 25.0, w: 1.15, sec: 16, cores: 1, iz0: 85, bendK: 10, sys: "BT_POWER" },
-      { id: "UNI_3X35_PE", code: "QGBT-UPS C-5",desc: "Dorsale Unipolari 35mm² + PE",  type: "FG16M16/FG17 PE", form: "3(1x35)+(1x25)+(1PE16)", d: 31.0, w: 1.88, sec: 35, cores: 1, iz0: 138, bendK: 12, sys: "BT_POWER" },
-      { id: "FTG18_3G2.5", code: "QE-VVF C-1",  desc: "Linea Sicurezza Antincendio",   type: "FTG18OM16", form: "1(3G2,5)", d: 14.5, w: 0.27, sec: 2.5, cores: 2, iz0: 27, bendK: 10, sys: "BT_FIRE" },
-      { id: "IRAI_LOOP",   code: "IRAI-LOOP1",  desc: "Loop Rivelazione Fumi IRAI",    type: "FTG18(O)M16", form: "1(2x1,5)", d: 8.5, w: 0.11, sec: 1.5, cores: 2, iz0: 15, bendK: 10, sys: "SPECIAL_ELV" },
-      { id: "EVAC_100V",   code: "EVAC-SPK1",   desc: "Diffusione Sonora EVAC 100V",   type: "FTG18(O)M16", form: "1(2x2,5)", d: 9.8, w: 0.15, sec: 2.5, cores: 2, iz0: 20, bendK: 10, sys: "SPECIAL_ELV" },
-      { id: "DATA_CAT6A",  code: "TD-CAT6A",    desc: "Rete Dati Schermata F/UTP 10G", type: "F/UTP Cat.6A", form: "4x2x23AWG", d: 7.5, w: 0.07, sec: 0.5, cores: 2, iz0: 5, bendK: 10, sys: "SPECIAL_ELV" }
+      // ==========================================
+      // 1. CAVI BT POTENZA UNIPOLARI (FG16M16 / FS17)
+      // ==========================================
+      { id: "FG16_1X1.5",  cat: "bt_uni", code: "L-1X1.5",  desc: "Unipolare BT Ausiliari 1x1.5",   type: "FG16M16", form: "1(1x1,5)", d: 5.8,  w: 0.05, sec: 1.5, cores: 1, iz0: 24,  bendK: 10, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X2.5",  cat: "bt_uni", code: "L-1X2.5",  desc: "Unipolare BT Fase/Neutro 1x2.5",  type: "FG16M16", form: "1(1x2,5)", d: 6.4,  w: 0.07, sec: 2.5, cores: 1, iz0: 32,  bendK: 10, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X4",    cat: "bt_uni", code: "L-1X4",    desc: "Unipolare BT Linea FM 1x4",       type: "FG16M16", form: "1(1x4)",   d: 7.0,  w: 0.09, sec: 4.0, cores: 1, iz0: 42,  bendK: 10, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X6",    cat: "bt_uni", code: "L-1X6",    desc: "Unipolare BT Linea FM 1x6",       type: "FG16M16", form: "1(1x6)",   d: 7.6,  w: 0.11, sec: 6.0, cores: 1, iz0: 54,  bendK: 10, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X10",   cat: "bt_uni", code: "QGBT C-3", desc: "Unipolare Singolo 10mm²",        type: "FG16M16", form: "1(1x10)",  d: 9.2,  w: 0.17, sec: 10.0,cores: 1, iz0: 75,  bendK: 10, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X16",   cat: "bt_uni", code: "QGBT C-4", desc: "Unipolare Singolo 16mm²",        type: "FG16M16", form: "1(1x16)",  d: 10.5, w: 0.23, sec: 16.0,cores: 1, iz0: 100, bendK: 10, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X25",   cat: "bt_uni", code: "QGBT C-5", desc: "Unipolare Singolo 25mm²",        type: "FG16M16", form: "1(1x25)",  d: 12.2, w: 0.33, sec: 25.0,cores: 1, iz0: 135, bendK: 10, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X35",   cat: "bt_uni", code: "QGBT-UPS C-1", desc: "Unipolare Singolo 35mm²",    type: "FG16M16", form: "1(1x35)",  d: 13.5, w: 0.44, sec: 35.0,cores: 1, iz0: 169, bendK: 12, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X50",   cat: "bt_uni", code: "QGBT-UPS C-2", desc: "Unipolare Singolo 50mm²",    type: "FG16M16", form: "1(1x50)",  d: 15.4, w: 0.58, sec: 50.0,cores: 1, iz0: 207, bendK: 12, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X70",   cat: "bt_uni", code: "QGBT-UPS C-3", desc: "Unipolare Singolo 70mm²",    type: "FG16M16", form: "1(1x70)",  d: 17.5, w: 0.81, sec: 70.0,cores: 1, iz0: 268, bendK: 12, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X95",   cat: "bt_uni", code: "QGBT-UPS C-4", desc: "Unipolare Singolo 95mm²",    type: "FG16M16", form: "1(1x95)",  d: 19.8, w: 1.08, sec: 95.0,cores: 1, iz0: 328, bendK: 12, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X120",  cat: "bt_uni", code: "QGBT-TRAFO C-1", desc: "Unipolare Singolo 120mm²", type: "FG16M16", form: "1(1x120)", d: 22.0, w: 1.34, sec: 120.0, cores: 1, iz0: 383, bendK: 12, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X150",  cat: "bt_uni", code: "QGBT-TRAFO C-2", desc: "Unipolare Singolo 150mm²", type: "FG16M16", form: "1(1x150)", d: 24.2, w: 1.65, sec: 150.0, cores: 1, iz0: 444, bendK: 12, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X185",  cat: "bt_uni", code: "QGBT-TRAFO C-3", desc: "Unipolare Singolo 185mm²", type: "FG16M16", form: "1(1x185)", d: 26.8, w: 2.05, sec: 185.0, cores: 1, iz0: 510, bendK: 12, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X240",  cat: "bt_uni", code: "QGBT-TRAFO C-4", desc: "Unipolare Singolo 240mm²", type: "FG16M16", form: "1(1x240)", d: 30.2, w: 2.65, sec: 240.0, cores: 1, iz0: 607, bendK: 12, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_1X300",  cat: "bt_uni", code: "QGBT-TRAFO C-5", desc: "Unipolare Singolo 300mm²", type: "FG16M16", form: "1(1x300)", d: 33.5, w: 3.30, sec: 300.0, cores: 1, iz0: 703, bendK: 12, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FS17_1X16_GV",cat: "bt_uni", code: "PE-16",    desc: "Conduttore Terra PE Giallo/Verde 16mm²", type: "FS17", form: "1(1x16) PE", d: 7.4, w: 0.18, sec: 16.0, cores: 1, iz0: 76, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35716 Cca-s3,d1,a3" },
+      { id: "FS17_1X25_GV",cat: "bt_uni", code: "PE-25",    desc: "Conduttore Terra PE Giallo/Verde 25mm²", type: "FS17", form: "1(1x25) PE", d: 9.2, w: 0.28, sec: 25.0, cores: 1, iz0: 101, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35716 Cca-s3,d1,a3" },
+      { id: "FS17_1X35_GV",cat: "bt_uni", code: "PE-35",    desc: "Conduttore Terra PE Giallo/Verde 35mm²", type: "FS17", form: "1(1x35) PE", d: 10.4, w: 0.38, sec: 35.0, cores: 1, iz0: 125, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35716 Cca-s3,d1,a3" },
+
+      // ==========================================
+      // 2. CAVI BT POTENZA MULTIPOLARI (FG16OM16 / H07RN-F)
+      // ==========================================
+      { id: "FG16_2X1.5",  cat: "bt_multi", code: "L-2X1.5",   desc: "Alimentazione Bipolare 2x1.5",      type: "FG16OM16", form: "1(2x1,5)", d: 10.2, w: 0.14, sec: 1.5, cores: 2, iz0: 22, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 0.6/1kV" },
+      { id: "FG16_2X2.5",  cat: "bt_multi", code: "L-2X2.5",   desc: "Alimentazione Bipolare 2x2.5",      type: "FG16OM16", form: "1(2x2,5)", d: 11.5, w: 0.18, sec: 2.5, cores: 2, iz0: 30, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 0.6/1kV" },
+      { id: "FG16_3G1.5",  cat: "bt_multi", code: "QGBT-P C-21", desc: "Illuminazione / Ausiliari 230V",   type: "FG16OM16", form: "1(3G1,5)", d: 11.0, w: 0.16, sec: 1.5, cores: 2, iz0: 22, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_3G2.5",  cat: "bt_multi", code: "QGBT-P C-22", desc: "Alimentazione Monofase 230V 16A",  type: "FG16OM16", form: "1(3G2,5)", d: 12.2, w: 0.22, sec: 2.5, cores: 2, iz0: 30, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_3G4",    cat: "bt_multi", code: "QP1-DX-N C-4",desc: "Forza Motrice Monofase 230V 25A",  type: "FG16OM16", form: "1(3G4)",   d: 13.8, w: 0.31, sec: 4.0, cores: 2, iz0: 40, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_3G6",    cat: "bt_multi", code: "QP1-DX-N C-5",desc: "Forza Motrice Monofase 230V 32A",  type: "FG16OM16", form: "1(3G6)",   d: 15.2, w: 0.42, sec: 6.0, cores: 2, iz0: 51, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_4G1.5",  cat: "bt_multi", code: "L-4G1.5",   desc: "Comando / Trifase 400V 1.5mm²",     type: "FG16OM16", form: "1(4G1,5)", d: 12.0, w: 0.20, sec: 1.5, cores: 3, iz0: 19, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_4G2.5",  cat: "bt_multi", code: "L-4G2.5",   desc: "Trifase 400V 2.5mm² (Senza N)",     type: "FG16OM16", form: "1(4G2,5)", d: 13.4, w: 0.27, sec: 2.5, cores: 3, iz0: 26, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_4G4",    cat: "bt_multi", code: "L-4G4",     desc: "Trifase 400V 4mm² Motori",          type: "FG16OM16", form: "1(4G4)",   d: 15.2, w: 0.38, sec: 4.0, cores: 3, iz0: 35, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_4G6",    cat: "bt_multi", code: "L-4G6",     desc: "Trifase 400V 6mm² Pompe",           type: "FG16OM16", form: "1(4G6)",   d: 16.8, w: 0.52, sec: 6.0, cores: 3, iz0: 45, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_4G10",   cat: "bt_multi", code: "L-4G10",    desc: "Trifase 400V 10mm² Motori Grandi",  type: "FG16OM16", form: "1(4G10)",  d: 19.5, w: 0.78, sec: 10.0,cores: 3, iz0: 63, bendK: 10,sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_4G16",   cat: "bt_multi", code: "L-4G16",    desc: "Trifase 400V 16mm² Utenza Pesante", type: "FG16OM16", form: "1(4G16)",  d: 22.8, w: 1.15, sec: 16.0,cores: 3, iz0: 85, bendK: 10,sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_4G25",   cat: "bt_multi", code: "L-4G25",    desc: "Trifase 400V 25mm² Dorsale Quadro", type: "FG16OM16", form: "1(4G25)",  d: 27.2, w: 1.70, sec: 25.0,cores: 3, iz0: 115,bendK: 10,sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_4G35",   cat: "bt_multi", code: "L-4G35",    desc: "Trifase 400V 35mm² Dorsale Quadro", type: "FG16OM16", form: "1(4G35)",  d: 30.5, w: 2.25, sec: 35.0,cores: 3, iz0: 143,bendK: 10,sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_4G50",   cat: "bt_multi", code: "L-4G50",    desc: "Trifase 400V 50mm² Linea Principale",type: "FG16OM16", form: "1(4G50)", d: 35.0, w: 3.10, sec: 50.0,cores: 3, iz0: 178,bendK: 12,sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_5G1.5",  cat: "bt_multi", code: "QP1-DX-N C-5",desc: "Trifase + N + PE 400V 10A",       type: "FG16OM16", form: "1(5G1,5)", d: 13.0, w: 0.24, sec: 1.5, cores: 3, iz0: 19, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_5G2.5",  cat: "bt_multi", code: "QP1-DX-N C-6",desc: "Trifase + N + PE 400V 16A",       type: "FG16OM16", form: "1(5G2,5)", d: 14.5, w: 0.32, sec: 2.5, cores: 3, iz0: 26, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_5G4",    cat: "bt_multi", code: "QP1-DX-N C-7",desc: "Trifase + N + PE 400V 25A",       type: "FG16OM16", form: "1(5G4)",   d: 16.5, w: 0.45, sec: 4.0, cores: 3, iz0: 35, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_5G6",    cat: "bt_multi", code: "QP1-DX-N C-8",desc: "Trifase + N + PE 400V 32A",       type: "FG16OM16", form: "1(5G6)",   d: 18.2, w: 0.60, sec: 6.0, cores: 3, iz0: 45, bendK: 8, sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_5G10",   cat: "bt_multi", code: "QGBT C-1",    desc: "Alimentazione Quadro Trifase 40A",type: "FG16OM16", form: "1(5G10)",  d: 21.4, w: 0.92, sec: 10.0,cores: 3, iz0: 63, bendK: 10,sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_5G16",   cat: "bt_multi", code: "QGBT C-2",    desc: "Dorsale Quadro Trifase 63A",     type: "FG16OM16", form: "1(5G16)",  d: 24.8, w: 1.35, sec: 16.0,cores: 3, iz0: 85, bendK: 10,sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "FG16_5G25",   cat: "bt_multi", code: "QGBT C-6",    desc: "Dorsale Quadro Generale 100A",   type: "FG16OM16", form: "1(5G25)",  d: 29.8, w: 2.05, sec: 25.0,cores: 3, iz0: 115,bendK: 10,sys: "BT_POWER", std: "CEI UNEL 35375 Cca-s3,d1,a3" },
+      { id: "H07RN_3G2.5", cat: "bt_multi", code: "CANT-3G2.5", desc: "Cavo Gomma Neoprene H07RN-F 3G2.5",type: "H07RN-F",  form: "1(3G2,5)", d: 13.5, w: 0.28, sec: 2.5, cores: 2, iz0: 30, bendK: 8, sys: "BT_POWER", std: "CEI EN 50525-2-21 450/750V" },
+      { id: "H07RN_4G4",   cat: "bt_multi", code: "POMP-4G4",   desc: "Cavo Gomma Sommerso Pompa 4G4",   type: "H07RN-F",  form: "1(4G4)",   d: 17.5, w: 0.48, sec: 4.0, cores: 3, iz0: 35, bendK: 8, sys: "BT_POWER", std: "CEI EN 50525-2-21 450/750V" },
+
+      // ==========================================
+      // 3. CAVI SEGNALI, COMANDO & AUSILIARI (FG16OH2R16 / LiYCY / KNX)
+      // ==========================================
+      { id: "OH2_2X1",     cat: "signal",   code: "SIG-2X1",    desc: "Segnale Schermato Nastro Cu 0.6/1kV",type: "FG16OH2R16", form: "1(2x1)",  d: 9.5,  w: 0.13, sec: 1.0, cores: 2, iz0: 15, bendK: 10,sys: "BT_POWER", std: "CEI 20-13 Schermato (Compatibile BT)" },
+      { id: "OH2_2X1.5",   cat: "signal",   code: "SIG-2X1.5",  desc: "Segnale Schermato Nastro Cu 0.6/1kV",type: "FG16OH2R16", form: "1(2x1,5)",d: 10.2, w: 0.16, sec: 1.5, cores: 2, iz0: 18, bendK: 10,sys: "BT_POWER", std: "CEI 20-13 Schermato (Compatibile BT)" },
+      { id: "OH2_4G1.5",   cat: "signal",   code: "CMD-4G1.5",  desc: "Comando Schermato Nastro Cu 4G1.5", type: "FG16OH2R16", form: "1(4G1,5)",d: 12.2, w: 0.23, sec: 1.5, cores: 3, iz0: 18, bendK: 10,sys: "BT_POWER", std: "CEI 20-13 Schermato (Compatibile BT)" },
+      { id: "OH2_7G1.5",   cat: "signal",   code: "CMD-7G1.5",  desc: "Ausiliari Quadro 7G1.5 Schermato",  type: "FG16OH2R16", form: "1(7G1,5)",d: 14.5, w: 0.34, sec: 1.5, cores: 3, iz0: 14, bendK: 10,sys: "BT_POWER", std: "CEI 20-13 Schermato (Compatibile BT)" },
+      { id: "OH2_12G1.5",  cat: "signal",   code: "CMD-12G1.5", desc: "Multifilare Ausiliari 12G1.5 Sch.",  type: "FG16OH2R16", form: "1(12G1,5)",d: 18.2, w: 0.55, sec: 1.5, cores: 3, iz0: 12, bendK: 10,sys: "BT_POWER", std: "CEI 20-13 Schermato (Compatibile BT)" },
+      { id: "LIYCY_2X0.75",cat: "signal",   code: "PLC-2X0.75", desc: "Trasmissione Dati/Analogico LiYCY",type: "LiYCY",     form: "2x0,75",   d: 5.8,  w: 0.05, sec: 0.75,cores: 2, iz0: 8,  bendK: 10,sys: "SPECIAL_ELV", std: "DIN 47100 Schermato Treccia" },
+      { id: "LIYCY_4X0.75",cat: "signal",   code: "PLC-4X0.75", desc: "Sonde Temperatura 4 Fili LiYCY",   type: "LiYCY",     form: "4x0,75",   d: 6.8,  w: 0.08, sec: 0.75,cores: 2, iz0: 8,  bendK: 10,sys: "SPECIAL_ELV", std: "DIN 47100 Schermato Treccia" },
+      { id: "BUS_KNX",     cat: "signal",   code: "BUS-KNX01",  desc: "Cavo Bus Building Automation KNX/EIB",type: "KNX Bus TP1", form: "2x2x0,8", d: 6.8,  w: 0.06, sec: 0.5, cores: 2, iz0: 6,  bendK: 10,sys: "SPECIAL_ELV", std: "CEI EN 50090 Certificato Verde" },
+
+      // ==========================================
+      // 4. RESISTENTI AL FUOCO PH120 & SICUREZZA (FTG10OM1 / FTG18OM16 / IRAI / EVAC)
+      // ==========================================
+      { id: "FTG18_2X1.5", cat: "fire",     code: "FIRE-2X1.5", desc: "Resistente al Fuoco PH120 2x1.5",    type: "FTG18OM16", form: "1(2x1,5)", d: 10.5, w: 0.15, sec: 1.5, cores: 2, iz0: 22, bendK: 10, sys: "BT_FIRE", std: "CEI 20-45 / UNI 9795 PH120" },
+      { id: "FTG18_3G2.5", cat: "fire",     code: "QE-VVF C-1", desc: "Pompe Antincendio / Sicurezza PH120",type: "FTG18OM16", form: "1(3G2,5)", d: 12.8, w: 0.24, sec: 2.5, cores: 2, iz0: 30, bendK: 10, sys: "BT_FIRE", std: "CEI 20-45 / UNI 9795 PH120" },
+      { id: "FTG18_4G4",   cat: "fire",     code: "FIRE-4G4",   desc: "Gruppo Elettrogeno Emergenza PH120",  type: "FTG18OM16", form: "1(4G4)",   d: 16.0, w: 0.42, sec: 4.0, cores: 3, iz0: 35, bendK: 10, sys: "BT_FIRE", std: "CEI 20-45 / UNI 9795 PH120" },
+      { id: "FTG18_4G10",  cat: "fire",     code: "FIRE-4G10",  desc: "Quadro Pompe VVF Sprinkler PH120",   type: "FTG18OM16", form: "1(4G10)",  d: 20.2, w: 0.85, sec: 10.0,cores: 3, iz0: 63, bendK: 10, sys: "BT_FIRE", std: "CEI 20-45 / UNI 9795 PH120" },
+      { id: "IRAI_LOOP",   cat: "fire",     code: "IRAI-LOOP1", desc: "Loop Rivelazione Incendio Fumi IRAI",type: "FTG18(O)M16", form: "1(2x1,5)", d: 8.2,  w: 0.09, sec: 1.5, cores: 2, iz0: 15, bendK: 10, sys: "SPECIAL_ELV", std: "CEI 20-105 Rosso Allarme" },
+      { id: "EVAC_100V",   cat: "fire",     code: "EVAC-SPK1",  desc: "Diffusione Sonora di Sicurezza EVAC 100V",type: "FTG18(O)M16", form: "1(2x2,5)", d: 9.8, w: 0.14, sec: 2.5, cores: 2, iz0: 20, bendK: 10, sys: "SPECIAL_ELV", std: "EN 54-24 / CEI 20-105 PH120" },
+
+      // ==========================================
+      // 5. RETI DATI STRUTTURATE & FIBRA OTTICA
+      // ==========================================
+      { id: "DATA_CAT6",   cat: "data",     code: "TD-CAT6",    desc: "Cablaggio Dati U/UTP Cat.6 LSZH",    type: "U/UTP Cat.6", form: "4x2x24AWG", d: 5.8,  w: 0.04, sec: 0.5, cores: 2, iz0: 4,  bendK: 8,  sys: "SPECIAL_ELV", std: "ISO/IEC 11801 Class E" },
+      { id: "DATA_CAT6A",  cat: "data",     code: "TD-CAT6A",   desc: "Rete Dati Schermata F/UTP Cat.6A 10G",type: "F/UTP Cat.6A", form: "4x2x23AWG", d: 7.3, w: 0.06, sec: 0.5, cores: 2, iz0: 5, bendK: 10, sys: "SPECIAL_ELV", std: "ISO/IEC 11801 Class EA" },
+      { id: "DATA_CAT7",   cat: "data",     code: "TD-CAT7",    desc: "Dorsale Dati S/FTP Cat.7 LSZH 1000MHz",type: "S/FTP Cat.7", form: "4x2x23AWG", d: 8.2, w: 0.07, sec: 0.5, cores: 2, iz0: 5, bendK: 10, sys: "SPECIAL_ELV", std: "ISO/IEC 11801 Class F" },
+      { id: "FO_4_OM4",    cat: "data",     code: "FO-4OM4",    desc: "Fibra Ottica Breakout 4 FO OM4 LSZH",type: "FO Breakout 4x", form: "4 FO 50/125", d: 6.2, w: 0.04, sec: 0.2, cores: 2, iz0: 1, bendK: 12, sys: "SPECIAL_ELV", std: "CEI EN 60794-2" },
+      { id: "FO_8_OM4",    cat: "data",     code: "FO-8OM4",    desc: "Fibra Ottica Breakout 8 FO OM4 LSZH",type: "FO Breakout 8x", form: "8 FO 50/125", d: 7.8, w: 0.06, sec: 0.2, cores: 2, iz0: 1, bendK: 12, sys: "SPECIAL_ELV", std: "CEI EN 60794-2" },
+      { id: "FO_12_OS2",   cat: "data",     code: "FO-12OS2",   desc: "Fibra Ottica Monomodale 12 FO OS2",  type: "FO Loose 12x", form: "12 FO 9/125", d: 7.0, w: 0.05, sec: 0.2, cores: 2, iz0: 1, bendK: 12, sys: "SPECIAL_ELV", std: "ITU-T G.652.D / EN 60794" },
+      { id: "FO_24_OS2",   cat: "data",     code: "FO-24OS2",   desc: "Fibra Ottica Monomodale 24 FO OS2",  type: "FO Loose 24x", form: "24 FO 9/125", d: 8.5, w: 0.07, sec: 0.2, cores: 2, iz0: 1, bendK: 12, sys: "SPECIAL_ELV", std: "ITU-T G.652.D / EN 60794" }
     ];
 
     // Mappa granulare basata sul diametro reale (mm) secondo tabelle dimensionali CEI UNEL 35310 / Prysmian / Baldassari
-    function inferCableSpecsByDiameter(d, codeStr = "") {
-      const upperCode = String(codeStr || "").toUpperCase();
-      // Se la sigla contiene indizi di circuiti speciali
-      if (/IRAI|FUMI|LOOP/i.test(upperCode) || (d >= 8.0 && d <= 8.8)) {
-        return { type: "FTG18(O)M16", form: "1(2x1,5)", sec: 1.5, cores: 2, iz0: 15, bendK: 10, sys: "SPECIAL_ELV" };
-      }
-      if (/EVAC|SPK/i.test(upperCode) || (d >= 9.4 && d <= 10.1)) {
-        return { type: "FTG18(O)M16", form: "1(2x2,5)", sec: 2.5, cores: 2, iz0: 20, bendK: 10, sys: "SPECIAL_ELV" };
-      }
-      if (/CAT6|DATI|LAN|UTP/i.test(upperCode) || d <= 7.9) {
+    // NOTA NORMATIVA: I cavi importati sono SEMPRE BT (sys: "BT_POWER"), salvo esplicita presenza di sigle di segnale/speciali.
+    function inferCableSpecsByDiameter(d, codeStr = "", layerStr = "") {
+      const combined = (String(codeStr || "") + " " + String(layerStr || "")).toUpperCase();
+      
+      // Controllo esplicito di cavi ausiliari / segnali / reti speciali
+      const isExplicitSignal = /(?:IRAI|FUMI|LOOP|EVAC|SPK|DIFFUS|CAT\s*[567]|DATI|LAN|UTP|FTP|BUS|KNX|FONIA|FIBRA|ELV|SEGNAL|SONOR)/i.test(combined);
+      const isExplicitFire = /(?:FTG10|FTG18|RESIST|INCEND|TAGLIAFUOCO|REI)/i.test(combined);
+
+      if (isExplicitSignal) {
+        if (/IRAI|FUMI|LOOP/i.test(combined)) {
+          return { type: "FTG18(O)M16", form: "1(2x1,5)", sec: 1.5, cores: 2, iz0: 15, bendK: 10, sys: "SPECIAL_ELV" };
+        }
+        if (/EVAC|SPK|DIFFUS|SONOR/i.test(combined)) {
+          return { type: "FTG18(O)M16", form: "1(2x2,5)", sec: 2.5, cores: 2, iz0: 20, bendK: 10, sys: "SPECIAL_ELV" };
+        }
+        if (/BUS|KNX/i.test(combined)) {
+          return { type: "KNX Bus TP1", form: "2x2x0,8", sec: 0.5, cores: 2, iz0: 6, bendK: 10, sys: "SPECIAL_ELV" };
+        }
+        if (/FIBRA/i.test(combined)) {
+          return { type: "Fibra Ottica", form: "8 FO OM4", sec: 0.2, cores: 2, iz0: 1, bendK: 12, sys: "SPECIAL_ELV" };
+        }
         return { type: "F/UTP Cat.6A", form: "4x2x23AWG", sec: 0.5, cores: 2, iz0: 5, bendK: 10, sys: "SPECIAL_ELV" };
       }
 
-      // Cavi BT in base al diametro effettivo misurato dal cerchio CAD (in mm)
-      if (d <= 9.3)  return { type: "FG16M16", form: "1(1x10)",  sec: 10.0, cores: 1, iz0: 63,  bendK: 10, sys: "BT_POWER" };
-      if (d <= 10.8) return { type: "FG16M16", form: "1(1x16)",  sec: 16.0, cores: 1, iz0: 85,  bendK: 10, sys: "BT_POWER" };
-      if (d <= 12.0) return { type: "FG16OM16", form: "1(3G1,5)", sec: 1.5,  cores: 2, iz0: 20,  bendK: 8,  sys: "BT_POWER" };
-      if (d <= 12.8) return { type: "FG16M16", form: "1(1x25)",  sec: 25.0, cores: 1, iz0: 112, bendK: 10, sys: "BT_POWER" };
-      if (d <= 13.4) return { type: "FG16OM16", form: "1(4G1,5)", sec: 1.5,  cores: 3, iz0: 18,  bendK: 8,  sys: "BT_POWER" };
-      if (d <= 14.3) return { type: "FG16OM16", form: "1(3G2,5)", sec: 2.5,  cores: 2, iz0: 27,  bendK: 8,  sys: "BT_POWER" };
-      if (d <= 14.7) return { type: "FTG18OM16", form: "1(3G2,5)", sec: 2.5, cores: 2, iz0: 27,  bendK: 10, sys: "BT_FIRE" };
-      if (d <= 15.1) return { type: "FG16OM16", form: "1(5G2,5)", sec: 2.5,  cores: 3, iz0: 24,  bendK: 8,  sys: "BT_POWER" };
-      if (d <= 15.8) return { type: "FG16OM16", form: "1(3G4)",   sec: 4.0,  cores: 2, iz0: 37,  bendK: 8,  sys: "BT_POWER" };
-      if (d <= 17.0) return { type: "FG16OM16", form: "1(5G4)",   sec: 4.0,  cores: 3, iz0: 32,  bendK: 8,  sys: "BT_POWER" };
-      if (d <= 17.8) return { type: "FG16OM16", form: "1(3G6)",   sec: 6.0,  cores: 2, iz0: 48,  bendK: 8,  sys: "BT_POWER" };
-      if (d <= 19.0) return { type: "FG16OM16", form: "1(5G6)",   sec: 6.0,  cores: 3, iz0: 41,  bendK: 8,  sys: "BT_POWER" };
-      if (d <= 20.2) return { type: "FG16M16", form: "1(1x95)",  sec: 95.0, cores: 1, iz0: 258, bendK: 12, sys: "BT_POWER" };
-      if (d <= 21.4) return { type: "FG16OM16", form: "1(5G10)",  sec: 10.0, cores: 3, iz0: 57,  bendK: 10, sys: "BT_POWER" };
-      if (d <= 23.0) return { type: "FG16M16/FG17 PE", form: "4(1x10)+(1PE10)", sec: 10.0, cores: 1, iz0: 63, bendK: 10, sys: "BT_POWER" };
-      if (d <= 24.5) return { type: "FG16OM16", form: "1(5G16)",  sec: 16.0, cores: 3, iz0: 76,  bendK: 10, sys: "BT_POWER" };
-      if (d <= 26.5) return { type: "FG16M16/FG17 PE", form: "4(1x16)+(1PE16)", sec: 16.0, cores: 1, iz0: 85, bendK: 10, sys: "BT_POWER" };
-      if (d <= 29.0) return { type: "FG16M16/FG17 PE", form: "4(1x25)+(1PE16)", sec: 25.0, cores: 1, iz0: 112,bendK: 12, sys: "BT_POWER" };
-      if (d <= 33.0) return { type: "FG16M16/FG17 PE", form: "3(1x35)+(1x25)+(1PE16)", sec: 35.0, cores: 1, iz0: 138, bendK: 12, sys: "BT_POWER" };
-      return { type: "FG16M16/FG17 PE", form: "3(1x50)+(1x25)+(1PE25)", sec: 50.0, cores: 1, iz0: 168, bendK: 12, sys: "BT_POWER" };
+      if (isExplicitFire) {
+        if (d <= 14.5) return { type: "FTG18OM16", form: "1(3G2,5)", sec: 2.5, cores: 2, iz0: 27, bendK: 10, sys: "BT_FIRE" };
+        if (d <= 18.0) return { type: "FTG18OM16", form: "1(4G4)",   sec: 4.0, cores: 3, iz0: 36, bendK: 10, sys: "BT_FIRE" };
+        return { type: "FTG18OM16", form: "1(4G10)",  sec: 10.0, cores: 3, iz0: 60, bendK: 10, sys: "BT_FIRE" };
+      }
+
+      // TUTTI GLI ALTRI CAVI SONO SEMPRE BASSA TENSIONE (BT_POWER)
+      // Mappatura continua secondo tabelle dimensionali standard CEI UNEL 35375 / CEI 20-22
+      if (d <= 6.8)  return { type: "FS17",     form: "1(1x2,5)", sec: 2.5,  cores: 1, iz0: 24,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 7.8)  return { type: "FS17",     form: "1(1x4)",   sec: 4.0,  cores: 1, iz0: 32,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 8.8)  return { type: "FS17",     form: "1(1x6)",   sec: 6.0,  cores: 1, iz0: 42,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 9.8)  return { type: "FG16M16",  form: "1(1x10)",  sec: 10.0, cores: 1, iz0: 75,  bendK: 10, sys: "BT_POWER" };
+      if (d <= 10.8) return { type: "FG16M16",  form: "1(1x16)",  sec: 16.0, cores: 1, iz0: 100, bendK: 10, sys: "BT_POWER" };
+      if (d <= 11.6) return { type: "FG16OM16", form: "1(3G1,5)", sec: 1.5,  cores: 2, iz0: 22,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 12.8) return { type: "FG16M16",  form: "1(1x25)",  sec: 25.0, cores: 1, iz0: 135, bendK: 10, sys: "BT_POWER" };
+      if (d <= 13.5) return { type: "FG16OM16", form: "1(4G1,5)", sec: 1.5,  cores: 3, iz0: 19,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 14.4) return { type: "FG16OM16", form: "1(3G2,5)", sec: 2.5,  cores: 2, iz0: 30,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 15.2) return { type: "FG16OM16", form: "1(5G2,5)", sec: 2.5,  cores: 3, iz0: 26,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 16.0) return { type: "FG16OM16", form: "1(3G4)",   sec: 4.0,  cores: 2, iz0: 40,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 17.2) return { type: "FG16OM16", form: "1(5G4)",   sec: 4.0,  cores: 3, iz0: 35,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 18.2) return { type: "FG16OM16", form: "1(5G6)",   sec: 6.0,  cores: 3, iz0: 45,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 20.5) return { type: "FG16M16",  form: "1(1x95)",  sec: 95.0, cores: 1, iz0: 328, bendK: 12, sys: "BT_POWER" };
+      if (d <= 21.8) return { type: "FG16OM16", form: "1(5G10)",  sec: 10.0, cores: 3, iz0: 63,  bendK: 10, sys: "BT_POWER" };
+      if (d <= 23.5) return { type: "FG16M16",  form: "1(1x120)", sec: 120.0, cores: 1, iz0: 383, bendK: 12, sys: "BT_POWER" };
+      if (d <= 25.0) return { type: "FG16OM16", form: "1(5G16)",  sec: 16.0, cores: 3, iz0: 85,  bendK: 10, sys: "BT_POWER" };
+      if (d <= 27.5) return { type: "FG16M16",  form: "1(1x185)", sec: 185.0, cores: 1, iz0: 510, bendK: 12, sys: "BT_POWER" };
+      if (d <= 31.0) return { type: "FG16M16",  form: "1(1x240)", sec: 240.0, cores: 1, iz0: 607, bendK: 12, sys: "BT_POWER" };
+      if (d <= 35.0) return { type: "FG16M16",  form: "1(1x300)", sec: 300.0, cores: 1, iz0: 703, bendK: 12, sys: "BT_POWER" };
+      return { type: "FG16M16", form: "1(1x400)", sec: 400.0, cores: 1, iz0: 823, bendK: 12, sys: "BT_POWER" };
     }
 
     // Determina se un cavo è Unipolare (es. "1x...", "4(1x10)", "FG16M16", "FS17")
@@ -803,16 +1018,11 @@
 
     // Estrae la sezione nominale in mm² da una stringa formazione con fix standard metrico
     function parseSectionFromForm(formStr, fallbackSec = 2.5) {
-      // Blocco di sicurezza: se la stringa contiene chiari riferimenti AWG, ritorna al fallback
       if (/AWG/i.test(formStr)) return fallbackSec;
-      
       const m = String(formStr || "").match(/[xXGg](\d+(?:[.,]\d+)?)/);
       if (m) {
         let val = parseFloat(m[1].replace(",", "."));
-        // Array di sezioni commerciali europee standard (mm²)
         const standardSections = [0.5, 1, 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400, 500, 630];
-        
-        // Snapping alla sezione metrica corretta più vicina
         let closest = standardSections.reduce((prev, curr) => 
           Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev
         );
@@ -822,12 +1032,42 @@
     }
 
     const SUPPORT_SPECS = {
-      wall_light:     { name: "Mensola Parete Leggera C30", swl15m: 35,  armH: 8,  strut: false },
-      wall_med:       { name: "Mensola Parete Rinforzata Saetta", swl15m: 75, armH: 10, strut: true },
-      wall_heavy:     { name: "Mensola Parete Pesante Doppia C50", swl15m: 150, armH: 14, strut: true },
-      ceiling_trap:   { name: "Trapezio Soffitto 2xM10 + C40", swl15m: 210, armH: 12, strut: false },
-      ceiling_single: { name: "Pendino Centrale Monotirante M10", swl15m: 45,  armH: 10, strut: false },
-      floor_omega:    { name: "Supporto a Pavimento su Omega C40", swl15m: 180, armH: 15, strut: false }
+      wall_light: {
+        name: "Mensola Parete Leggera C30",
+        desc: "Profilato a C 30x15 sp.1.5mm, fissaggio a parete con 1 tassello M8, indicata per carichi leggeri e segnali",
+        swl10m: 55, swl15m: 35, swl20m: 22, swl25m: 14, swl30m: 10,
+        armH: 8, strut: false, type: "wall"
+      },
+      wall_med: {
+        name: "Mensola Rinforzata con Saetta",
+        desc: "Braccio profilato 40x20 sp.2.0mm con saetta diagonale di rinforzo saldata, fissaggio a 2 tasselli M10",
+        swl10m: 120, swl15m: 75, swl20m: 50, swl25m: 35, swl30m: 24,
+        armH: 10, strut: true, type: "wall"
+      },
+      wall_heavy: {
+        name: "Mensola Parete Pesante Doppia C50",
+        desc: "Doppio profilato a C 50x30 sp.2.5mm con tirante superiore e piastra 4 fori M12 per canalizzazioni pesanti",
+        swl10m: 240, swl15m: 150, swl20m: 100, swl25m: 75, swl30m: 55,
+        armH: 14, strut: true, type: "wall"
+      },
+      ceiling_trap: {
+        name: "Trapezio Soffitto 2xM10 + C40",
+        desc: "Traversina a C 40x40 sospesa con 2 barre filettate M10 ancorate a solaio con tasselli chimici / antisfilamento",
+        swl10m: 320, swl15m: 210, swl20m: 145, swl25m: 105, swl30m: 80,
+        armH: 12, strut: false, type: "ceiling"
+      },
+      ceiling_single: {
+        name: "Pendino Centrale Monotirante M10",
+        desc: "Sospensione centrale a singola barra filettata M10 con bilancino basculante per canali compatti (L max 200mm)",
+        swl10m: 70, swl15m: 45, swl20m: 30, swl25m: 20, swl30m: 12,
+        armH: 10, strut: false, type: "ceiling"
+      },
+      floor_omega: {
+        name: "Supporto a Pavimento su Omega C40",
+        desc: "Profilato a Omega con piastre di base e piedini antivibranti in gomma per canalizzazioni a pavimento flottante / CED",
+        swl10m: 260, swl15m: 180, swl20m: 130, swl25m: 95, swl30m: 70,
+        armH: 15, strut: false, type: "floor"
+      }
     };
 
     const MAT_SPECS = {
@@ -889,20 +1129,41 @@
         .toUpperCase();
     }
 
+    // Estrae il codice circuito base eliminando suffissi di fase / polo / conduttore unipolare
+    function getBaseCircuitCode(str) {
+      let s = String(str || "").trim();
+      // Elimina indicazioni di formazione inline tra parentesi, es: " (4(1x10))" o " (1x185)"
+      s = s.replace(/\s*\(\s*\d*\(?\d+[xXGg]\d+(?:[.,]\d+)?\)?\s*\)\s*$/i, "").trim();
+      // Non tocca sigle temporanee generiche come CAVO-1 se iniziano con CAVO-
+      if (/^CAVO-\d+$/i.test(s)) return s;
+      // Elimina suffissi conduttore: es. - L1, -L2, L3, _N, - PE, (L1), (PE), .1, /2, (1), ecc.
+      // ma NON intacca numerazioni di circuito come C-3 o C-12
+      s = s.replace(/(?:[-_/\s]+(?:(?:FASE|COND|POLO)\s*)?(?:L[123]|F[123]|R|S|T|N|PE|TERRA)|[./]\d+|\(\s*(?:L[123]|F[123]|R|S|T|N|PE|TERRA|[1-9])\s*\))$/i, "").trim();
+      return s;
+    }
+
     function findInUnifilareDict(codeStr) {
+      if (!codeStr) return null;
       const k1 = normalizeLineKey(codeStr);
       if (unifilareDict[k1]) return unifilareDict[k1];
-      // Eventuale fallback senza spazi attorno a C- o trattini
+      
+      const base = getBaseCircuitCode(codeStr);
+      const kBase = normalizeLineKey(base);
+      if (unifilareDict[kBase]) return unifilareDict[kBase];
+
+      // Fallback senza spazi
       const kCompact = k1.replace(/\s+/g, "");
+      const kBaseCompact = kBase.replace(/\s+/g, "");
       for (const [k, val] of Object.entries(unifilareDict)) {
-        if (k.replace(/\s+/g, "") === kCompact) return val;
+        const c = k.replace(/\s+/g, "");
+        if (c === kCompact || c === kBaseCompact) return val;
       }
       return null;
     }
 
     function calcAllowedLinearLoadKgM(supportKey, spanM) {
       const spec = SUPPORT_SPECS[supportKey] || SUPPORT_SPECS.wall_med;
-      const baseKgMAt15 = spec.swl15m / 1.5;
+      const baseKgMAt15 = (spec.swl15m || 75) / 1.5;
       const hFactor = Math.pow(state.height / 75, 0.35) * Math.pow(state.thk / 1.5, 0.5);
       return +(baseKgMAt15 * Math.pow(1.5 / spanM, 1.55) * hFactor).toFixed(1);
     }
@@ -943,11 +1204,25 @@
     function initCatalogDropdown() {
       const sel = document.getElementById("selCableCatalog");
       sel.innerHTML = "";
-      CABLE_CATALOG.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.id;
-        opt.textContent = `${c.type} ${c.form} — ${c.desc} (Ø ${c.d}mm)`;
-        sel.appendChild(opt);
+      const categories = [
+        { cat: "bt_uni",   label: "⚡ Cavi BT Unipolari (1X) — FG16M16 / FS17" },
+        { cat: "bt_multi", label: "🔌 Cavi BT Multipolari — FG16OM16 / H07RN-F" },
+        { cat: "signal",   label: "📡 Segnali, Comando & Bus KNX — FG16OH2R16 / LiYCY" },
+        { cat: "fire",     label: "🔥 Resistenti al Fuoco PH120 & EVAC — FTG18OM16" },
+        { cat: "data",     label: "🌐 Reti Dati LAN & Fibra Ottica — Cat.6A/7 / FO" }
+      ];
+
+      categories.forEach(group => {
+        const grpEl = document.createElement("optgroup");
+        grpEl.label = group.label;
+        const items = CABLE_CATALOG.filter(c => c.cat === group.cat);
+        items.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = `${c.type} ${c.form} — ${c.desc} (Ø${c.d}mm, Iz0=${c.iz0}A)`;
+          grpEl.appendChild(opt);
+        });
+        sel.appendChild(grpEl);
       });
     }
 
@@ -1111,8 +1386,10 @@
 
     function findFreePositionNear(cable, targetX, targetY) {
       const W = state.width, H = state.height, r = cable.d / 2;
-      const cx = Math.max(r + 0.4, Math.min(W - r - 0.4, targetX));
-      const cy = Math.max(r, Math.min(H - r - 0.4, targetY));
+      const defX = Number.isFinite(targetX) ? targetX : (Number.isFinite(cable.x) && cable.x >= 0 ? cable.x : W / 2);
+      const defY = Number.isFinite(targetY) ? targetY : (Number.isFinite(cable.y) && cable.y >= 0 ? cable.y : r + 1);
+      const cx = Math.max(r + 0.4, Math.min(W - r - 0.4, defX));
+      const cy = Math.max(r, Math.min(H - r - 0.4, defY));
       if (isSpotFree(cable, cx, cy)) return { x: +(cx.toFixed(1)), y: +(cy.toFixed(1)) };
 
       for (let rad = 0.8; rad <= Math.max(W, H); rad += 0.8) {
@@ -1215,7 +1492,9 @@
         });
       } else {
         const seps = getSeptumXList();
-        if (seps.length === 0) {
+        const hasSpecialElv = state.cables.some(c => c.sys === "SPECIAL_ELV");
+        if (seps.length === 0 || !hasSpecialElv) {
+          // In assenza di cavi di segnale, posa naturale uniforme senza segregazione forzata
           packByGravity(state.cables, 0, W);
         } else if (seps.length === 1) {
           packByGravity(state.cables.filter(c => c.sys !== "SPECIAL_ELV"), 0, seps[0]);
@@ -1266,15 +1545,22 @@
       const sepBounds = [0, ...getSeptumXList(), W];
       let segConform = true;
       let segDetail = `Art. 528.1 OK (Kr=${kr} su ${nLayers} str.)`;
-      for (let sIdx = 0; sIdx < sepBounds.length - 1; sIdx++) {
-        const x0 = sepBounds[sIdx], x1 = sepBounds[sIdx + 1];
-        const compCables = state.cables.filter(c => c.x >= x0 - 0.5 && c.x <= x1 + 0.5);
-        const hasPower = compCables.some(c => c.sys === "BT_POWER" || c.sys === "BT_FIRE");
-        const unshieldedElv = compCables.filter(c => c.sys === "SPECIAL_ELV" && !/FTG18|FG16|0,6\/1|1kV|C-4/i.test(c.type));
-        if (hasPower && unshieldedElv.length > 0) {
-          segConform = false;
-          segDetail = `Conflitto ${unshieldedElv[0].code}: inserire Setto!`;
-          break;
+      const hasAnySignal = state.cables.some(c => c.sys === "SPECIAL_ELV");
+
+      if (!hasAnySignal) {
+        segConform = true;
+        segDetail = `Solo Cavi BT Potenza (Kr=${kr} su ${nLayers} str.)`;
+      } else {
+        for (let sIdx = 0; sIdx < sepBounds.length - 1; sIdx++) {
+          const x0 = sepBounds[sIdx], x1 = sepBounds[sIdx + 1];
+          const compCables = state.cables.filter(c => c.x >= x0 - 0.5 && c.x <= x1 + 0.5);
+          const hasPower = compCables.some(c => c.sys === "BT_POWER" || c.sys === "BT_FIRE");
+          const unshieldedElv = compCables.filter(c => c.sys === "SPECIAL_ELV" && !/FTG18|FG16|0,6\/1|1kV|C-4|SCHERM|OH2/i.test(c.type));
+          if (hasPower && unshieldedElv.length > 0) {
+            segConform = false;
+            segDetail = `Conflitto ${unshieldedElv[0].code}: inserire Setto!`;
+            break;
+          }
         }
       }
 
@@ -1326,6 +1612,8 @@
         pullDaN, maxPullDaN, maxBendR, critCode, fitR,
         jouleWm: +jouleWm.toFixed(1), maxDv: +maxDv.toFixed(2), bom
       };
+      state.metrics = metrics;
+      if (typeof window !== "undefined") window.metrics = metrics;
 
       document.getElementById("kpiAreaUsed").textContent = Math.round(usedArea);
       document.getElementById("kpiAreaTot").textContent = Math.round(trayArea);
@@ -1520,6 +1808,24 @@
     window.addEventListener("mousemove", (e) => { if (isDraggingSpanOnChart) updateSpanFromChartMouse(e); });
     window.addEventListener("mouseup", () => { isDraggingSpanOnChart = false; });
 
+    // Touch support per il diagramma di carico su mobile e tablet
+    lcCanvas.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 1) {
+        isDraggingSpanOnChart = true;
+        updateSpanFromChartMouse({ clientX: e.touches[0].clientX });
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    lcCanvas.addEventListener("touchmove", (e) => {
+      if (isDraggingSpanOnChart && e.touches.length === 1) {
+        updateSpanFromChartMouse({ clientX: e.touches[0].clientX });
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    window.addEventListener("touchend", () => { isDraggingSpanOnChart = false; });
+
     function addCableFromPortfolio() {
       const id = document.getElementById("selCableCatalog").value;
       const qty = Math.max(1, Math.min(30, parseInt(document.getElementById("inpCableQty").value, 10) || 1));
@@ -1684,6 +1990,18 @@
         c.form = val;
         c.sec = parseSectionFromForm(val, c.sec);
         c.cores = isUnipolarCable(c) ? 1 : (val.includes("5G") || val.includes("4G") ? 3 : 2);
+      } else if (field === "desc") {
+        c.desc = val;
+        if (isUnipolarCable(c)) {
+          const base = getBaseCircuitCode(c.code);
+          if (base && !base.startsWith("CAVO-")) {
+            state.cables.forEach(other => {
+              if (other !== c && getBaseCircuitCode(other.code) === base) {
+                other.desc = val;
+              }
+            });
+          }
+        }
       } else {
         c[field] = val;
       }
@@ -1965,6 +2283,11 @@
         row.items.push(t);
       });
 
+      // Funzione di riconoscimento sigle/codici linea per evitare falsi positivi come descrizione
+      const isCodeLike = (s) =>
+        !/^CANALINA\b|^SCALA|^DATA|^DISEGNATORE|^VISTO|^DESCRIZIONE|^REV\b|^POS\b|^SIGLA\b|^Base\s+L|^H\s*=/i.test(s) &&
+        (/[A-Z0-9]+.*C-\d+/i.test(s) || /^(?:QGBT|QP|QE|UPS|IRAI|EVAC|TD|LINEA|CAVO)/i.test(s) || /^#\d+\s+/i.test(s));
+
       textRows.forEach(row => {
         if (row.items.length < 2) return;
         row.items.sort((a, b) => a.x - b.x);
@@ -1983,6 +2306,7 @@
           s !== codeCandidate &&
           s !== formCandidate &&
           s !== typeCandidate &&
+          !isCodeLike(s) &&
           !/^#?\d+$/.test(s) &&
           !/^\d+(?:[.,]\d+)?\s*(?:mm|kg|daN)?$/i.test(s) &&
           !/^(?:BT|ELV|POS|SIGLA|TIPO|FORMAZIONE)$/i.test(s) &&
@@ -1990,18 +2314,22 @@
         );
 
         const normKey = normalizeLineKey(codeCandidate);
-        dwgTableByCode[normKey] = {
+        const baseCandidate = getBaseCircuitCode(codeCandidate);
+        const normBaseKey = normalizeLineKey(baseCandidate);
+        const rowData = {
           rawCode: codeCandidate,
+          baseCode: baseCandidate,
           form: formCandidate || null,
           type: typeCandidate || null,
           desc: descCandidate || null
         };
+        dwgTableByCode[normKey] = rowData;
+        if (!dwgTableByCode[normBaseKey]) {
+          dwgTableByCode[normBaseKey] = rowData;
+        }
       });
 
       // 4. ESTRAZIONE SIGLE SULLE BANDIERINE VICINO ALLA SEZIONE
-      const isCodeLike = (s) =>
-        !/^CANALINA\b|^SCALA|^DATA|^DISEGNATORE|^VISTO|^DESCRIZIONE|^REV\b|^POS\b|^SIGLA\b|^Base\s+L|^H\s*=/i.test(s) &&
-        (/[A-Z0-9]+.*C-\d+/i.test(s) || /^(?:QGBT|QP|QE|UPS|IRAI|EVAC|TD|LINEA|CAVO)/i.test(s) || /^#\d+\s+/i.test(s));
 
       const calloutTexts = rawTexts.filter(t =>
         (isCodeLike(t.str) || /Testi|Bandierine/i.test(t.lay)) &&
@@ -2081,15 +2409,17 @@
 
         const parsedLbl = parseCalloutLabelString(matchedLblObj ? matchedLblObj.str : `CAVO-${idx + 1}`);
         const exactCode = parsedLbl.cleanCode || `CAVO-${idx + 1}`;
+        const baseCircuit = getBaseCircuitCode(exactCode);
         const normKey = normalizeLineKey(exactCode);
+        const normBaseKey = normalizeLineKey(baseCircuit);
 
         const relX = +(cir.cx - origX).toFixed(1);
         const relY = +(cir.cy - origY).toFixed(1);
         const d = cir.d;
 
-        const uInfo = findInUnifilareDict(exactCode);
-        const dwgRow = dwgTableByCode[normKey];
-        const diamSpec = inferCableSpecsByDiameter(d, exactCode);
+        const uInfo = findInUnifilareDict(exactCode) || findInUnifilareDict(baseCircuit);
+        const dwgRow = dwgTableByCode[normKey] || dwgTableByCode[normBaseKey];
+        const diamSpec = inferCableSpecsByDiameter(d, exactCode, matchedLblObj ? matchedLblObj.lay : "");
 
         const finalForm = (uInfo && uInfo.form) || (dwgRow && dwgRow.form) || parsedLbl.inlineForm || diamSpec.form;
         const finalType = (uInfo && uInfo.cable) || (dwgRow && dwgRow.type) || diamSpec.type;
@@ -2118,6 +2448,72 @@
           form: finalForm,
           sys: diamSpec.sys
         };
+      });
+
+      // =========================================================================
+      // EREDITARIETÀ DESCRIZIONE PER CIRCUITI UNIPOLARI E RAGGRUPPAMENTO
+      // =========================================================================
+      const circuitGroups = {};
+      state.cables.forEach(c => {
+        const base = getBaseCircuitCode(c.code);
+        if (!circuitGroups[base]) circuitGroups[base] = [];
+        circuitGroups[base].push(c);
+      });
+
+      // Associazione conduttori per formazioni unipolari (es. 4(1x185), 3(1x240)) con cerchi CAVO-x adiacenti
+      Object.entries(circuitGroups).forEach(([base, group]) => {
+        if (!base || base.startsWith("CAVO-")) return;
+        const main = group[0];
+        const formStr = String(main.form || "");
+        let expectedCount = 1;
+        const mCount = formStr.match(/^(\d+)\s*\(?\s*1[xX]\d+/i) || formStr.match(/^(\d+)[xX]\s*1[xX]\d+/i);
+        if (mCount) expectedCount = parseInt(mCount[1], 10);
+        else if (/3\(1x.*PE/i.test(formStr)) expectedCount = 5;
+        else if (/3\(1x/i.test(formStr)) expectedCount = 4;
+
+        if (expectedCount > group.length) {
+          const missing = expectedCount - group.length;
+          const candidates = state.cables.filter(c =>
+            c.code.startsWith("CAVO-") && Math.abs(c.d - main.d) <= 3.0
+          );
+          candidates.sort((a, b) => Math.hypot(a.x - main.x, a.y - main.y) - Math.hypot(b.x - main.x, b.y - main.y));
+          const toAdd = candidates.slice(0, missing);
+          toAdd.forEach((tc, idx) => {
+            const phaseSuffixes = ["L2", "L3", "N", "PE"];
+            tc.code = `${base} - ${phaseSuffixes[group.length - 1 + idx] || (group.length + idx + 1)}`;
+            tc.type = main.type;
+            tc.form = main.form;
+            tc.cores = 1;
+            tc.sys = main.sys;
+            group.push(tc);
+          });
+        }
+      });
+
+      // Propagazione rigorosa della descrizione a TUTTI i conduttori di ciascun circuito unipolare
+      Object.entries(circuitGroups).forEach(([base, group]) => {
+        if (!base || base.startsWith("CAVO-")) return;
+        
+        let validDesc = null;
+        for (const c of group) {
+          if (c.desc && !c.desc.startsWith("Alimentazione linea CAVO-") && c.desc !== `Alimentazione linea ${c.code}`) {
+            validDesc = c.desc;
+            break;
+          }
+        }
+        if (!validDesc) {
+          const u = findInUnifilareDict(base);
+          if (u && u.desc) validDesc = u.desc;
+          const dRow = dwgTableByCode[normalizeLineKey(base)];
+          if (dRow && dRow.desc) validDesc = dRow.desc;
+        }
+
+        const isAnyUni = group.some(c => isUnipolarCable(c));
+        if (validDesc && (isAnyUni || group.length > 1)) {
+          group.forEach(c => {
+            c.desc = validDesc;
+          });
+        }
       });
 
       pushStateToUI();
@@ -2822,6 +3218,401 @@
       const r = canvas.getBoundingClientRect();
       zoomBy(e.deltaY < 0 ? 1.15 : 0.87, e.clientX - r.left, e.clientY - r.top);
     }, { passive: false });
+
+    // ============================================================================
+    // GESTIONE GESTI TOUCH NATIVI SU CAD CANVAS (1 DITO PAN / TRASCINA, 2 DITA PINCH-ZOOM)
+    // ============================================================================
+    let touchStartDist = 0;
+    let touchStartScale = 1;
+    let touchStartMidpoint = { x: 0, y: 0 };
+    let touchDraggingCable = null;
+    let touchPanning = false;
+    let touchPanOrigin = { x: 0, y: 0 };
+    let lastTapTime = 0;
+
+    canvas.addEventListener("touchstart", e => {
+      if (e.touches.length === 1) {
+        const t0 = e.touches[0];
+        const r = canvas.getBoundingClientRect();
+        const pt = screenToWorld(t0.clientX - r.left, t0.clientY - r.top);
+        
+        // Rilevamento doppio tocco per fitAll()
+        const now = Date.now();
+        if (now - lastTapTime < 300) {
+          fitAll();
+          lastTapTime = 0;
+          e.preventDefault();
+          return;
+        }
+        lastTapTime = now;
+
+        if (rulerActive) {
+          if (!rulerP1 || (rulerP1 && rulerP2)) { rulerP1 = pt; rulerP2 = pt; } else { rulerP2 = pt; }
+          drawScene();
+          e.preventDefault();
+          return;
+        }
+
+        // Cerca cavo sotto il tocco
+        touchDraggingCable = null;
+        for (let i = state.cables.length - 1; i >= 0; i--) {
+          const c = state.cables[i];
+          if (Math.hypot(pt.x - c.x, pt.y - c.y) <= (c.d / 2) + 3) {
+            touchDraggingCable = c;
+            break;
+          }
+        }
+
+        if (touchDraggingCable) {
+          e.preventDefault();
+        } else {
+          touchPanning = true;
+          touchPanOrigin = { x: t0.clientX - camX, y: t0.clientY - camY };
+        }
+      } else if (e.touches.length === 2) {
+        // Pinch-to-zoom fluido con 2 dita
+        e.preventDefault();
+        touchDraggingCable = null;
+        touchPanning = false;
+        const t0 = e.touches[0], t1 = e.touches[1];
+        touchStartDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+        touchStartScale = camScale;
+        const r = canvas.getBoundingClientRect();
+        touchStartMidpoint = {
+          x: (t0.clientX + t1.clientX) / 2 - r.left,
+          y: (t0.clientY + t1.clientY) / 2 - r.top
+        };
+      }
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", e => {
+      const r = canvas.getBoundingClientRect();
+      if (e.touches.length === 1) {
+        const t0 = e.touches[0];
+        const pt = screenToWorld(t0.clientX - r.left, t0.clientY - r.top);
+        
+        if (rulerActive && rulerP1) {
+          rulerP2 = pt;
+          drawScene();
+          e.preventDefault();
+          return;
+        }
+
+        if (touchDraggingCable) {
+          e.preventDefault();
+          const oldX = touchDraggingCable.x, oldY = touchDraggingCable.y;
+          const pos = resolveNonOverlappingPosition(touchDraggingCable, pt.x, pt.y);
+          const dx = pos.x - oldX, dy = pos.y - oldY;
+          touchDraggingCable.x = pos.x; touchDraggingCable.y = pos.y;
+          touchDraggingCable.origX = pos.x; touchDraggingCable.origY = pos.y;
+          if (touchDraggingCable.trefoil && touchDraggingCable.trefoilGroupId) {
+            state.cables.forEach(other => {
+              if (other !== touchDraggingCable && other.trefoilGroupId === touchDraggingCable.trefoilGroupId) {
+                other.x = +(other.x + dx).toFixed(1);
+                other.y = +(other.y + dy).toFixed(1);
+                other.origX = other.x;
+                other.origY = other.y;
+              }
+            });
+          }
+          drawScene();
+        } else if (touchPanning) {
+          e.preventDefault();
+          camX = t0.clientX - touchPanOrigin.x;
+          camY = t0.clientY - touchPanOrigin.y;
+          drawScene();
+        }
+      } else if (e.touches.length === 2) {
+        e.preventDefault();
+        const t0 = e.touches[0], t1 = e.touches[1];
+        const curDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+        if (touchStartDist > 5) {
+          const factor = curDist / touchStartDist;
+          const newScale = Math.max(0.2, Math.min(25, touchStartScale * factor));
+          const wPt = screenToWorld(touchStartMidpoint.x, touchStartMidpoint.y);
+          camScale = newScale;
+          camX = touchStartMidpoint.x - wPt.x * camScale;
+          camY = touchStartMidpoint.y + wPt.y * camScale;
+          drawScene();
+        }
+      }
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", e => {
+      if (touchDraggingCable) {
+        touchDraggingCable = null;
+        updateTableUI();
+      }
+      if (e.touches.length === 0) {
+        touchPanning = false;
+        touchStartDist = 0;
+      } else if (e.touches.length === 1) {
+        const t0 = e.touches[0];
+        touchPanning = true;
+        touchPanOrigin = { x: t0.clientX - camX, y: t0.clientY - camY };
+      }
+    });
+
+    canvas.addEventListener("touchcancel", () => {
+      touchDraggingCable = null;
+      touchPanning = false;
+      touchStartDist = 0;
+    });
+
+    // ============================================================================
+    // GESTIONE RESPONSIVE MOBILE VIEW SWITCHER & MODALE DATABASE TECNICO
+    // ============================================================================
+    let currentMobileView = "controls"; // "controls" | "cad" | "results"
+    if (typeof window !== "undefined") window.currentMobileView = currentMobileView;
+    let currentDbCategory = "all";
+
+    function setMobileView(view) {
+      currentMobileView = view;
+      if (typeof window !== "undefined") window.currentMobileView = view;
+      const isMobile = window.innerWidth < 1024;
+      const leftCol = document.getElementById("leftColSection");
+      const cadView = document.getElementById("cadViewportContainer");
+      const distView = document.getElementById("distintaContainer");
+      const kpiBar = document.getElementById("kpiBar");
+
+      const btnControls = document.getElementById("mobTabBtn_controls");
+      const btnCad = document.getElementById("mobTabBtn_cad");
+      const btnResults = document.getElementById("mobTabBtn_results");
+
+      if (btnControls) btnControls.className = view === "controls" ? "flex-1 py-2 text-center rounded-lg bg-amber-500/20 text-amber-300 font-bold transition" : "flex-1 py-2 text-center rounded-lg text-slate-400 hover:text-white transition";
+      if (btnCad) btnCad.className = view === "cad" ? "flex-1 py-2 text-center rounded-lg bg-cyan-500/20 text-cyan-300 font-bold transition" : "flex-1 py-2 text-center rounded-lg text-slate-400 hover:text-white transition";
+      if (btnResults) btnResults.className = view === "results" ? "flex-1 py-2 text-center rounded-lg bg-emerald-500/20 text-emerald-300 font-bold transition" : "flex-1 py-2 text-center rounded-lg text-slate-400 hover:text-white transition";
+
+      if (isMobile) {
+        if (leftCol) leftCol.classList.toggle("hidden", view !== "controls");
+        if (cadView) cadView.classList.toggle("hidden", view !== "cad");
+        if (distView) distView.classList.toggle("hidden", view !== "results");
+        if (kpiBar) kpiBar.classList.toggle("hidden", view === "controls");
+        if (view === "cad") {
+          setTimeout(() => { fitAll(); drawScene(); }, 60);
+        }
+      } else {
+        if (leftCol) leftCol.classList.remove("hidden");
+        if (cadView) cadView.classList.remove("hidden");
+        if (distView) distView.classList.remove("hidden");
+        if (kpiBar) kpiBar.classList.remove("hidden");
+      }
+    }
+
+    function toggleDatabaseModal() {
+      const modal = document.getElementById("databaseCatalogModal");
+      if (!modal) return;
+      const isHidden = modal.classList.contains("hidden");
+      if (isHidden) {
+        modal.classList.remove("hidden");
+        renderDatabaseItems();
+      } else {
+        modal.classList.add("hidden");
+      }
+    }
+
+    function filterDbCategory(cat) {
+      currentDbCategory = cat;
+      const categories = ['all', 'bt_uni', 'bt_multi', 'signal', 'fire', 'data', 'trays_supports'];
+      categories.forEach(c => {
+        const btn = document.getElementById(`dbCatBtn_${c}`);
+        if (!btn) return;
+        if (c === cat) {
+          btn.className = "px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold transition";
+        } else {
+          btn.className = "px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition";
+        }
+      });
+      renderDatabaseItems();
+    }
+
+    function renderDatabaseItems() {
+      const searchTxt = (document.getElementById("dbSearchInp").value || "").trim().toLowerCase();
+      const cablesTable = document.getElementById("dbCablesTableView");
+      const supportsTable = document.getElementById("dbSupportsTableView");
+      const tbody = document.getElementById("dbCablesTableBody");
+
+      if (currentDbCategory === "trays_supports") {
+        cablesTable.classList.add("hidden");
+        supportsTable.classList.remove("hidden");
+        renderDbSupportsAndTrays(searchTxt);
+        return;
+      }
+
+      cablesTable.classList.remove("hidden");
+      supportsTable.classList.add("hidden");
+      tbody.innerHTML = "";
+
+      let items = CABLE_CATALOG;
+      if (currentDbCategory !== "all") {
+        items = items.filter(c => c.cat === currentDbCategory);
+      }
+      if (searchTxt) {
+        items = items.filter(c => 
+          c.type.toLowerCase().includes(searchTxt) ||
+          c.form.toLowerCase().includes(searchTxt) ||
+          c.desc.toLowerCase().includes(searchTxt) ||
+          (c.std && c.std.toLowerCase().includes(searchTxt))
+        );
+      }
+
+      document.getElementById("dbItemsCount").textContent = items.length;
+
+      items.forEach(c => {
+        const isUni = isUnipolarCable(c);
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-800/60 transition";
+        const catBadge = c.cat === "bt_uni" ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">1X UNI</span>'
+          : c.cat === "bt_multi" ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-bold">MULTI</span>'
+          : c.cat === "signal" ? '<span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold">SEGN</span>'
+          : c.cat === "fire" ? '<span class="px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 text-[10px] font-bold">FIRE</span>'
+          : '<span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px] font-bold">DATI</span>';
+
+        tr.innerHTML = `
+          <td class="py-2 px-2">${catBadge}</td>
+          <td class="py-2 px-2 font-bold text-white">${c.type}</td>
+          <td class="py-2 px-2 text-emerald-300 font-bold">${c.form}</td>
+          <td class="py-2 px-2 text-center text-cyan-300 font-bold">${c.d}</td>
+          <td class="py-2 px-2 text-center text-slate-300">${c.w.toFixed(2)}</td>
+          <td class="py-2 px-2 text-center text-amber-300">${c.sec}</td>
+          <td class="py-2 px-2 text-center text-emerald-400 font-bold">${c.iz0} A</td>
+          <td class="py-2 px-2 text-center text-purple-300">${Math.round(c.d * c.bendK)}mm</td>
+          <td class="py-2 px-2 text-slate-300 font-sans max-w-xs">
+            <div>${c.desc}</div>
+            <div class="text-[9px] text-slate-400">${c.std || ""}</div>
+          </td>
+          <td class="py-2 px-2 text-right">
+            <div class="flex items-center justify-end gap-1.5">
+              <input type="number" min="1" max="24" value="${isUni ? 3 : 1}" id="dbQty_${c.id}" class="w-10 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center text-white text-[10px] mono">
+              ${isUni ? `<label class="flex items-center gap-1 text-[9px] text-amber-300"><input type="checkbox" checked id="dbTrf_${c.id}" class="accent-amber-400">🔺3F</label>` : ''}
+              <button type="button" onclick="addCableFromDbRow('${c.id}')" class="px-2 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded font-semibold transition text-[10px]">
+                + Inserisci
+              </button>
+            </div>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderDbSupportsAndTrays(searchTxt) {
+      const brandContainer = document.getElementById("dbBrandSeriesCards");
+      const supContainer = document.getElementById("dbSupportsCards");
+      brandContainer.innerHTML = "";
+      supContainer.innerHTML = "";
+
+      Object.entries(BRAND_SERIES).forEach(([brand, seriesList]) => {
+        seriesList.forEach(ser => {
+          if (searchTxt && !ser.name.toLowerCase().includes(searchTxt) && !brand.toLowerCase().includes(searchTxt)) return;
+          const card = document.createElement("div");
+          card.className = "bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between";
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">${brand}</span>
+                <span class="text-[10px] text-slate-400 font-mono">${ser.code}</span>
+              </div>
+              <h5 class="text-xs font-bold text-white mb-1">${ser.name}</h5>
+              <div class="text-[10px] text-slate-400">Tipologia: <span class="text-cyan-300 font-semibold">${ser.type === "perforated" ? "Passerella Asolata" : ser.type === "mesh" ? "Passerella a Filo Rete" : "Canale Cieco"}</span></div>
+            </div>
+            <button type="button" onclick="applyBrandSeriesFromDb('${brand}', '${ser.id}')" class="mt-2.5 w-full py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded font-semibold text-[10px] transition">
+              ✓ Applica a Progetto
+            </button>`;
+          brandContainer.appendChild(card);
+        });
+      });
+
+      Object.entries(SUPPORT_SPECS).forEach(([key, spec]) => {
+        if (searchTxt && !spec.name.toLowerCase().includes(searchTxt) && !spec.desc.toLowerCase().includes(searchTxt)) return;
+        const card = document.createElement("div");
+        card.className = "bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] mono font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">${spec.type === "wall" ? "PARETE" : spec.type === "ceiling" ? "SOFFITTO" : "PAVIMENTO"}</span>
+              <span class="text-[10px] text-emerald-400 font-bold mono">SWL: ${spec.swl15m} kg @1.5m</span>
+            </div>
+            <h5 class="text-xs font-bold text-white mb-1">${spec.name}</h5>
+            <p class="text-[10px] text-slate-400 mb-2 leading-relaxed">${spec.desc}</p>
+            <div class="grid grid-cols-4 gap-1 text-[9px] mono text-center bg-slate-900/80 p-1 rounded border border-slate-800 mb-2">
+              <div><span class="text-slate-500">1.0m:</span> <span class="text-amber-300">${spec.swl10m}kg</span></div>
+              <div><span class="text-slate-500">1.5m:</span> <span class="text-emerald-400 font-bold">${spec.swl15m}kg</span></div>
+              <div><span class="text-slate-500">2.0m:</span> <span class="text-cyan-300">${spec.swl20m}kg</span></div>
+              <div><span class="text-slate-500">2.5m:</span> <span class="text-purple-300">${spec.swl25m}kg</span></div>
+            </div>
+          </div>
+          <button type="button" onclick="applySupportFromDb('${key}')" class="w-full py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded font-semibold text-[10px] transition">
+            ✓ Seleziona Supporto
+          </button>`;
+        supContainer.appendChild(card);
+      });
+    }
+
+    function addCableFromDbRow(id) {
+      const item = CABLE_CATALOG.find(c => c.id === id);
+      if (!item) return;
+      const qtyInp = document.getElementById(`dbQty_${id}`);
+      const qty = Math.max(1, Math.min(30, parseInt(qtyInp ? qtyInp.value : 1, 10) || 1));
+      const trfInp = document.getElementById(`dbTrf_${id}`);
+      const trefoil = trfInp ? trfInp.checked : false;
+
+      const isUni = isUnipolarCable(item);
+      const effectiveQty = (trefoil && isUni && qty === 1) ? 3 : qty;
+      const batchId = Date.now();
+
+      for (let q = 0; q < effectiveQty; q++) {
+        const idx = state.cables.length + 1;
+        const phaseLabels = ["L1", "L2", "L3", "N", "PE"];
+        const suffix = trefoil ? phaseLabels[q % 3] : (effectiveQty > 1 ? phaseLabels[q % 5] || `${q + 1}` : "");
+        const code = suffix ? `${item.code} - ${suffix}` : item.code;
+        const trefoilGroupId = trefoil ? `TRF_${batchId}_${Math.floor(q / 3)}` : null;
+
+        state.cables.push({
+          id: idx,
+          code,
+          d: item.d,
+          w: item.w,
+          sec: item.sec,
+          cores: item.cores,
+          iz0: item.iz0,
+          ib: 0,
+          bendK: item.bendK,
+          trefoil,
+          trefoilGroupId,
+          origX: 20 + ((idx - 1) % 6) * 16,
+          origY: item.d / 2 + Math.floor((idx - 1) / 6) * 16,
+          x: 20,
+          y: item.d / 2,
+          desc: item.desc,
+          type: item.type,
+          form: item.form,
+          sys: item.sys
+        });
+      }
+
+      recalculateAll();
+      drawScene();
+      const banner = document.getElementById("statusBanner");
+      if (banner) {
+        banner.textContent = `✓ Inserito a progetto: ${effectiveQty}x ${item.type} ${item.form} (${item.desc})`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+      }
+    }
+
+    function applyBrandSeriesFromDb(brand, seriesId) {
+      document.getElementById("inpBrand").value = brand;
+      populateBrandSeries();
+      document.getElementById("inpSeries").value = seriesId;
+      state.seriesId = seriesId;
+      syncFromUI();
+      toggleDatabaseModal();
+    }
+
+    function applySupportFromDb(supKey) {
+      document.getElementById("inpSupport").value = supKey;
+      state.support = supKey;
+      syncFromUI();
+      toggleDatabaseModal();
+    }
 
     const dropArea = document.getElementById("cadDropArea");
     dropArea.addEventListener("dragover", e => { e.preventDefault(); dropArea.classList.add("border-cyan-400"); });
