@@ -1838,10 +1838,15 @@
         const ys = traySegments.flatMap(s => [s.y1, s.y2]);
         origX = Math.min(...xs);
         origY = Math.min(...ys);
-        const spanX = Math.round(Math.max(...xs) - origX);
-        const spanY = Math.round(Math.max(...ys) - origY);
-        if (spanX >= 40 && spanX <= 1200) geomW = spanX;
-        if (spanY >= 30 && spanY <= 400) geomH = spanY;
+        const spanX = Math.max(...xs) - origX;
+        const spanY = Math.max(...ys) - origY;
+        // Arrotonda alla misura nominale standard più vicina (multiplo di 5mm) sottraendo spessore parete (≈3mm lato, ≈1.5mm h)
+        const nomW = Math.round((spanX - 3) / 5) * 5;
+        const nomH = Math.round((spanY - 1.5) / 5) * 5;
+        if (nomW >= 40 && nomW <= 1200) geomW = nomW;
+        else if (spanX >= 40 && spanX <= 1200) geomW = Math.round(spanX);
+        if (nomH >= 30 && nomH <= 400) geomH = nomH;
+        else if (spanY >= 30 && spanY <= 400) geomH = Math.round(spanY);
       } else if (outerCircles.length > 0) {
         origX = Math.min(...outerCircles.map(c => c.cx - c.r)) - 12;
         origY = Math.min(...outerCircles.map(c => c.cy - c.r));
@@ -1855,6 +1860,17 @@
         geomH = parseInt(mTitle[3], 10);
         state.title = mTitle[0].trim();
       } else {
+        // Cerca pattern generico L=NNNmm H=NNNmm anche senza "CANALINA" (es. DXF esterni o titoli diversi)
+        const mDims = allTextCorpus.match(/L\s*=\s*(\d+)\s*mm.*?H\s*=\s*(\d+)\s*mm/i)
+                   || allTextCorpus.match(/W\s*=\s*(\d+)\s*mm.*?H\s*=\s*(\d+)\s*mm/i)
+                   || allTextCorpus.match(/(\d{2,4})\s*[xX×]\s*(\d{2,3})\s*mm/);
+        if (mDims) {
+          const fw = parseInt(mDims[1], 10), fh = parseInt(mDims[2], 10);
+          if (fw >= 40 && fw <= 1200 && fh >= 20 && fh <= 400) {
+            geomW = fw;
+            geomH = fh;
+          }
+        }
         const mAnyTitle = rawTexts.find(t => /CANALINA/i.test(t.str) && !/DISTINTA|TABELLA|PARTICOLARE/i.test(t.str));
         state.title = mAnyTitle ? mAnyTitle.str.trim() : `${fileName.replace(/\.[^.]+$/, "").toUpperCase()} - L=${geomW}mm H=${geomH}mm`;
       }
@@ -2421,7 +2437,7 @@
       const tabW = colW.reduce((a, b) => a + b, 0), rowH = 8.0;
 
       rect("TABELLA", rightX, topY, tabW, 10, "#38bdf8", boxBg, true);
-      text("TABELLA", rightX + 4, topY + 3, 2.7, `1. DISTINTA CAVI POSATI NELLA SEZIONE — ${state.title}`, "#38bdf8", "left", tabW - 8);
+      text("TABELLA", rightX + 4, topY + 3, 2.7, `1. DISTINTA CAVI POSATI NELLA SEZIONE - ${state.title}`, "#38bdf8", "left", tabW - 8);
 
       const headers = ["POS", "SIGLA LINEA", "DESCRIZIONE UTENZA", "TIPO CAVO", "FORMAZIONE", "Ø mm", "R_min", "POSA"];
       const headY = topY - rowH;
@@ -2464,7 +2480,7 @@
       const chartH = 54, chartY = headY - nRows * rowH - chartH - 22;
       rect("CURVA_CARICO", rightX, chartY, tabW, chartH + 16, "#38bdf8", boxBg, true);
       line("CURVA_CARICO", rightX, chartY + chartH + 1, rightX + tabW, chartY + chartH + 1, "#334155", 0.4);
-      text("CURVA_CARICO", rightX + 4, chartY + chartH + 9.5, 2.5, `2. DIAGRAMMA CURVA DI CARICO E FRECCIA — RIF. CEI EN 61537 (SWL)`, "#38bdf8", "left", tabW - 8);
+      text("CURVA_CARICO", rightX + 4, chartY + chartH + 9.5, 2.5, `2. DIAGRAMMA CURVA DI CARICO E FRECCIA - RIF. CEI EN 61537 (SWL)`, "#38bdf8", "left", tabW - 8);
       text("CURVA_CARICO", rightX + 4, chartY + chartH + 3.8, 2.0, `Supporto: ${sup.name} | Passo Ls = ${state.spanM.toFixed(2)} m | Freccia f = ${metrics.deflectionMm} mm (Lim. ${metrics.maxDeflectionMm} mm)`, "#cbd5e1", "left", tabW - 8);
 
       const gx0 = rightX + 26, gy0 = chartY + 11, gw = tabW - 42, gh = chartH - 14;
@@ -2510,7 +2526,7 @@
       // Computo BOM
       const bomTopY = chartY - 6;
       rect("TABELLA", rightX, bomTopY - 9, tabW, 9, "#4ade80", boxBg, true);
-      text("TABELLA", rightX + 4, bomTopY - 6.2, 2.5, `3. COMPUTO METRICO E DISTINTA MATERIALI (BOM ${state.brand} — Tratto ${state.lengthM}m)`, "#4ade80", "left", tabW - 8);
+      text("TABELLA", rightX + 4, bomTopY - 6.2, 2.5, `3. COMPUTO METRICO E DISTINTA MATERIALI (BOM ${state.brand} - Tratto ${state.lengthM}m)`, "#4ade80", "left", tabW - 8);
       let lowRightY = bomTopY - 9;
       metrics.bom.forEach((b, i) => {
         const by = bomTopY - 9 - (i + 1) * 7;
@@ -2524,7 +2540,7 @@
       lowRightY = tbY;
       rect("CORNICE", rightX, tbY, tabW, 20, "#38bdf8", boxBg, true);
       text("CORNICE", rightX + 4, tbY + 12, 2.3, `COMMITTENTE: ${state.tb.client} | CODICE: ${state.tb.docCode}`, "#f8fafc", "left", tabW - 8);
-      text("CORNICE", rightX + 4, tbY + 4, 2.2, `PROGETTISTA: ${state.tb.author} | ${state.tb.scaleRev} — ${state.title}`, "#fbbf24", "left", tabW - 8);
+      text("CORNICE", rightX + 4, tbY + 4, 2.2, `PROGETTISTA: ${state.tb.author} | ${state.tb.scaleRev} - ${state.title}`, "#fbbf24", "left", tabW - 8);
 
       const minX = Math.min(-48 - maxLW - 10, leftBoxX - 10);
       const maxX = rightX + tabW + 12;
@@ -2938,6 +2954,11 @@
         .replace(/≥/g, "\\U+2265")
         .replace(/≤/g, "\\U+2264")
         .replace(/Δ/g, "\\U+0394")
+        .replace(/\u2014/g, " - ")     // Em-dash → hyphen (AutoCAD LT AC1009 non supporta non-ASCII)
+        .replace(/\u2013/g, " - ")     // En-dash → hyphen
+        .replace(/\u2012/g, "-")       // Figure-dash → hyphen
+        .replace(/\u2010/g, "-")       // Hyphen → hyphen-minus
+        .replace(/\u2011/g, "-")       // Non-breaking hyphen → hyphen-minus
         .replace(/•/g, "-")
         .replace(/à/g, "\\U+00E0")
         .replace(/á/g, "\\U+00E1")
@@ -2954,11 +2975,15 @@
         .replace(/É/g, "\\U+00C9")
         .replace(/Ì/g, "\\U+00CC")
         .replace(/Ò/g, "\\U+00D2")
-        .replace(/Ù/g, "\\U+00D9");
+        .replace(/Ù/g, "\\U+00D9")
+        // Catch-all: qualsiasi altro non-ASCII rimasto → rimosso (AutoCAD LT AC1009 vuole solo ASCII puro)
+        .replace(/[^\x00-\x7F]/g, "?");
     }
 
     function cleanCADStr(s) {
       return String(s || "")
+        .replace(/\u2014/g, " - ")   // Em-dash
+        .replace(/\u2013/g, " - ")   // En-dash
         .replace(/•/g, "-")
         .replace(/Ø/g, "%%c")
         .replace(/±/g, "%%p")
@@ -3276,7 +3301,14 @@
       }
 
       add(0, "EOF");
-      const blob = new Blob([dxf.join("\r\n") + "\r\n"], { type: "application/dxf;charset=utf-8" });
+
+      // Unisce le linee DXF. Per AC1009: sanitizza ulteriormente i non-ASCII residui (AutoCAD LT accetta solo ASCII puro)
+      let dxfContent = dxf.join("\r\n") + "\r\n";
+      if (!isAc1018) {
+        // Passaggio finale di sicurezza: rimuove qualsiasi carattere > 0x7F rimasto (non dovrebbe esserci, ma per sicurezza)
+        dxfContent = dxfContent.replace(/[^\x00-\x7F]/g, "?");
+      }
+      const blob = new Blob([dxfContent], { type: isAc1018 ? "application/dxf;charset=utf-8" : "application/dxf" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `${name}.dxf`;
