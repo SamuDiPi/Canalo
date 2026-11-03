@@ -1,0 +1,3016 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Constructive Cable Tray Studio v16.2 — Vero Parser DWG WASM & Curva EN 61537</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Motore Ufficiale C/WebAssembly LibreDWG per decomprimere i file binari .DWG (AC1015..AC1032) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.1.3/dist/libredwg-web.umd.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #060911; color: #e2e8f0; overflow-x: hidden; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .cad-grid-dark {
+      background-color: #04070d;
+      background-image: 
+        linear-gradient(to right, rgba(30, 41, 59, 0.35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 41, 59, 0.35) 1px, transparent 1px),
+        linear-gradient(to right, rgba(56, 189, 248, 0.09) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56, 189, 248, 0.09) 1px, transparent 1px);
+      background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+    }
+    .cad-grid-light {
+      background-color: #f8fafc;
+      background-image: 
+        linear-gradient(to right, rgba(203, 213, 225, 0.5) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(203, 213, 225, 0.5) 1px, transparent 1px),
+        linear-gradient(to right, rgba(148, 163, 184, 0.4) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.4) 1px, transparent 1px);
+      background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- HEADER PRINCIPALE -->
+  <header class="border-b border-slate-800 bg-slate-900/95 backdrop-blur sticky top-0 z-40 px-4 py-2">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold mono text-xs">
+          v16.2
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 id="headerTitle" class="text-sm font-bold tracking-tight text-white uppercase">Constructive Cable Tray Studio v16.2</h1>
+            <span id="wasmStatusBadge" class="text-[10px] mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold">
+              Inizializzazione Motore DWG WebAssembly...
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Zero Dati Preimpostati: Vera Decompressione Geometrica <code class="text-cyan-300">.DWG (LibreDWG C/WASM)</code> &bull; Match Unifilare PDF &amp; Cavi Unipolari 1X
+          </p>
+        </div>
+      </div>
+
+      <!-- AZIONI RAPIDE E IMPORT/EXPORT -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button type="button" onclick="toggleTheme()" id="btnTheme" class="text-xs bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 px-2.5 py-1.5 rounded-md font-semibold transition">
+          Tema: Scuro
+        </button>
+
+        <button type="button" onclick="swapDimensions()" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-2.5 py-1.5 rounded-md font-semibold transition" title="Inverte Base L e Altezza H">
+          ⇄ Inverti L/H
+        </button>
+
+        <button type="button" onclick="resetProject()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 py-1.5 rounded-md font-medium transition">
+          Svuota (0 Cavi)
+        </button>
+
+        <!-- INPUT FILE DWG / DXF -->
+        <button type="button" onclick="document.getElementById('dwgInput').click()" class="inline-flex items-center gap-1.5 text-xs bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3.5 py-1.5 rounded-md shadow-lg shadow-cyan-500/20 transition">
+          <span>📁 1. Importa .DWG / .DXF Reale</span>
+        </button>
+        <input id="dwgInput" type="file" accept=".dwg,.dxf" class="hidden" onchange="importCADFile(this)">
+
+        <!-- INPUT FILE PDF UNIFILARE -->
+        <button type="button" onclick="document.getElementById('pdfInput').click()" class="inline-flex items-center gap-1.5 text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-400/50 px-3 py-1.5 rounded-md font-semibold transition">
+          <span>📄 2. PDF Unifilare</span>
+        </button>
+        <input id="pdfInput" type="file" accept=".pdf" class="hidden" onchange="importPDFFile(this)">
+
+        <!-- ISPETTORE ENTITÀ REALI ESTRATTE DAL DWG -->
+        <button type="button" onclick="toggleDwgInspector()" class="text-xs bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 px-2.5 py-1.5 rounded-md font-semibold transition">
+          🔍 Entità DWG Lette
+        </button>
+
+        <!-- NOME FILE EXPORT -->
+        <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md px-2 py-1">
+          <span class="text-[10px] mono text-slate-400 mr-1">File:</span>
+          <input id="exportName" type="text" value="NUOVA_CANALINA_L200xH75" class="bg-transparent text-xs mono text-amber-300 font-semibold w-44 focus:outline-none">
+        </div>
+
+        <!-- EXPORT DXF / DWG / DOC / CSV -->
+        <button type="button" onclick="exportAutoCADDXF()" class="inline-flex items-center gap-1 text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-md shadow transition">
+          <span>💾 Scarica .DXF (1:1)</span>
+        </button>
+        <button type="button" onclick="exportAutoLISPDWG()" class="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1.5 rounded-md font-semibold transition">
+          <span>.DWG TrueColor (.SCR)</span>
+        </button>
+        <button type="button" onclick="exportWordReport()" class="text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2.5 py-1.5 rounded-md font-semibold transition">
+          <span>.DOC</span>
+        </button>
+        <button type="button" onclick="exportCSV()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1.5 rounded-md font-semibold transition">
+          <span>.CSV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- BARRA MULTI-TRATTO (GESTIONE PROGETTO MULTI-SEZIONE + SALVATAGGIO JSON) -->
+  <div class="bg-slate-900/90 border-b border-slate-800 px-4 py-1.5">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-1.5 overflow-x-auto py-0.5" id="multiSectionTabs"></div>
+      <div class="flex items-center gap-1.5 text-[11px]">
+        <button type="button" onclick="addNewSectionTab(false)" class="px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold transition">
+          + Nuova Sezione
+        </button>
+        <button type="button" onclick="addNewSectionTab(true)" class="px-2.5 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-semibold transition" title="Duplica la sezione corrente inclusi tutti i cavi">
+          ⧉ Duplica Sez.
+        </button>
+        <button type="button" onclick="deleteCurrentSectionTab()" class="px-2 py-1 rounded bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-semibold transition" title="Elimina la sezione corrente">
+          🗑
+        </button>
+        <span class="text-slate-700">|</span>
+        <button type="button" onclick="exportProjectJSON()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-semibold transition" title="Salva l'intero progetto multi-sezione in formato .JSON">
+          💾 Salva .JSON
+        </button>
+        <button type="button" onclick="document.getElementById('jsonProjectInput').click()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold transition" title="Carica un progetto .JSON salvato">
+          📂 Apri .JSON
+        </button>
+        <input id="jsonProjectInput" type="file" accept=".json" class="hidden" onchange="importProjectJSON(this)">
+      </div>
+    </div>
+  </div>
+
+  <!-- PANNELLO ISPETTORE ENTITÀ DWG -->
+  <div id="dwgInspectorModal" class="hidden bg-slate-900/95 border-b border-cyan-500/40 px-4 py-3 text-xs mono">
+    <div class="max-w-[1920px] mx-auto flex flex-col gap-1.5">
+      <div class="flex items-center justify-between">
+        <span class="text-cyan-300 font-bold uppercase">🔍 Dump Entità Geometriche Reali Estratte dal Database Interno del File .DWG / .DXF:</span>
+        <button type="button" onclick="toggleDwgInspector()" class="text-slate-400 hover:text-white font-bold px-2">Chiudi &times;</button>
+      </div>
+      <div id="dwgInspectorContent" class="bg-slate-950 border border-slate-800 rounded p-2.5 text-[11px] text-slate-300 max-h-44 overflow-y-auto whitespace-pre-wrap">In attesa di importazione file .DWG / .DXF...</div>
+    </div>
+  </div>
+
+  <!-- BARRA DI STATO IMPORTAZIONE E STRUMENTI -->
+  <div class="bg-slate-950 border-b border-slate-800 px-4 py-1.5">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 rounded px-1">
+          <button type="button" onclick="autoSizeTray()" class="px-2 py-0.5 hover:bg-amber-500/25 text-amber-300 font-semibold transition text-[11px]">
+            ⚡ Auto-Dimensiona
+          </button>
+          <input id="inpSpareReserve" type="number" value="30" min="0" max="80" class="w-12 bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[10px] mono text-amber-300 text-center" title="% Riserva Desiderata">
+          <span class="text-[10px] text-amber-300 pr-1">%</span>
+        </div>
+        <button type="button" onclick="toggleRuler()" id="btnRuler" class="px-2.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 font-medium transition text-[11px]">
+          📏 Righello CAD: OFF
+        </button>
+        <span id="statusBanner" class="mono text-[11px] px-2.5 py-0.5 rounded bg-slate-900 text-cyan-300 border border-slate-800">
+          Pronto. Carica qualsiasi file .DWG o .DXF per decomprimere le entità geometriche reali.
+        </span>
+      </div>
+      <div class="text-[11px] mono text-slate-400">
+        Curva di Carico: <span class="text-emerald-400 font-semibold">Doppio Asse (Portata kg/m + Freccia mm)</span> &bull; Cavi Unipolari <code class="text-amber-300">1x</code> con Anima Singola Cordata
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKSPACE PRINCIPALE -->
+  <main class="flex-1 max-w-[1920px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 p-4">
+
+    <!-- COLONNA SINISTRA: CONTROLLI + DIAGRAMMA INTERATTIVO CURVA DI CARICO -->
+    <section class="lg:col-span-4 xl:col-span-3 flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-145px)] pr-1.5">
+
+      <!-- SELETTORE SCHEDE -->
+      <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-center text-[11px] font-semibold">
+        <button type="button" onclick="showTab('geom')" id="tabBtn_geom" class="py-1.5 rounded-lg bg-amber-500/20 text-amber-300 transition">1. Geom</button>
+        <button type="button" onclick="showTab('prod')" id="tabBtn_prod" class="py-1.5 rounded-lg text-slate-400 hover:text-white transition">2. Produttore</button>
+        <button type="button" onclick="showTab('staff')" id="tabBtn_staff" class="py-1.5 rounded-lg text-slate-400 hover:text-white transition">3. Staffaggio</button>
+        <button type="button" onclick="showTab('cavi')" id="tabBtn_cavi" class="py-1.5 rounded-lg text-slate-400 hover:text-white transition">4. Cavi</button>
+      </div>
+
+      <!-- SCHEDA 1: GEOMETRIA E POSA -->
+      <div id="tabPanel_geom" class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400">1. Geometria Sezione &amp; Tratto</h2>
+          <span class="text-[10px] mono text-slate-400">Scala 1:1 (mm)</span>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 uppercase mono mb-0.5">Titolo / Sigla Canalina</label>
+          <input id="inpTitle" type="text" value="NUOVA CANALINA 01 - L=200mm H=75mm" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs mono text-white font-semibold">
+        </div>
+
+        <div class="grid grid-cols-4 gap-1.5">
+          <div>
+            <label class="block text-[10px] text-emerald-300 font-semibold mb-0.5">Base L (mm)</label>
+            <input id="inpWidth" type="number" value="200" min="50" max="1000" step="25" onchange="syncFromUI()" class="w-full bg-slate-950 border border-emerald-500/50 rounded px-2 py-1 text-xs mono text-white font-bold">
+          </div>
+          <div>
+            <label class="block text-[10px] text-cyan-300 font-semibold mb-0.5">Alt. H (mm)</label>
+            <input id="inpHeight" type="number" value="75" min="35" max="300" step="5" onchange="syncFromUI()" class="w-full bg-slate-950 border border-cyan-500/50 rounded px-2 py-1 text-xs mono text-white font-bold">
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-0.5">Spess. (mm)</label>
+            <select id="inpThk" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-1 text-xs mono text-white">
+              <option value="1.5" selected>1.5</option>
+              <option value="2.0">2.0</option>
+              <option value="2.5">2.5</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-amber-300 mb-0.5">Tratto (m)</label>
+            <input id="inpLength" type="number" value="30" min="3" max="1000" step="3" onchange="syncFromUI()" class="w-full bg-slate-950 border border-amber-500/50 rounded px-2 py-1 text-xs mono text-amber-300 font-bold">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-0.5">Tipologia Profilo</label>
+            <select id="inpTrayType" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+              <option value="perforated" selected>Passerella Asolata</option>
+              <option value="solid">Canale Chiuso Cieco</option>
+              <option value="mesh">Passerella a Filo Rete</option>
+              <option value="ladder">Passerella a Pioli</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-0.5">Modalità Posa Cavi</label>
+            <select id="inpPacking" onchange="syncFromUI()" class="w-full bg-slate-950 border border-amber-500/50 rounded px-2 py-1 text-xs text-amber-300 font-semibold">
+              <option value="input">Coordinate Reali DWG</option>
+              <option value="gravity" selected>Gravità &amp; Scomparti</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-cyan-300 mb-0.5">Etichetta Planimetria (Taglio Sezione &amp; Quota)</label>
+          <input id="inpPlanTag" type="text" value="SEZ. A-A | H=+3.20m" oninput="syncFromUI()" class="w-full bg-slate-950 border border-cyan-500/40 rounded px-2 py-1 text-xs mono text-cyan-300 font-semibold">
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-800 text-[11px] text-slate-300">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="chkEdge" type="checkbox" checked onchange="syncFromUI()" class="accent-amber-400">
+            <span>Bordino Salvacavo</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="chkClamps" type="checkbox" checked onchange="syncFromUI()" class="accent-amber-400">
+            <span>Fascette Ancoraggio</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="chkIso3D" type="checkbox" checked onchange="syncFromUI()" class="accent-cyan-400">
+            <span>Vista Assonometrica 3D</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="chkPlanTag" type="checkbox" checked onchange="syncFromUI()" class="accent-emerald-400">
+            <span>Fumetto Planimetria</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- SCHEDA 2: PRODUTTORE, SERIE E MATERIALE -->
+      <div id="tabPanel_prod" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-3 shadow space-y-2">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400">2. Produttore, Serie &amp; Dotazioni</h2>
+
+        <div>
+          <label class="block text-[10px] text-amber-300 font-semibold mb-0.5">Costruttore di Riferimento</label>
+          <select id="inpBrand" onchange="populateBrandSeries()" class="w-full bg-slate-950 border border-amber-500/50 rounded px-2 py-1 text-xs text-amber-300 font-semibold">
+            <option value="LEGRAND" selected>Legrand / Pial / Cablofil</option>
+            <option value="OBO">OBO Bettermann</option>
+            <option value="BTICINO">Bticino / Metallurgica</option>
+            <option value="NIEDAX">Niedax / Gouda</option>
+            <option value="CUSTOM">Canalina Libera (Custom)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-cyan-300 font-semibold mb-0.5">Serie Commerciale</label>
+          <select id="inpSeries" onchange="syncFromUI()" class="w-full bg-slate-950 border border-cyan-500/40 rounded px-2 py-1 text-xs text-cyan-200 mono"></select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 mb-0.5">Materiale e Finitura</label>
+          <select id="inpMaterial" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+            <option value="sendzimir" selected>Acciaio Zincato Sendzimir (EN 10346)</option>
+            <option value="hdg">Zincato a Caldo HDG (EN 1461)</option>
+            <option value="inox304">Acciaio Inox AISI 304 Satinato</option>
+            <option value="inox316">Acciaio Inox AISI 316L Marino</option>
+            <option value="ral7035">Verniciato Polveri RAL 7035</option>
+            <option value="ral3000">Verniciato RAL 3000 Antincendio</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-0.5">Coperchio Superiore</label>
+            <select id="inpCover" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+              <option value="none">Nessuno (A giorno)</option>
+              <option value="snap" selected>Cieco a Scatto</option>
+              <option value="ventilated">Aerato (+15mm)</option>
+              <option value="clamped">Con Clip Antisfilamento</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-0.5">Setti Separatori</label>
+            <select id="inpSeptums" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+              <option value="0" selected>0 - Nessun Setto</option>
+              <option value="1">1 Setto (2 Scomparti)</option>
+              <option value="2">2 Setti (3 Scomparti)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-emerald-300 font-semibold mb-0.5">Conduttore Equipotenziale di Terra (PE)</label>
+          <select id="inpEarth" onchange="syncFromUI()" class="w-full bg-slate-950 border border-emerald-500/50 rounded px-2 py-1 text-xs text-white">
+            <option value="gv16" selected>Cavo Bicolore Giallo/Verde FS17 16 mm²</option>
+            <option value="gv25">Cavo Bicolore Giallo/Verde FS17 25 mm²</option>
+            <option value="cu25">Treccia Piatta Rame Nudo Stagnato 25 mm²</option>
+            <option value="cu35">Treccia Piatta Rame Nudo Stagnato 35 mm²</option>
+            <option value="none">Nessun Collegamento PE</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-0.5">Rispetto Solaio</label>
+            <select id="inpClearance" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+              <option value="0">Non Quotare</option>
+              <option value="150" selected>Min. 150 mm</option>
+              <option value="200">Min. 200 mm</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-red-300 mb-0.5">Varchi Tagliafuoco EI120</label>
+            <input id="inpRei" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="w-full bg-slate-950 border border-red-500/40 rounded px-2 py-1 text-xs mono text-red-300 font-bold text-center">
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEDA 3: STAFFAGGIO & CURVA DI CARICO -->
+      <div id="tabPanel_staff" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-3 shadow space-y-2">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400">3. Staffaggio, Sismica &amp; Curve</h2>
+
+        <div>
+          <label class="block text-[10px] text-slate-400 mb-0.5">Tipologia Supporto (CEI EN 61537)</label>
+          <select id="inpSupport" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+            <option value="wall_light">Mensola Parete Leggera C30 (SWL 35 kg @ 1.5m)</option>
+            <option value="wall_med" selected>Mensola Rinforzata con Saetta (SWL 75 kg @ 1.5m)</option>
+            <option value="wall_heavy">Mensola Pesante Doppia C50 (SWL 150 kg @ 1.5m)</option>
+            <option value="ceiling_trap">Trapezio Soffitto 2xM10 + C40 (SWL 210 kg @ 1.5m)</option>
+            <option value="ceiling_single">Pendino Monotirante M10 (SWL 45 kg @ 1.5m)</option>
+            <option value="floor_omega">Supporto a Pavimento su Omega C40 (SWL 180 kg)</option>
+          </select>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded p-2">
+          <div class="flex justify-between text-[10px] mono text-amber-300 mb-0.5">
+            <span>Passo Staffaggio Ls:</span>
+            <span id="lblSpan" class="font-bold">1.50 m (1500 mm)</span>
+          </div>
+          <input id="inpSpan" type="range" min="1.0" max="3.0" step="0.1" value="1.5" oninput="syncFromUI()" class="w-full accent-amber-400">
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-red-300 font-semibold mb-0.5">Controvento Antisismico (NTC 2018)</label>
+          <select id="inpSeismic" onchange="syncFromUI()" class="w-full bg-slate-950 border border-red-500/40 rounded px-2 py-1 text-xs text-red-200">
+            <option value="none" selected>Nessun Controvento Sismico</option>
+            <option value="cable_9m">Kit Funi Acciaio 45° ogni 9.0 m</option>
+            <option value="rigid_6m">Controvento Rigido Strut 45° ogni 6.0 m</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-800">
+          <div>
+            <label class="block text-[9px] text-purple-300 mb-0.5">Curve 90°</label>
+            <input id="inpBends" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="w-full bg-slate-950 border border-purple-500/40 rounded px-1.5 py-1 text-xs mono text-purple-300 font-bold text-center">
+          </div>
+          <div>
+            <label class="block text-[9px] text-cyan-300 mb-0.5">Deviaz. T</label>
+            <input id="inpTees" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="w-full bg-slate-950 border border-cyan-500/40 rounded px-1.5 py-1 text-xs mono text-cyan-300 font-bold text-center">
+          </div>
+          <div>
+            <label class="block text-[9px] text-emerald-300 mb-0.5">Riduzioni</label>
+            <input id="inpReducers" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="w-full bg-slate-950 border border-emerald-500/40 rounded px-1.5 py-1 text-xs mono text-emerald-300 font-bold text-center">
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEDA 4: AGGIUNTA CAVI DA PORTFOLIO -->
+      <div id="tabPanel_cavi" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-3 shadow space-y-2">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400">4. Aggiungi Cavi dal Portfolio</h2>
+
+        <select id="selCableCatalog" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-white mono"></select>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-0.5">Quantità</label>
+            <input id="inpCableQty" type="number" value="1" min="1" max="30" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs mono text-white">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-[10px] text-slate-400 mb-0.5">Sigla Utenza / Linea</label>
+            <input id="inpCableCode" type="text" placeholder="Es. QGBT-P C-22" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs mono text-white">
+          </div>
+        </div>
+
+        <label class="flex items-center gap-2 bg-slate-950 border border-amber-500/40 rounded px-2.5 py-1.5 text-xs text-amber-300 cursor-pointer">
+          <input id="chkTrefoil" type="checkbox" class="accent-amber-400">
+          <span>🔺 Posa a Trifoglio (3 Unipolari legati)</span>
+        </label>
+
+        <button type="button" onclick="addCableFromPortfolio()" class="w-full py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded font-semibold transition text-xs">
+          + Inserisci Cavo/i nella Sezione
+        </button>
+
+        <div class="mt-3 pt-3 border-t border-slate-800">
+          <h3 class="text-[10px] text-cyan-300 font-semibold mb-1">Crea Nuovo Cavo a DB (Sessione Corrente)</h3>
+          <div class="grid grid-cols-4 gap-1">
+            <input id="newCbForm" type="text" placeholder="Form. (es 1G16)" class="col-span-1 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-[10px] text-white mono">
+            <input id="newCbDesc" type="text" placeholder="Descrizione / Tipo" class="col-span-2 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-[10px] text-white">
+            <input id="newCbD" type="number" step="0.1" placeholder="Ø mm" class="col-span-1 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-[10px] text-white text-center mono">
+          </div>
+          <button type="button" onclick="addCustomCableToDB()" class="w-full mt-1.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded font-semibold transition text-[10px]">
+            + Registra nel Catalogo DB
+          </button>
+        </div>
+      </div>
+
+      <!-- WIDGET DEDICATO INTERATTIVO CURVA DI CARICO E FRECCIA (CEI EN 61537) -->
+      <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-3 shadow">
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="text-[11px] font-bold uppercase tracking-wider text-cyan-300">📊 Curva di Carico &amp; Freccia EN 61537</h2>
+          <span id="curveStatusBadge" class="text-[10px] mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">VERIFICATO</span>
+        </div>
+        <p class="text-[10px] text-slate-400 mb-1.5">Clicca o trascina sul grafico per variare il passo staffe <code class="text-amber-300">Ls</code>:</p>
+        <canvas id="loadCurveCanvas" width="380" height="175" class="w-full bg-slate-950 border border-slate-800 rounded-lg cursor-ew-resize"></canvas>
+        <div class="grid grid-cols-3 gap-1 mt-1.5 text-[10px] mono text-center bg-slate-950 p-1.5 rounded border border-slate-800">
+          <div>
+            <div class="text-slate-400">Carico q_tot</div>
+            <div id="lblChartQtot" class="text-amber-300 font-bold">0.0 kg/m</div>
+          </div>
+          <div>
+            <div class="text-slate-400">Portata q_amm</div>
+            <div id="lblChartQamm" class="text-emerald-400 font-bold">50.0 kg/m</div>
+          </div>
+          <div>
+            <div class="text-slate-400">Freccia f / Lim</div>
+            <div id="lblChartDefl" class="text-cyan-300 font-bold">0.4 / 7.5 mm</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARTIGLIO PROGETTO -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 shadow">
+        <h2 class="text-[11px] font-bold uppercase tracking-wider text-amber-400 mb-1">Cartiglio Tavola CAD</h2>
+        <div class="grid grid-cols-2 gap-1.5 text-xs">
+          <div>
+            <label class="block text-[9px] text-slate-400">Committente</label>
+            <input id="inpClient" type="text" value="PROGETTO ESECUTIVO" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] mono text-white">
+          </div>
+          <div>
+            <label class="block text-[9px] text-slate-400">Cod. Elaborato</label>
+            <input id="inpDocCode" type="text" value="PE-IMP-EL-PART-02" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] mono text-white">
+          </div>
+          <div>
+            <label class="block text-[9px] text-slate-400">Progettista</label>
+            <input id="inpAuthor" type="text" value="STUDIO TECNICO" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] mono text-white">
+          </div>
+          <div>
+            <label class="block text-[9px] text-slate-400">Scala / Rev</label>
+            <input id="inpScaleRev" type="text" value="Scala 1:1 - Rev.00" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] mono text-white">
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- AREA CENTRALE / DESTRA: KPI, VIEWPORT CAD 1:1 E TABELLA CAVI -->
+    <section class="lg:col-span-8 xl:col-span-9 flex flex-col gap-3">
+
+      <!-- KPI INGEGNERISTICI -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2" id="kpiBar">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[10px] text-slate-400 uppercase font-semibold">Riempimento &amp; Riserva</div>
+          <div class="flex items-baseline gap-1.5 mt-0.5">
+            <span id="kpiFill" class="text-sm font-bold mono text-emerald-400">0.0%</span>
+            <span id="kpiSpare" class="text-[9px] mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Riserva 100%</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-0.5"><span id="kpiAreaUsed">0</span> / <span id="kpiAreaTot">15000</span> mm²</div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[10px] text-slate-400 uppercase font-semibold">Carico Mensola EN 61537</div>
+          <div class="text-sm font-bold mono text-cyan-300 mt-0.5"><span id="kpiLoadPct">0.0%</span> <span class="text-[10px] text-slate-400">@ <span id="kpiSpan">1.5m</span></span></div>
+          <div id="kpiLoadTxt" class="text-[10px] text-emerald-400">SWL Verificato</div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[10px] text-slate-400 uppercase font-semibold">Tiro Posa Cavi &amp; R_min</div>
+          <div class="text-sm font-bold mono text-purple-300 mt-0.5"><span id="kpiPull">0.0</span> daN &bull; R=<span id="kpiBendR">0</span>mm</div>
+          <div id="kpiPullTxt" class="text-[10px] text-emerald-400">Trazione Posa OK</div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[10px] text-slate-400 uppercase font-semibold">Sismica &amp; Tagliafuoco</div>
+          <div id="kpiReiTxt" class="text-sm font-bold mono text-slate-400 mt-0.5">0 Varchi EI120</div>
+          <div id="kpiSeisTxt" class="text-[10px] text-slate-500">NTC 2018: Standard</div>
+        </div>
+
+        <div id="kpiElectricalCard" class="hidden bg-purple-950/30 border border-purple-500/40 rounded-xl p-2.5">
+          <div class="text-[10px] text-purple-300 uppercase font-semibold">Derating Iz' &amp; ΔV% (PDF)</div>
+          <div class="text-sm font-bold mono text-amber-300 mt-0.5"><span id="kpiJoule">0.0</span> W/m &bull; ΔV <span id="kpiDv" class="text-emerald-300">0.0%</span></div>
+          <div id="kpiDeratTxt" class="text-[10px] text-emerald-400">Iz' = Iz·Kr &ge; Ib OK</div>
+        </div>
+
+        <div id="kpiSegCard" class="bg-slate-900 border border-emerald-500/40 rounded-xl p-2.5">
+          <div class="text-[10px] text-slate-400 uppercase font-semibold">Segregazione CEI 64-8</div>
+          <div id="kpiSegTitle" class="text-xs font-bold text-emerald-400 mt-0.5">CONFORME</div>
+          <div class="text-[10px] text-slate-300">Art. 528.1 Rispettato</div>
+        </div>
+      </div>
+
+      <!-- VIEWPORT GRAFICA CAD 1:1 (CON DRAG & DROP FILE) -->
+      <div id="cadDropArea" class="relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-1 min-h-[520px] flex flex-col">
+        <div class="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
+          <div class="flex items-center gap-2 bg-slate-900/90 backdrop-blur border border-slate-700/80 px-3 py-1.5 rounded-lg pointer-events-auto">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-[11px] mono text-amber-400 font-bold">ANTEPRIMA ESECUTIVA 1:1 — TRASCINA I CAVI O UN FILE .DWG/.DXF QUI SOPRA</span>
+          </div>
+
+          <div class="flex items-center gap-1.5 bg-slate-900/90 backdrop-blur border border-slate-700/80 px-2.5 py-1 rounded-lg pointer-events-auto text-[11px]">
+            <span id="lblZoom" class="text-[10px] mono text-slate-400 w-12 text-right mr-1">100%</span>
+            <button type="button" onclick="zoomBy(1.25)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 mono font-bold">+</button>
+            <button type="button" onclick="zoomBy(0.80)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 mono font-bold">-</button>
+            <button type="button" onclick="fitAll()" class="px-2.5 py-0.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded text-amber-300 font-semibold">Adatta Tutto</button>
+            <button type="button" onclick="zoomSection()" class="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-cyan-300 font-medium">Zoom Sezione</button>
+            <button type="button" onclick="zoomTables()" class="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-emerald-300 font-medium">Zoom Tabelle</button>
+          </div>
+        </div>
+
+        <canvas id="cadCanvas" class="w-full flex-1 cad-grid-dark cursor-grab active:cursor-grabbing"></canvas>
+      </div>
+
+      <!-- TABELLA DISTINTA CAVI INTERATTIVA -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+            <span>Distinta Cavi Posati nella Sezione (Editabile in Tempo Reale)</span>
+            <span id="lblTableMode" class="text-[10px] mono bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded">Coordinate &amp; Diametri 1:1</span>
+          </h2>
+          <button type="button" onclick="clearCables()" class="text-xs bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 px-2.5 py-1 rounded transition">
+            Svuota Cavi
+          </button>
+        </div>
+
+        <div class="overflow-x-auto max-h-48">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead id="tblHead"></thead>
+            <tbody id="tblBody" class="divide-y divide-slate-800/70 mono text-[11px]"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // Istanze globali per il motore C/WebAssembly LibreDWG
+    let globalLibreDwgLib = null;
+    let globalLibreDwgInstance = null;
+
+    // Scarica la libreria e il binario WASM usando Import Dinamico ESM
+    async function loadLibreDwgWasmInstance() {
+      if (!globalLibreDwgLib) {
+        try {
+          globalLibreDwgLib = await import('https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.1.3/+esm');
+        } catch (err) {
+          globalLibreDwgLib = window.LibreDwg || window.LibreDwgWeb || window.libredwg || window.mlightcadLibredwgWeb || window['@mlightcad/libredwg-web'];
+        }
+      }
+
+      if (!globalLibreDwgLib || !globalLibreDwgLib.LibreDwg) {
+        throw new Error("Impossibile importare la libreria @mlightcad/libredwg-web dal CDN.");
+      }
+
+      const candidateUrls = [
+        "https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.1.3/dist/libredwg-web.wasm",
+        "https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.1.3/dist/wasm/libredwg-web.wasm",
+        "https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.1.3/wasm/libredwg-web.wasm",
+        "https://unpkg.com/@mlightcad/libredwg-web@0.1.3/dist/libredwg-web.wasm"
+      ];
+
+      for (const wasmUrl of candidateUrls) {
+        try {
+          const resp = await fetch(wasmUrl);
+          if (resp.ok) {
+            const baseDir = wasmUrl.substring(0, wasmUrl.lastIndexOf("/"));
+            const instance = await globalLibreDwgLib.LibreDwg.create(baseDir);
+            if (instance) return instance;
+          }
+        } catch (err) {
+          console.warn("URL WASM saltato:", wasmUrl);
+        }
+      }
+
+      return await globalLibreDwgLib.LibreDwg.create();
+    }
+
+    async function initLibreDwgEngine() {
+      const badge = document.getElementById("wasmStatusBadge");
+      try {
+        globalLibreDwgInstance = await loadLibreDwgWasmInstance();
+        badge.textContent = "Motore DWG C/WASM Pronto (AC1015..AC1032)";
+        badge.className = "text-[10px] mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold";
+      } catch (e) {
+        console.error("Errore inizializzazione WASM:", e);
+        badge.textContent = "Errore WASM: Apri Console (F12)";
+        badge.className = "text-[10px] mono uppercase px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-semibold";
+      }
+    }
+
+    function toggleDwgInspector() {
+      document.getElementById("dwgInspectorModal").classList.toggle("hidden");
+    }
+
+    // ============================================================================
+    // 1. DATABASE TECNICO, PROFILI CAVI (CON UNIPOLARI 1X) E STATO APPLICAZIONE
+    // ============================================================================
+    const BRAND_SERIES = {
+      LEGRAND: [
+        { id: "P31_ASO", name: "Legrand P31 Plus — Passerella Asolata (370xx)", code: "LG-370", type: "perforated" },
+        { id: "P31_CIE", name: "Legrand P31 Plus — Canale Cieco (372xx)", code: "LG-372", type: "solid" },
+        { id: "CABLOFIL", name: "Cablofil CF — Passerella a Filo (CM50/100)", code: "CF-CM", type: "mesh" }
+      ],
+      OBO: [
+        { id: "RKS_MAGIC", name: "OBO RKS-Magic® — Passerella Asolata", code: "OBO-604", type: "perforated" },
+        { id: "MKS_MAGIC", name: "OBO MKS-Magic® — Canale Portacavi", code: "OBO-605", type: "solid" },
+        { id: "GRM_MAGIC", name: "OBO GR-Magic® — Passerella a Filo", code: "OBO-600", type: "mesh" }
+      ],
+      BTICINO: [
+        { id: "BT_S27", name: "Bticino Serie 27 — Passerella Asolata", code: "BT-S27", type: "perforated" },
+        { id: "BT_S28", name: "Bticino Serie 28 — Canale Cieco IP40", code: "BT-S28", type: "solid" }
+      ],
+      NIEDAX: [
+        { id: "NDX_RL", name: "Niedax RL — Passerella Asolata Standard", code: "NDX-RL", type: "perforated" },
+        { id: "NDX_RS", name: "Niedax RS — Canale Chiuso Pesante", code: "NDX-RS", type: "solid" }
+      ],
+      CUSTOM: [
+        { id: "CUSTOM_ASO", name: "Custom — Passerella Asolata", code: "CST-P", type: "perforated" },
+        { id: "CUSTOM_CIE", name: "Custom — Canale Chiuso", code: "CST-C", type: "solid" }
+      ]
+    };
+
+    const CABLE_CATALOG = [
+      { id: "FG16_3G1.5",  code: "QGBT-P C-21", desc: "Illuminazione / Ausiliari 230V", type: "FG16OM16", form: "1(3G1,5)", d: 11.5, w: 0.18, sec: 1.5, cores: 2, iz0: 20, bendK: 8,  sys: "BT_POWER" },
+      { id: "FG16_3G2.5",  code: "QGBT-P C-22", desc: "Alimentazione Monofase 230V",   type: "FG16OM16", form: "1(3G2,5)", d: 14.0, w: 0.24, sec: 2.5, cores: 2, iz0: 27, bendK: 8,  sys: "BT_POWER" },
+      { id: "FG16_3G4",    code: "QP1-DX-N C-4",desc: "Forza Motrice Monofase 230V",   type: "FG16OM16", form: "1(3G4)",   d: 15.2, w: 0.31, sec: 4.0, cores: 2, iz0: 37, bendK: 8,  sys: "BT_POWER" },
+      { id: "FG16_5G2.5",  code: "QP1-DX-N C-5",desc: "Alimentazione Trifase 400V 16A",type: "FG16OM16", form: "1(5G2,5)", d: 15.0, w: 0.33, sec: 2.5, cores: 3, iz0: 24, bendK: 8,  sys: "BT_POWER" },
+      { id: "FG16_5G4",    code: "QP1-DX-N C-6",desc: "Alimentazione Trifase 400V 25A",type: "FG16OM16", form: "1(5G4)",   d: 16.5, w: 0.44, sec: 4.0, cores: 3, iz0: 32, bendK: 8,  sys: "BT_POWER" },
+      { id: "FG16_5G6",    code: "QP1-DX-N C-7",desc: "Alimentazione Trifase 400V 32A",type: "FG16OM16", form: "1(5G6)",   d: 18.2, w: 0.58, sec: 6.0, cores: 3, iz0: 41, bendK: 8,  sys: "BT_POWER" },
+      { id: "FG16_5G10",   code: "QGBT C-1",    desc: "Alimentazione Trifase 400V 40A",type: "FG16OM16", form: "1(5G10)",  d: 21.0, w: 0.86, sec: 10,  cores: 3, iz0: 57, bendK: 10, sys: "BT_POWER" },
+      { id: "FG16_5G16",   code: "QGBT C-2",    desc: "Dorsale Quadro Trifase 63A",    type: "FG16OM16", form: "1(5G16)",  d: 24.2, w: 1.25, sec: 16,  cores: 3, iz0: 76, bendK: 10, sys: "BT_POWER" },
+      { id: "UNI_1X10",    code: "QGBT-C C-3",  desc: "Unipolare Singolo Fase/Neutro", type: "FG16M16",  form: "1(1x10)",  d: 9.2,  w: 0.15, sec: 10,  cores: 1, iz0: 63, bendK: 10, sys: "BT_POWER" },
+      { id: "UNI_1X16",    code: "QGBT-C C-4",  desc: "Unipolare Singolo 16mm²",       type: "FG16M16",  form: "1(1x16)",  d: 10.5, w: 0.22, sec: 16,  cores: 1, iz0: 85, bendK: 10, sys: "BT_POWER" },
+      { id: "UNI_1X25",    code: "QGBT-C C-5",  desc: "Unipolare Singolo 25mm²",       type: "FG16M16",  form: "1(1x25)",  d: 12.2, w: 0.32, sec: 25,  cores: 1, iz0: 112,bendK: 10, sys: "BT_POWER" },
+      { id: "UNI_1X35",    code: "QGBT-UPS C-1",desc: "Unipolare Singolo 35mm²",       type: "FG16M16",  form: "1(1x35)",  d: 13.5, w: 0.43, sec: 35,  cores: 1, iz0: 138,bendK: 12, sys: "BT_POWER" },
+      { id: "UNI_1X50",    code: "QGBT-UPS C-2",desc: "Unipolare Singolo 50mm²",       type: "FG16M16",  form: "1(1x50)",  d: 15.4, w: 0.58, sec: 50,  cores: 1, iz0: 168,bendK: 12, sys: "BT_POWER" },
+      { id: "UNI_1X70",    code: "QGBT-UPS C-3",desc: "Unipolare Singolo 70mm²",       type: "FG16M16",  form: "1(1x70)",  d: 17.5, w: 0.80, sec: 70,  cores: 1, iz0: 213,bendK: 12, sys: "BT_POWER" },
+      { id: "UNI_1X95",    code: "QGBT-UPS C-4",desc: "Unipolare Singolo 95mm²",       type: "FG16M16",  form: "1(1x95)",  d: 19.8, w: 1.08, sec: 95,  cores: 1, iz0: 258,bendK: 12, sys: "BT_POWER" },
+      { id: "UNI_4X10_PE", code: "QGBT-C C-6",  desc: "Fascio Unipolari 10mm² + PE",   type: "FG16M16/FG17 PE", form: "4(1x10)+(1PE10)", d: 22.0, w: 0.78, sec: 10, cores: 1, iz0: 63, bendK: 10, sys: "BT_POWER" },
+      { id: "UNI_4X16_PE", code: "QGBT-C C-7",  desc: "Fascio Unipolari 16mm² + PE",   type: "FG16M16/FG17 PE", form: "4(1x16)+(1PE16)", d: 25.0, w: 1.15, sec: 16, cores: 1, iz0: 85, bendK: 10, sys: "BT_POWER" },
+      { id: "UNI_3X35_PE", code: "QGBT-UPS C-5",desc: "Dorsale Unipolari 35mm² + PE",  type: "FG16M16/FG17 PE", form: "3(1x35)+(1x25)+(1PE16)", d: 31.0, w: 1.88, sec: 35, cores: 1, iz0: 138, bendK: 12, sys: "BT_POWER" },
+      { id: "FTG18_3G2.5", code: "QE-VVF C-1",  desc: "Linea Sicurezza Antincendio",   type: "FTG18OM16", form: "1(3G2,5)", d: 14.5, w: 0.27, sec: 2.5, cores: 2, iz0: 27, bendK: 10, sys: "BT_FIRE" },
+      { id: "IRAI_LOOP",   code: "IRAI-LOOP1",  desc: "Loop Rivelazione Fumi IRAI",    type: "FTG18(O)M16", form: "1(2x1,5)", d: 8.5, w: 0.11, sec: 1.5, cores: 2, iz0: 15, bendK: 10, sys: "SPECIAL_ELV" },
+      { id: "EVAC_100V",   code: "EVAC-SPK1",   desc: "Diffusione Sonora EVAC 100V",   type: "FTG18(O)M16", form: "1(2x2,5)", d: 9.8, w: 0.15, sec: 2.5, cores: 2, iz0: 20, bendK: 10, sys: "SPECIAL_ELV" },
+      { id: "DATA_CAT6A",  code: "TD-CAT6A",    desc: "Rete Dati Schermata F/UTP 10G", type: "F/UTP Cat.6A", form: "4x2x23AWG", d: 7.5, w: 0.07, sec: 0.5, cores: 2, iz0: 5, bendK: 10, sys: "SPECIAL_ELV" }
+    ];
+
+    // Mappa granulare basata sul diametro reale (mm) secondo tabelle dimensionali CEI UNEL 35310 / Prysmian / Baldassari
+    function inferCableSpecsByDiameter(d, codeStr = "") {
+      const upperCode = String(codeStr || "").toUpperCase();
+      // Se la sigla contiene indizi di circuiti speciali
+      if (/IRAI|FUMI|LOOP/i.test(upperCode) || (d >= 8.0 && d <= 8.8)) {
+        return { type: "FTG18(O)M16", form: "1(2x1,5)", sec: 1.5, cores: 2, iz0: 15, bendK: 10, sys: "SPECIAL_ELV" };
+      }
+      if (/EVAC|SPK/i.test(upperCode) || (d >= 9.4 && d <= 10.1)) {
+        return { type: "FTG18(O)M16", form: "1(2x2,5)", sec: 2.5, cores: 2, iz0: 20, bendK: 10, sys: "SPECIAL_ELV" };
+      }
+      if (/CAT6|DATI|LAN|UTP/i.test(upperCode) || d <= 7.9) {
+        return { type: "F/UTP Cat.6A", form: "4x2x23AWG", sec: 0.5, cores: 2, iz0: 5, bendK: 10, sys: "SPECIAL_ELV" };
+      }
+
+      // Cavi BT in base al diametro effettivo misurato dal cerchio CAD (in mm)
+      if (d <= 9.3)  return { type: "FG16M16", form: "1(1x10)",  sec: 10.0, cores: 1, iz0: 63,  bendK: 10, sys: "BT_POWER" };
+      if (d <= 10.8) return { type: "FG16M16", form: "1(1x16)",  sec: 16.0, cores: 1, iz0: 85,  bendK: 10, sys: "BT_POWER" };
+      if (d <= 12.0) return { type: "FG16OM16", form: "1(3G1,5)", sec: 1.5,  cores: 2, iz0: 20,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 12.8) return { type: "FG16M16", form: "1(1x25)",  sec: 25.0, cores: 1, iz0: 112, bendK: 10, sys: "BT_POWER" };
+      if (d <= 13.4) return { type: "FG16OM16", form: "1(4G1,5)", sec: 1.5,  cores: 3, iz0: 18,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 14.3) return { type: "FG16OM16", form: "1(3G2,5)", sec: 2.5,  cores: 2, iz0: 27,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 14.7) return { type: "FTG18OM16", form: "1(3G2,5)", sec: 2.5, cores: 2, iz0: 27,  bendK: 10, sys: "BT_FIRE" };
+      if (d <= 15.1) return { type: "FG16OM16", form: "1(5G2,5)", sec: 2.5,  cores: 3, iz0: 24,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 15.8) return { type: "FG16OM16", form: "1(3G4)",   sec: 4.0,  cores: 2, iz0: 37,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 17.0) return { type: "FG16OM16", form: "1(5G4)",   sec: 4.0,  cores: 3, iz0: 32,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 17.8) return { type: "FG16OM16", form: "1(3G6)",   sec: 6.0,  cores: 2, iz0: 48,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 19.0) return { type: "FG16OM16", form: "1(5G6)",   sec: 6.0,  cores: 3, iz0: 41,  bendK: 8,  sys: "BT_POWER" };
+      if (d <= 20.2) return { type: "FG16M16", form: "1(1x95)",  sec: 95.0, cores: 1, iz0: 258, bendK: 12, sys: "BT_POWER" };
+      if (d <= 21.4) return { type: "FG16OM16", form: "1(5G10)",  sec: 10.0, cores: 3, iz0: 57,  bendK: 10, sys: "BT_POWER" };
+      if (d <= 23.0) return { type: "FG16M16/FG17 PE", form: "4(1x10)+(1PE10)", sec: 10.0, cores: 1, iz0: 63, bendK: 10, sys: "BT_POWER" };
+      if (d <= 24.5) return { type: "FG16OM16", form: "1(5G16)",  sec: 16.0, cores: 3, iz0: 76,  bendK: 10, sys: "BT_POWER" };
+      if (d <= 26.5) return { type: "FG16M16/FG17 PE", form: "4(1x16)+(1PE16)", sec: 16.0, cores: 1, iz0: 85, bendK: 10, sys: "BT_POWER" };
+      if (d <= 29.0) return { type: "FG16M16/FG17 PE", form: "4(1x25)+(1PE16)", sec: 25.0, cores: 1, iz0: 112,bendK: 12, sys: "BT_POWER" };
+      if (d <= 33.0) return { type: "FG16M16/FG17 PE", form: "3(1x35)+(1x25)+(1PE16)", sec: 35.0, cores: 1, iz0: 138, bendK: 12, sys: "BT_POWER" };
+      return { type: "FG16M16/FG17 PE", form: "3(1x50)+(1x25)+(1PE25)", sec: 50.0, cores: 1, iz0: 168, bendK: 12, sys: "BT_POWER" };
+    }
+
+    // Determina se un cavo è Unipolare (es. "1x...", "4(1x10)", "FG16M16", "FS17")
+    function isUnipolarCable(c) {
+      const f = String(c.form || "").toUpperCase();
+      const t = String(c.type || "").toUpperCase();
+      return /\b1X\d+|\(\s*1X\d+/i.test(f) || /\bFG16M16\b|\bFS17\b|\bFG17\b|\bH07Z1-K\b/i.test(t) || c.cores === 1;
+    }
+
+    // Estrae la sezione nominale in mm² da una stringa formazione con fix standard metrico
+    function parseSectionFromForm(formStr, fallbackSec = 2.5) {
+      // Blocco di sicurezza: se la stringa contiene chiari riferimenti AWG, ritorna al fallback
+      if (/AWG/i.test(formStr)) return fallbackSec;
+      
+      const m = String(formStr || "").match(/[xXGg](\d+(?:[.,]\d+)?)/);
+      if (m) {
+        let val = parseFloat(m[1].replace(",", "."));
+        // Array di sezioni commerciali europee standard (mm²)
+        const standardSections = [0.5, 1, 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400, 500, 630];
+        
+        // Snapping alla sezione metrica corretta più vicina
+        let closest = standardSections.reduce((prev, curr) => 
+          Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev
+        );
+        return closest;
+      }
+      return fallbackSec;
+    }
+
+    const SUPPORT_SPECS = {
+      wall_light:     { name: "Mensola Parete Leggera C30", swl15m: 35,  armH: 8,  strut: false },
+      wall_med:       { name: "Mensola Parete Rinforzata Saetta", swl15m: 75, armH: 10, strut: true },
+      wall_heavy:     { name: "Mensola Parete Pesante Doppia C50", swl15m: 150, armH: 14, strut: true },
+      ceiling_trap:   { name: "Trapezio Soffitto 2xM10 + C40", swl15m: 210, armH: 12, strut: false },
+      ceiling_single: { name: "Pendino Centrale Monotirante M10", swl15m: 45,  armH: 10, strut: false },
+      floor_omega:    { name: "Supporto a Pavimento su Omega C40", swl15m: 180, armH: 15, strut: false }
+    };
+
+    const MAT_SPECS = {
+      sendzimir: { name: "Acciaio Zincato Sendzimir (UNI EN 10346)", stroke: "#94a3b8", fill: "#334155", aci: 8 },
+      hdg:       { name: "Acciaio Zincato a Caldo HDG (EN 1461)", stroke: "#cbd5e1", fill: "#475569", aci: 9 },
+      inox304:   { name: "Acciaio Inox AISI 304 Satinato", stroke: "#67e8f9", fill: "#164e63", aci: 4 },
+      inox316:   { name: "Acciaio Inox AISI 316L Marino", stroke: "#38bdf8", fill: "#0c4a6e", aci: 5 },
+      ral7035:   { name: "Verniciato Polveri RAL 7035", stroke: "#e2e8f0", fill: "#64748b", aci: 7 },
+      ral3000:   { name: "Verniciato RAL 3000 Antincendio", stroke: "#f87171", fill: "#991b1b", aci: 1 }
+    };
+
+    let state = {
+      pdfLoaded: false,
+      theme: "dark",
+      brand: "LEGRAND",
+      seriesId: "P31_ASO",
+      title: "NUOVA CANALINA 01 - L=200mm H=75mm",
+      planTag: "SEZ. A-A | H=+3.20m",
+      width: 200,
+      height: 75,
+      thk: 1.5,
+      lengthM: 30,
+      bends90: 0,
+      tees: 0,
+      reducers: 0,
+      seismic: "none",
+      trayType: "perforated",
+      packing: "gravity",
+      material: "sendzimir",
+      cover: "snap",
+      septums: 0,
+      earth: "gv16",
+      clearance: 150,
+      reiCount: 0,
+      edgeGuard: true,
+      clamps: true,
+      showIso3D: true,
+      showPlanTag: true,
+      support: "wall_med",
+      spanM: 1.5,
+      tb: { client: "PROGETTO ESECUTIVO", docCode: "PE-IMP-EL-PART-02", author: "STUDIO TECNICO", scaleRev: "Scala 1:1 - Rev.00" },
+      cables: []
+    };
+
+    let unifilareDict = {};
+    let metrics = {
+      fillPct: 0, sparePct: 100, kr: 1, totalKgM: 0, qMaxKgM: 50,
+      pointLoad: 0, maxPoint: 75, loadPct: 0,
+      deflectionMm: 0.4, maxDeflectionMm: 7.5,
+      pullDaN: 0, maxPullDaN: 100, maxBendR: 0, critCode: "-", fitR: 150,
+      jouleWm: 0, maxDv: 0, bom: []
+    };
+
+    // Normalizza una sigla linea per garantire l'accoppiamento esatto tra DWG e PDF Unifilare
+    function normalizeLineKey(str) {
+      return String(str || "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toUpperCase();
+    }
+
+    function findInUnifilareDict(codeStr) {
+      const k1 = normalizeLineKey(codeStr);
+      if (unifilareDict[k1]) return unifilareDict[k1];
+      // Eventuale fallback senza spazi attorno a C- o trattini
+      const kCompact = k1.replace(/\s+/g, "");
+      for (const [k, val] of Object.entries(unifilareDict)) {
+        if (k.replace(/\s+/g, "") === kCompact) return val;
+      }
+      return null;
+    }
+
+    function calcAllowedLinearLoadKgM(supportKey, spanM) {
+      const spec = SUPPORT_SPECS[supportKey] || SUPPORT_SPECS.wall_med;
+      const baseKgMAt15 = spec.swl15m / 1.5;
+      const hFactor = Math.pow(state.height / 75, 0.35) * Math.pow(state.thk / 1.5, 0.5);
+      return +(baseKgMAt15 * Math.pow(1.5 / spanM, 1.55) * hFactor).toFixed(1);
+    }
+
+    function calcElasticDeflectionMm(qTotKgM, supportKey, spanM) {
+      const qAmm = calcAllowedLinearLoadKgM(supportKey, spanM);
+      const fLim = Math.min(10.0, (spanM * 1000) / 200);
+      return +Math.min(25.0, fLim * (qTotKgM / Math.max(1, qAmm))).toFixed(2);
+    }
+
+    // ============================================================================
+    // 2. INIZIALIZZAZIONE E CONTROLLI INTERFACCIA
+    // ============================================================================
+    function showTab(id) {
+      ['geom', 'prod', 'staff', 'cavi'].forEach(t => {
+        document.getElementById(`tabPanel_${t}`).classList.toggle('hidden', t !== id);
+        document.getElementById(`tabBtn_${t}`).className = t === id
+          ? 'py-1.5 rounded-lg bg-amber-500/20 text-amber-300 transition'
+          : 'py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      });
+    }
+
+    function populateBrandSeries() {
+      const b = document.getElementById("inpBrand").value;
+      state.brand = b;
+      const list = BRAND_SERIES[b] || BRAND_SERIES.LEGRAND;
+      const sel = document.getElementById("inpSeries");
+      sel.innerHTML = "";
+      list.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id; opt.textContent = s.name;
+        sel.appendChild(opt);
+      });
+      state.seriesId = list[0].id;
+      syncFromUI();
+    }
+
+    function initCatalogDropdown() {
+      const sel = document.getElementById("selCableCatalog");
+      sel.innerHTML = "";
+      CABLE_CATALOG.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = `${c.type} ${c.form} — ${c.desc} (Ø ${c.d}mm)`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function resetProject() {
+      state.width = 200;
+      state.height = 75;
+      state.bends90 = 0;
+      state.tees = 0;
+      state.reducers = 0;
+      state.title = "NUOVA CANALINA 01 - L=200mm H=75mm";
+      state.cables = [];
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+    }
+
+    function swapDimensions() {
+      const oldW = state.width;
+      state.width = Math.max(50, state.height);
+      state.height = Math.min(300, Math.max(35, oldW));
+      state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`).replace(/H=\s*\d+\s*mm/i, `H=${state.height}mm`);
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+    }
+
+    function toggleTheme() {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      document.getElementById("btnTheme").textContent = state.theme === "dark" ? "Tema: Scuro" : "Tema: Chiaro";
+      document.getElementById("cadCanvas").className = state.theme === "dark"
+        ? "w-full flex-1 cad-grid-dark cursor-grab active:cursor-grabbing"
+        : "w-full flex-1 cad-grid-light cursor-grab active:cursor-grabbing";
+      drawScene();
+    }
+
+    function pushStateToUI() {
+      document.getElementById("inpTitle").value = state.title;
+      document.getElementById("exportName").value = state.title.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "") + "_Costruttivo";
+      document.getElementById("inpWidth").value = state.width;
+      document.getElementById("inpHeight").value = state.height;
+      document.getElementById("inpThk").value = String(state.thk);
+      document.getElementById("inpLength").value = state.lengthM;
+      document.getElementById("inpTrayType").value = state.trayType;
+      document.getElementById("inpPacking").value = state.packing;
+      document.getElementById("inpPlanTag").value = state.planTag;
+      document.getElementById("chkEdge").checked = state.edgeGuard;
+      document.getElementById("chkClamps").checked = state.clamps;
+      document.getElementById("chkIso3D").checked = state.showIso3D;
+      document.getElementById("chkPlanTag").checked = state.showPlanTag;
+      document.getElementById("inpBrand").value = state.brand;
+      document.getElementById("inpMaterial").value = state.material;
+      document.getElementById("inpCover").value = state.cover;
+      document.getElementById("inpSeptums").value = String(state.septums);
+      document.getElementById("inpEarth").value = state.earth;
+      document.getElementById("inpClearance").value = String(state.clearance);
+      document.getElementById("inpRei").value = state.reiCount;
+      document.getElementById("inpSupport").value = state.support;
+      document.getElementById("inpSpan").value = state.spanM;
+      document.getElementById("lblSpan").textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
+      document.getElementById("inpSeismic").value = state.seismic;
+      document.getElementById("inpBends").value = state.bends90;
+      document.getElementById("inpTees").value = state.tees;
+      document.getElementById("inpReducers").value = state.reducers;
+    }
+
+    function syncFromUI() {
+      state.title = document.getElementById("inpTitle").value || "CANALINA 01";
+      state.width = Math.max(50, parseFloat(document.getElementById("inpWidth").value) || 100);
+      state.height = Math.max(35, parseFloat(document.getElementById("inpHeight").value) || 75);
+      state.thk = parseFloat(document.getElementById("inpThk").value) || 1.5;
+      state.lengthM = Math.max(3, parseFloat(document.getElementById("inpLength").value) || 30);
+      state.trayType = document.getElementById("inpTrayType").value;
+      state.packing = document.getElementById("inpPacking").value;
+      state.planTag = document.getElementById("inpPlanTag").value || "SEZ. A-A | H=+3.20m";
+      state.edgeGuard = document.getElementById("chkEdge").checked;
+      state.clamps = document.getElementById("chkClamps").checked;
+      state.showIso3D = document.getElementById("chkIso3D").checked;
+      state.showPlanTag = document.getElementById("chkPlanTag").checked;
+      state.brand = document.getElementById("inpBrand").value;
+      state.seriesId = document.getElementById("inpSeries").value;
+      state.material = document.getElementById("inpMaterial").value;
+      state.cover = document.getElementById("inpCover").value;
+      state.septums = parseInt(document.getElementById("inpSeptums").value, 10) || 0;
+      state.earth = document.getElementById("inpEarth").value;
+      state.clearance = parseInt(document.getElementById("inpClearance").value, 10) || 0;
+      state.reiCount = Math.max(0, parseInt(document.getElementById("inpRei").value, 10) || 0);
+      state.support = document.getElementById("inpSupport").value;
+      state.spanM = parseFloat(document.getElementById("inpSpan").value) || 1.5;
+      state.seismic = document.getElementById("inpSeismic").value;
+      state.bends90 = Math.max(0, parseInt(document.getElementById("inpBends").value, 10) || 0);
+      state.tees = Math.max(0, parseInt(document.getElementById("inpTees").value, 10) || 0);
+      state.reducers = Math.max(0, parseInt(document.getElementById("inpReducers").value, 10) || 0);
+      state.tb.client = document.getElementById("inpClient").value || "PROGETTO ESECUTIVO";
+      state.tb.docCode = document.getElementById("inpDocCode").value || "PE-IMP-EL-PART-02";
+      state.tb.author = document.getElementById("inpAuthor").value || "STUDIO TECNICO";
+      state.tb.scaleRev = document.getElementById("inpScaleRev").value || "Scala 1:1 - Rev.00";
+
+      state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`).replace(/H=\s*\d+\s*mm/i, `H=${state.height}mm`);
+      document.getElementById("inpTitle").value = state.title;
+      document.getElementById("headerTitle").textContent = state.title;
+      document.title = state.title + " — Constructive Cable Tray Studio v16.2";
+      document.getElementById("lblSpan").textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
+      document.getElementById("exportName").value = state.title.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "") + "_Costruttivo";
+
+      recalculateAll();
+    }
+
+    // ============================================================================
+    // 3. MOTORE DI COLLISIONE FISICA RIGIDA 1:1 E POSIZIONAMENTO CAVI
+    // ============================================================================
+    function getSeptumXList() {
+      if (state.septums === 1) return [state.width * 0.6];
+      if (state.septums >= 2) return [state.width * 0.34, state.width * 0.68];
+      return [];
+    }
+
+    function isSpotFree(cable, x, y) {
+      const W = state.width, H = state.height, r = cable.d / 2;
+      if (x < r + 0.3 || x > W - r - 0.3) return false;
+      if (y < r - 0.1 || y > H - r - 0.3) return false;
+
+      for (const sx of getSeptumXList()) {
+        if (Math.abs(x - sx) < r + state.thk / 2 + 0.3) return false;
+      }
+
+      for (const other of state.cables) {
+        if (other === cable || other.x < 0) continue;
+        if (Math.hypot(x - other.x, y - other.y) < r + other.d / 2 + 0.2) return false;
+      }
+      return true;
+    }
+
+    function resolveNonOverlappingPosition(dragCable, targetX, targetY) {
+      const W = state.width, H = state.height, r = dragCable.d / 2;
+      const clampedX = Math.max(r + 0.4, Math.min(W - r - 0.4, targetX));
+      const clampedY = Math.max(r, Math.min(H - r - 0.4, targetY));
+
+      if (isSpotFree(dragCable, clampedX, clampedY)) {
+        return { x: +(clampedX.toFixed(1)), y: +(clampedY.toFixed(1)) };
+      }
+
+      const startX = dragCable.x, startY = dragCable.y;
+      const dx = clampedX - startX, dy = clampedY - startY;
+      const dist = Math.hypot(dx, dy);
+      let bestX = startX, bestY = startY;
+
+      if (dist > 0.05) {
+        const steps = Math.min(70, Math.ceil(dist / 0.25));
+        for (let s = 1; s <= steps; s++) {
+          const tx = startX + (dx * s) / steps;
+          const ty = startY + (dy * s) / steps;
+          if (isSpotFree(dragCable, tx, ty)) {
+            bestX = tx; bestY = ty;
+          } else {
+            break;
+          }
+        }
+      }
+      return { x: +(bestX.toFixed(1)), y: +(bestY.toFixed(1)) };
+    }
+
+    function findFreePositionNear(cable, targetX, targetY) {
+      const W = state.width, H = state.height, r = cable.d / 2;
+      const cx = Math.max(r + 0.4, Math.min(W - r - 0.4, targetX));
+      const cy = Math.max(r, Math.min(H - r - 0.4, targetY));
+      if (isSpotFree(cable, cx, cy)) return { x: +(cx.toFixed(1)), y: +(cy.toFixed(1)) };
+
+      for (let rad = 0.8; rad <= Math.max(W, H); rad += 0.8) {
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 10) {
+          const tx = cx + Math.cos(a) * rad;
+          const ty = cy + Math.sin(a) * rad;
+          if (isSpotFree(cable, tx, ty)) return { x: +(tx.toFixed(1)), y: +(ty.toFixed(1)) };
+        }
+      }
+      return { x: +(cx.toFixed(1)), y: +(cy.toFixed(1)) };
+    }
+
+    function packByGravity(list, xMin, xMax) {
+      const placed = [];
+      const trefoilBuckets = {};
+      const singleCables = [];
+      list.forEach(c => {
+        if (c.trefoil && c.trefoilGroupId) {
+          if (!trefoilBuckets[c.trefoilGroupId]) trefoilBuckets[c.trefoilGroupId] = [];
+          trefoilBuckets[c.trefoilGroupId].push(c);
+        } else {
+          singleCables.push(c);
+        }
+      });
+
+      const packUnits = [];
+      Object.entries(trefoilBuckets).forEach(([gid, group]) => {
+        if (group.length === 3) {
+          const d0 = group[0].d;
+          packUnits.push({ isTrefoil: true, d: d0 * 2.02, baseD: d0, members: group });
+        } else {
+          group.forEach(c => packUnits.push({ isTrefoil: false, d: c.d, cable: c }));
+        }
+      });
+      singleCables.forEach(c => packUnits.push({ isTrefoil: false, d: c.d, cable: c }));
+
+      const sorted = packUnits.sort((a, b) => b.d - a.d);
+      sorted.forEach(u => {
+        if (u.isTrefoil) {
+          const r = u.baseD / 2;
+          const spanX = 2 * r;
+          const startX = xMin + spanX + 0.6;
+          const endX = Math.max(startX, xMax - spanX - 0.6);
+          let bestX = startX, bestY = r, bestScore = 1e9;
+          for (let tx = startX; tx <= endX; tx += 0.6) {
+            let ty = r;
+            const testCenters = [
+              { dx: -r, dy: 0, r },
+              { dx: +r, dy: 0, r },
+              { dx: 0,  dy: r * 1.73205, r }
+            ];
+            for (const p of placed) {
+              for (const tc of testCenters) {
+                const distX = Math.abs((tx + tc.dx) - p.x);
+                const minD = tc.r + p.d / 2 + 0.35;
+                if (distX < minD) {
+                  const reqBaseY = p.y + Math.sqrt(minD * minD - distX * distX) - tc.dy;
+                  if (reqBaseY > ty) ty = reqBaseY;
+                }
+              }
+            }
+            const score = ty * 100 + tx;
+            if (score < bestScore) { bestScore = score; bestX = tx; bestY = ty; }
+          }
+          const c0 = u.members[0], c1 = u.members[1], c2 = u.members[2];
+          c0.x = +((bestX - r).toFixed(1)); c0.y = +(bestY.toFixed(1));
+          c1.x = +((bestX + r).toFixed(1)); c1.y = +(bestY.toFixed(1));
+          c2.x = +(bestX.toFixed(1));       c2.y = +((bestY + r * 1.73205).toFixed(1));
+          placed.push(c0, c1, c2);
+        } else {
+          const c = u.cable;
+          const r = c.d / 2;
+          const startX = xMin + r + 0.5;
+          const endX = Math.max(startX, xMax - r - 0.5);
+          let bestX = startX, bestY = r, bestScore = 1e9;
+          for (let tx = startX; tx <= endX; tx += 0.6) {
+            let ty = r;
+            for (const p of placed) {
+              const dx = Math.abs(tx - p.x);
+              const minD = r + p.d / 2 + 0.4;
+              if (dx < minD) ty = Math.max(ty, p.y + Math.sqrt(minD * minD - dx * dx));
+            }
+            const score = ty * 100 + tx;
+            if (score < bestScore) { bestScore = score; bestX = tx; bestY = ty; }
+          }
+          c.x = +(bestX.toFixed(1));
+          c.y = +(bestY.toFixed(1));
+          placed.push(c);
+        }
+      });
+    }
+
+    function recalculateAll() {
+      const W = state.width, H = state.height;
+      if (state.packing === "input") {
+        state.cables.forEach(c => { c.x = -999; c.y = -999; });
+        state.cables.forEach(c => {
+          const pos = findFreePositionNear(c, c.origX, c.origY);
+          c.x = pos.x; c.y = pos.y;
+        });
+      } else {
+        const seps = getSeptumXList();
+        if (seps.length === 0) {
+          packByGravity(state.cables, 0, W);
+        } else if (seps.length === 1) {
+          packByGravity(state.cables.filter(c => c.sys !== "SPECIAL_ELV"), 0, seps[0]);
+          packByGravity(state.cables.filter(c => c.sys === "SPECIAL_ELV"), seps[0], W);
+        } else {
+          packByGravity(state.cables.filter(c => c.sys === "BT_POWER"), 0, seps[0]);
+          packByGravity(state.cables.filter(c => c.sys === "BT_FIRE"), seps[0], seps[1]);
+          packByGravity(state.cables.filter(c => c.sys === "SPECIAL_ELV"), seps[1], W);
+        }
+      }
+
+      const trayArea = W * H;
+      let usedArea = 0, cablesKgM = 0, cuArea = 0, maxBendR = 0, critCode = "-", jouleWm = 0, maxDv = 0;
+
+      // Rilevamento automatico degli strati verticali (CEI UNEL 35024/1)
+      const yLayers = [];
+      state.cables.forEach(c => {
+        if (!yLayers.some(yl => Math.abs(yl - c.y) < c.d * 0.72)) yLayers.push(c.y);
+      });
+      const nLayers = Math.max(1, yLayers.length);
+      const nCirc = state.cables.length;
+      const kFascio = nCirc <= 1 ? 1.0 : nCirc <= 2 ? 0.85 : nCirc <= 3 ? 0.79 : nCirc <= 6 ? 0.75 : nCirc <= 9 ? 0.72 : 0.68;
+      const kStrati = nLayers === 1 ? 1.0 : nLayers === 2 ? 0.80 : 0.73;
+      const kPosa = (state.trayType === "solid" && state.cover !== "none") ? 0.85
+                  : (state.cover === "snap" || state.cover === "clamped") ? 0.90
+                  : (state.trayType === "mesh" || state.trayType === "ladder") ? 1.00 : 0.96;
+      const kr = +(kFascio * kStrati * kPosa).toFixed(2);
+
+      let deratingFailCode = null;
+      state.cables.forEach(c => {
+        usedArea += Math.PI * Math.pow(c.d / 2, 2);
+        cablesKgM += c.w;
+        cuArea += (c.sec || 2.5) * (c.cores || 2);
+        const rMin = Math.round(c.d * (c.bendK || 10));
+        if (rMin > maxBendR) { maxBendR = rMin; critCode = c.code; }
+        if (state.pdfLoaded && c.ib > 0) {
+          const pj = (c.cores || 2) * (0.0214 / Math.max(0.5, c.sec || 2.5)) * Math.pow(c.ib, 2);
+          jouleWm += pj;
+          const kP = c.cores === 3 ? 1.732 : 2.0;
+          const vN = c.cores === 3 ? 400 : 230;
+          const dv = ((kP * state.lengthM * c.ib * (0.0214 / Math.max(0.5, c.sec || 2.5)) * 0.9) / vN) * 100;
+          if (dv > maxDv) maxDv = dv;
+          if ((c.iz0 || 27) * kr < c.ib && !deratingFailCode) deratingFailCode = c.code;
+        }
+      });
+
+      // Verifica Segregazione Normativa CEI 64-8 Art. 528.1 per ciascuno scomparto
+      const sepBounds = [0, ...getSeptumXList(), W];
+      let segConform = true;
+      let segDetail = `Art. 528.1 OK (Kr=${kr} su ${nLayers} str.)`;
+      for (let sIdx = 0; sIdx < sepBounds.length - 1; sIdx++) {
+        const x0 = sepBounds[sIdx], x1 = sepBounds[sIdx + 1];
+        const compCables = state.cables.filter(c => c.x >= x0 - 0.5 && c.x <= x1 + 0.5);
+        const hasPower = compCables.some(c => c.sys === "BT_POWER" || c.sys === "BT_FIRE");
+        const unshieldedElv = compCables.filter(c => c.sys === "SPECIAL_ELV" && !/FTG18|FG16|0,6\/1|1kV|C-4/i.test(c.type));
+        if (hasPower && unshieldedElv.length > 0) {
+          segConform = false;
+          segDetail = `Conflitto ${unshieldedElv[0].code}: inserire Setto!`;
+          break;
+        }
+      }
+
+      const fillPct = trayArea > 0 ? +((usedArea / trayArea) * 100).toFixed(1) : 0;
+      const sparePct = +(Math.max(0, 100 - fillPct)).toFixed(1);
+      const unfolded = W + 2 * H + 16 + (state.cover !== "none" ? W + 20 : 0);
+      const trayKgM = +(unfolded * state.thk * 0.00785 * (state.trayType === "perforated" ? 0.85 : 1.0)).toFixed(2);
+      const totalKgM = +(cablesKgM + trayKgM).toFixed(2);
+
+      const supSpec = SUPPORT_SPECS[state.support] || SUPPORT_SPECS.wall_med;
+      const qMaxKgM = calcAllowedLinearLoadKgM(state.support, state.spanM);
+      const pointLoad = +(totalKgM * state.spanM).toFixed(1);
+      const maxPoint = Math.round(qMaxKgM * state.spanM);
+      const loadPct = +((totalKgM / qMaxKgM) * 100).toFixed(1);
+      const maxDeflectionMm = +Math.min(10.0, (state.spanM * 1000) / 200).toFixed(1);
+      const deflectionMm = calcElasticDeflectionMm(totalKgM, state.support, state.spanM);
+
+      const pullDaN = +(cablesKgM * state.lengthM * 0.35 * Math.exp(0.35 * state.bends90 * (Math.PI / 2))).toFixed(1);
+      const maxPullDaN = Math.round(Math.max(15, cuArea * 5.0));
+      const fitR = maxBendR <= 150 ? 150 : maxBendR <= 300 ? 300 : 600;
+
+      const nVerghe = Math.ceil(state.lengthM / 3);
+      const nStaffe = Math.ceil(state.lengthM / state.spanM) + 1;
+      const serList = BRAND_SERIES[state.brand] || BRAND_SERIES.LEGRAND;
+      const serObj = serList.find(s => s.id === state.seriesId) || serList[0];
+      const pCode = serObj.code;
+
+      const freeAreaCm2 = Math.max(0, Math.round((trayArea - usedArea) / 100));
+      const nSacchettiRei = Math.max(2, Math.ceil(freeAreaCm2 / 35)) * state.reiCount;
+
+      const bom = [
+        { code: `${pCode}-${W}x${H}`, desc: `${serObj.name} L=${W}xH=${H}mm sp.${state.thk}mm`, qty: nVerghe * 3, um: "m", note: `${nVerghe} verghe da 3m` },
+        ...(state.cover !== "none" ? [{ code: `${pCode}-COP-${W}`, desc: `Coperchio superiore (${state.cover}) L=${W}mm`, qty: nVerghe * 3, um: "m", note: "Inclusi fermacoperchi" }] : []),
+        ...(state.septums > 0 ? [{ code: `${pCode}-SET-H${H}`, desc: `Setto separatore longitudinale H=${H}mm (${state.septums} file)`, qty: nVerghe * 3 * state.septums, um: "m", note: "Segregazione CEI 64-8" }] : []),
+        { code: `${pCode}-GIU-M6`, desc: `Kit giunzione lineare rinforzata con bulloneria M6`, qty: nVerghe, um: "cad", note: "1 ogni 3m" },
+        { code: `${pCode}-STF-${W}`, desc: `${supSpec.name} L=${W + 50}mm (Passo Ls=${state.spanM}m)`, qty: nStaffe, um: "cad", note: `Inclusi ${nStaffe * 2} tasselli M10` },
+        ...(state.bends90 > 0 ? [{ code: `${pCode}-CRV90-${W}-R${fitR}`, desc: `Curva piana 90° L=${W}mm H=${H}mm (R_acc=${fitR}mm >= R_min=${maxBendR}mm)`, qty: state.bends90, um: "cad", note: `Cavo critico: ${critCode}` }] : []),
+        ...(state.tees > 0 ? [{ code: `${pCode}-DEVT-${W}`, desc: `Deviazione piana a T L=${W}mm H=${H}mm completa di giunti`, qty: state.tees, um: "cad", note: "Raggio R=" + fitR + "mm" }] : []),
+        ...(state.reducers > 0 ? [{ code: `${pCode}-RID-${W}`, desc: `Riduzione simmetrica/asimmetrica di larghezza L=${W}mm`, qty: state.reducers, um: "cad", note: "Acciaio zincato" }] : []),
+        ...(state.seismic !== "none" ? [{ code: `${pCode}-SISM-${state.seismic.toUpperCase()}`, desc: `Kit controvento antisismico NTC 2018 (${state.seismic === "cable_9m" ? "Funi 45° ogni 9m" : "Strut rigido 45° ogni 6m"})`, qty: Math.max(1, Math.ceil(state.lengthM / (state.seismic === "cable_9m" ? 9 : 6))), um: "kit", note: "Certificato EN 61537" }] : []),
+        ...(state.reiCount > 0 ? [{ code: `FIRE-EI120-${W}x${H}`, desc: `Barriera tagliafuoco intumescente EI120 (cuscini + mastice endotermico per ${freeAreaCm2} cm² netti/varco)`, qty: state.reiCount, um: "varco", note: `${nSacchettiRei} cuscini intumescenti tot.` }] : []),
+        ...(state.earth !== "none" ? [{ code: `${pCode}-PE-16`, desc: `Morsetto equipotenziale + capocorda M6 + conduttore PE (${state.earth.toUpperCase()})`, qty: Math.ceil(state.lengthM / 12) + 1, um: "cad", note: "1 ogni 12m" }] : [])
+      ];
+
+      metrics = {
+        fillPct, sparePct, kr, nLayers, kFascio, kStrati, kPosa, segConform, segDetail,
+        totalKgM, qMaxKgM, pointLoad, maxPoint, loadPct,
+        deflectionMm, maxDeflectionMm,
+        pullDaN, maxPullDaN, maxBendR, critCode, fitR,
+        jouleWm: +jouleWm.toFixed(1), maxDv: +maxDv.toFixed(2), bom
+      };
+
+      document.getElementById("kpiAreaUsed").textContent = Math.round(usedArea);
+      document.getElementById("kpiAreaTot").textContent = Math.round(trayArea);
+      document.getElementById("kpiFill").textContent = `${fillPct}%`;
+      document.getElementById("kpiSpare").textContent = `Riserva +${sparePct}%`;
+      document.getElementById("kpiLoadPct").textContent = `${loadPct}%`;
+      document.getElementById("kpiSpan").textContent = `${state.spanM.toFixed(2)}m`;
+      document.getElementById("kpiLoadTxt").textContent = loadPct <= 100 ? `${pointLoad} kg / ${maxPoint} kg OK` : `SOVRACCARICO (${pointLoad}/${maxPoint} kg)!`;
+      document.getElementById("kpiLoadTxt").className = loadPct <= 100 ? "text-[10px] text-emerald-400" : "text-[10px] text-red-400 font-bold";
+      document.getElementById("kpiPull").textContent = pullDaN;
+      document.getElementById("kpiBendR").textContent = maxBendR;
+      const pullOk = pullDaN <= maxPullDaN;
+      const pullTxtEl = document.getElementById("kpiPullTxt");
+      if (pullTxtEl) {
+        pullTxtEl.textContent = pullOk
+          ? `Tiro OK (<= ${maxPullDaN} daN) | R_acc=${fitR}mm`
+          : `TIRO ECCESSIVO (> ${maxPullDaN} daN)!`;
+        pullTxtEl.className = pullOk ? "text-[10px] text-emerald-400" : "text-[10px] text-red-400 font-bold";
+      }
+      document.getElementById("kpiReiTxt").textContent = state.reiCount > 0 ? `${state.reiCount} Varchi EI120 (${nSacchettiRei} cuscini)` : "0 Varchi EI120";
+      const seisTxtEl = document.getElementById("kpiSeisTxt");
+      if (seisTxtEl) {
+        seisTxtEl.textContent = state.seismic === "none" ? "NTC 2018: Standard" : `NTC 2018: ${ Math.max(1, Math.ceil(state.lengthM / (state.seismic === "cable_9m" ? 9 : 6))) } Kit Sismici`;
+        seisTxtEl.className = state.seismic === "none" ? "text-[10px] text-slate-500" : "text-[10px] text-amber-300 font-semibold";
+      }
+
+      if (state.pdfLoaded) {
+        document.getElementById("kpiJoule").textContent = metrics.jouleWm;
+        document.getElementById("kpiDv").textContent = `${metrics.maxDv}%`;
+        const deratEl = document.getElementById("kpiDeratTxt");
+        if (deratEl) {
+          deratEl.textContent = deratingFailCode ? `ATTENZIONE: Iz' < Ib su ${deratingFailCode} (Kr=${kr})` : `Kr=${kr} (${nLayers} str.) • Iz'=Iz·Kr >= Ib OK`;
+          deratEl.className = deratingFailCode ? "text-[10px] text-red-400 font-bold" : "text-[10px] text-emerald-400";
+        }
+      }
+
+      const segCard = document.getElementById("kpiSegCard");
+      const segTitle = document.getElementById("kpiSegTitle");
+      if (segCard && segTitle) {
+        const segSub = segCard.querySelector("div:last-child");
+        if (segConform) {
+          segCard.className = "bg-slate-900 border border-emerald-500/40 rounded-xl p-2.5";
+          segTitle.textContent = "CONFORME";
+          segTitle.className = "text-xs font-bold text-emerald-400 mt-0.5";
+          if (segSub) segSub.textContent = segDetail;
+        } else {
+          segCard.className = "bg-red-950/30 border border-red-500/60 rounded-xl p-2.5";
+          segTitle.textContent = "NON CONFORME (528.1)";
+          segTitle.className = "text-xs font-bold text-red-400 mt-0.5 animate-pulse";
+          if (segSub) segSub.textContent = segDetail;
+        }
+      }
+
+      if (typeof syncActiveSectionToMultiStore === "function") syncActiveSectionToMultiStore();
+      updateTableUI();
+      drawInteractiveLoadCurveWidget();
+      drawScene();
+    }
+
+    // ============================================================================
+    // 4. WIDGET INTERATTIVO DEDICATO CURVA DI CARICO & FRECCIA (CEI EN 61537)
+    // ============================================================================
+    const lcCanvas = document.getElementById("loadCurveCanvas");
+    const lcCtx = lcCanvas.getContext("2d");
+    let isDraggingSpanOnChart = false;
+
+    function drawInteractiveLoadCurveWidget() {
+      const w = lcCanvas.width, h = lcCanvas.height;
+      lcCtx.clearRect(0, 0, w, h);
+
+      const padL = 38, padR = 36, padT = 18, padB = 26;
+      const gw = w - padL - padR, gh = h - padT - padB;
+
+      const qAt1m = calcAllowedLinearLoadKgM(state.support, 1.0);
+      const maxScaleY = Math.max(25, Math.ceil(Math.max(qAt1m, metrics.totalKgM * 1.3) / 10) * 10);
+
+      lcCtx.lineWidth = 1;
+      lcCtx.font = "10px 'JetBrains Mono', monospace";
+      for (let i = 0; i <= 4; i++) {
+        const frac = i / 4;
+        const y = padT + gh - frac * gh;
+        lcCtx.strokeStyle = "#1e293b";
+        lcCtx.beginPath(); lcCtx.moveTo(padL, y); lcCtx.lineTo(padL + gw, y); lcCtx.stroke();
+        lcCtx.fillStyle = "#94a3b8";
+        lcCtx.textAlign = "right";
+        lcCtx.fillText(`${Math.round(frac * maxScaleY)}`, padL - 5, y + 3);
+      }
+
+      const spans = [1.0, 1.5, 2.0, 2.5, 3.0];
+      spans.forEach(s => {
+        const x = padL + ((s - 1.0) / 2.0) * gw;
+        lcCtx.strokeStyle = "#1e293b";
+        lcCtx.beginPath(); lcCtx.moveTo(x, padT); lcCtx.lineTo(x, padT + gh); lcCtx.stroke();
+        lcCtx.fillStyle = "#94a3b8";
+        lcCtx.textAlign = "center";
+        lcCtx.fillText(`${s.toFixed(1)}m`, x, padT + gh + 14);
+      });
+
+      lcCtx.beginPath();
+      lcCtx.moveTo(padL, padT + gh);
+      for (let s = 1.0; s <= 3.001; s += 0.05) {
+        const x = padL + ((s - 1.0) / 2.0) * gw;
+        const q = Math.min(maxScaleY, calcAllowedLinearLoadKgM(state.support, s));
+        const y = padT + gh - (q / maxScaleY) * gh;
+        lcCtx.lineTo(x, y);
+      }
+      lcCtx.lineTo(padL + gw, padT + gh);
+      lcCtx.closePath();
+      lcCtx.fillStyle = "rgba(34, 197, 94, 0.12)";
+      lcCtx.fill();
+
+      lcCtx.beginPath();
+      for (let s = 1.0; s <= 3.001; s += 0.05) {
+        const x = padL + ((s - 1.0) / 2.0) * gw;
+        const q = Math.min(maxScaleY, calcAllowedLinearLoadKgM(state.support, s));
+        const y = padT + gh - (q / maxScaleY) * gh;
+        if (s === 1.0) lcCtx.moveTo(x, y); else lcCtx.lineTo(x, y);
+      }
+      lcCtx.strokeStyle = "#22c55e";
+      lcCtx.lineWidth = 2.2;
+      lcCtx.stroke();
+
+      lcCtx.beginPath();
+      lcCtx.setLineDash([4, 3]);
+      for (let s = 1.0; s <= 3.001; s += 0.05) {
+        const x = padL + ((s - 1.0) / 2.0) * gw;
+        const defl = calcElasticDeflectionMm(metrics.totalKgM, state.support, s);
+        const y = padT + gh - Math.min(1.0, defl / 10.0) * gh;
+        if (s === 1.0) lcCtx.moveTo(x, y); else lcCtx.lineTo(x, y);
+      }
+      lcCtx.strokeStyle = "#38bdf8";
+      lcCtx.lineWidth = 1.5;
+      lcCtx.stroke();
+      lcCtx.setLineDash([]);
+
+      lcCtx.fillStyle = "#38bdf8";
+      lcCtx.textAlign = "left";
+      lcCtx.fillText("10mm", padL + gw + 4, padT + 4);
+      lcCtx.fillText("5mm", padL + gw + 4, padT + gh * 0.5 + 3);
+      lcCtx.fillText("0mm", padL + gw + 4, padT + gh + 3);
+
+      const yWork = padT + gh - Math.min(1.0, metrics.totalKgM / maxScaleY) * gh;
+      lcCtx.strokeStyle = "rgba(251, 191, 36, 0.45)";
+      lcCtx.lineWidth = 1.2;
+      lcCtx.beginPath(); lcCtx.moveTo(padL, yWork); lcCtx.lineTo(padL + gw, yWork); lcCtx.stroke();
+
+      const xWork = padL + ((state.spanM - 1.0) / 2.0) * gw;
+      const yLim = padT + gh - Math.min(1.0, metrics.qMaxKgM / maxScaleY) * gh;
+      const isOk = metrics.totalKgM <= metrics.qMaxKgM;
+
+      lcCtx.strokeStyle = "#f59e0b";
+      lcCtx.lineWidth = 1.4;
+      lcCtx.beginPath(); lcCtx.moveTo(xWork, padT); lcCtx.lineTo(xWork, padT + gh); lcCtx.stroke();
+
+      lcCtx.beginPath(); lcCtx.arc(xWork, yLim, 4, 0, Math.PI * 2);
+      lcCtx.fillStyle = "#22c55e"; lcCtx.fill();
+
+      lcCtx.beginPath(); lcCtx.arc(xWork, yWork, 5.5, 0, Math.PI * 2);
+      lcCtx.fillStyle = isOk ? "#fbbf24" : "#ef4444";
+      lcCtx.fill();
+      lcCtx.strokeStyle = "#0f172a"; lcCtx.lineWidth = 1.5; lcCtx.stroke();
+
+      document.getElementById("lblChartQtot").textContent = `${metrics.totalKgM} kg/m`;
+      document.getElementById("lblChartQamm").textContent = `${metrics.qMaxKgM} kg/m`;
+      document.getElementById("lblChartDefl").textContent = `${metrics.deflectionMm} / ${metrics.maxDeflectionMm} mm`;
+
+      const badge = document.getElementById("curveStatusBadge");
+      if (isOk) {
+        badge.textContent = `OK (${metrics.loadPct}%)`;
+        badge.className = "text-[10px] mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold";
+      } else {
+        badge.textContent = `SOVRACCARICO (${metrics.loadPct}%)`;
+        badge.className = "text-[10px] mono px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 font-bold";
+      }
+    }
+
+    function updateSpanFromChartMouse(e) {
+      const rect = lcCanvas.getBoundingClientRect();
+      const scaleX = lcCanvas.width / rect.width;
+      const mx = (e.clientX - rect.left) * scaleX;
+      const padL = 38, padR = 36;
+      const gw = lcCanvas.width - padL - padR;
+      const frac = Math.max(0, Math.min(1, (mx - padL) / gw));
+      const newSpan = +(1.0 + frac * 2.0).toFixed(2);
+      state.spanM = Math.round(newSpan * 20) / 20;
+      document.getElementById("inpSpan").value = state.spanM;
+      document.getElementById("lblSpan").textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
+      recalculateAll();
+    }
+
+    lcCanvas.addEventListener("mousedown", (e) => { isDraggingSpanOnChart = true; updateSpanFromChartMouse(e); });
+    window.addEventListener("mousemove", (e) => { if (isDraggingSpanOnChart) updateSpanFromChartMouse(e); });
+    window.addEventListener("mouseup", () => { isDraggingSpanOnChart = false; });
+
+    function addCableFromPortfolio() {
+      const id = document.getElementById("selCableCatalog").value;
+      const qty = Math.max(1, Math.min(30, parseInt(document.getElementById("inpCableQty").value, 10) || 1));
+      const customCode = document.getElementById("inpCableCode").value.trim();
+      const trefoil = document.getElementById("chkTrefoil").checked;
+      const item = CABLE_CATALOG.find(c => c.id === id) || CABLE_CATALOG[0];
+      const effectiveQty = (trefoil && qty === 1 && isUnipolarCable(item)) ? 3 : qty;
+      const batchId = Date.now();
+
+      for (let q = 0; q < effectiveQty; q++) {
+        const idx = state.cables.length + 1;
+        const baseCode = customCode ? customCode : item.code;
+        const phaseLabels = ["L1", "L2", "L3"];
+        const suffix = trefoil ? phaseLabels[q % 3] : `${q + 1}`;
+        const code = (customCode && effectiveQty > 1) || trefoil ? `${baseCode}-${suffix}` : baseCode;
+        const trefoilGroupId = trefoil ? `TRF_${batchId}_${Math.floor(q / 3)}` : null;
+        
+        const uInfo = findInUnifilareDict(code) || findInUnifilareDict(baseCode);
+        let finalDesc = (uInfo && uInfo.desc) || item.desc;
+        
+        if (isUnipolarCable(item)) {
+          const match = state.cables.find(c => c.code.startsWith(baseCode) || baseCode.startsWith(c.code));
+          if (match) finalDesc = match.desc;
+        }
+
+        state.cables.push({
+          id: idx,
+          code,
+          d: item.d,
+          w: item.w,
+          sec: item.sec,
+          cores: item.cores,
+          iz0: item.iz0,
+          ib: (state.pdfLoaded && uInfo) ? uInfo.ib : (state.pdfLoaded ? 12 : 0),
+          bendK: item.bendK,
+          trefoil,
+          trefoilGroupId,
+          origX: 18 + ((idx - 1) % 5) * 15,
+          origY: item.d / 2 + Math.floor((idx - 1) / 5) * 15,
+          x: 18,
+          y: item.d / 2,
+          desc: finalDesc,
+          type: (uInfo && uInfo.cable) || item.type,
+          form: (uInfo && uInfo.form) || item.form,
+          sys: item.sys
+        });
+      }
+      document.getElementById("inpCableCode").value = "";
+      recalculateAll();
+    }
+
+    function addCustomCableToDB() {
+      const form = document.getElementById("newCbForm").value || "1(1x1.5)";
+      const desc = document.getElementById("newCbDesc").value || "Cavo Custom Inserito";
+      const d = parseFloat(document.getElementById("newCbD").value) || 10.0;
+      const w = +(Math.pow(d / 10, 2) * 0.145).toFixed(2);
+      
+      CABLE_CATALOG.push({
+        id: "CUSTOM_" + Date.now(),
+        code: "CST-00",
+        desc: desc,
+        type: "CUSTOM",
+        form: form,
+        d: d,
+        w: w,
+        sec: parseSectionFromForm(form),
+        cores: /1[xX]|1\s*\(/.test(form) ? 1 : 3,
+        iz0: 20,
+        bendK: 10,
+        sys: "BT_POWER"
+      });
+      
+      initCatalogDropdown();
+      document.getElementById("selCableCatalog").selectedIndex = CABLE_CATALOG.length - 1;
+    }
+
+    function autoSizeTray() {
+      if (!state.cables.length) return;
+      const reservePct = parseFloat(document.getElementById("inpSpareReserve").value) || 30;
+      const targetFillFactor = (100 - reservePct) / 100;
+      
+      const used = state.cables.reduce((s, c) => s + Math.PI * Math.pow(c.d / 2, 2), 0);
+      const widths = [50, 100, 150, 200, 300, 400, 500, 600, 800, 1000];
+      
+      state.width = widths.find(w => w * state.height >= used / targetFillFactor) || widths[widths.length - 1];
+      state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`);
+      
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+    }
+
+    function updateTableUI() {
+      const head = document.getElementById("tblHead");
+      const body = document.getElementById("tblBody");
+      head.innerHTML = `
+        <tr class="border-b border-slate-800 text-[10px] uppercase text-slate-400 mono bg-slate-950/60">
+          <th class="py-1 px-2">Pos</th>
+          <th class="py-1 px-2">Sigla Utenza / Linea</th>
+          <th class="py-1 px-2">Ø (mm)</th>
+          <th class="py-1 px-2">Peso (kg/m)</th>
+          <th class="py-1 px-2">R_min</th>
+          <th class="py-1 px-2">Coord (X,Y)</th>
+          <th class="py-1 px-2">Descrizione Utenza</th>
+          <th class="py-1 px-2">Tipo Cavo</th>
+          <th class="py-1 px-2">Formazione</th>
+          <th class="py-1 px-2 text-right">Azioni</th>
+        </tr>`;
+      body.innerHTML = "";
+      if (!state.cables.length) {
+        body.innerHTML = `<tr><td colspan="10" class="py-4 text-center text-slate-500">Canalina vuota (0 cavi). Clicca su "📁 1. Importa .DWG / .DXF Reale" per decomprimere le entità geometriche del tuo file!</td></tr>`;
+        return;
+      }
+      state.cables.forEach((c, i) => {
+        const isUni = isUnipolarCable(c);
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-800/50 transition";
+        tr.innerHTML = `
+          <td class="py-1 px-2 text-amber-400 font-bold">#${i + 1}</td>
+          <td class="py-1 px-2"><input type="text" value="${c.code}" onchange="updateCableField(${i}, 'code', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-cyan-300 font-semibold w-32"></td>
+          <td class="py-1 px-2"><input type="number" value="${c.d}" step="0.5" min="4" max="90" onchange="updateCableField(${i}, 'd', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-white w-14 text-center"></td>
+          <td class="py-1 px-2 text-slate-300">${c.w.toFixed(2)}</td>
+          <td class="py-1 px-2 text-purple-300">${Math.round(c.d * (c.bendK || 10))}mm</td>
+          <td class="py-1 px-2 text-slate-400">(${c.x.toFixed(1)}, ${c.y.toFixed(1)})</td>
+          <td class="py-1 px-2"><input type="text" value="${c.desc}" onchange="updateCableField(${i}, 'desc', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-white font-sans w-48"></td>
+          <td class="py-1 px-2"><input type="text" value="${c.type}" onchange="updateCableField(${i}, 'type', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-amber-300 w-28"></td>
+          <td class="py-1 px-2">
+            <div class="flex items-center gap-1">
+              <input type="text" value="${c.form}" onchange="updateCableField(${i}, 'form', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-emerald-300 w-28">
+              ${isUni ? `<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 rounded font-bold" title="Cavo Unipolare 1X">1X</span>` : ``}
+              ${c.trefoil ? `<span class="text-[9px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-1 rounded font-bold" title="Posa a Trifoglio">🔺3F</span>` : ``}
+            </div>
+          </td>
+          <td class="py-1 px-2 text-right"><button type="button" onclick="deleteCable(${i})" class="text-slate-500 hover:text-red-400 px-1.5 font-bold">&times;</button></td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    function updateCableField(idx, field, val) {
+      const c = state.cables[idx];
+      if (!c) return;
+      if (field === "d") {
+        c.d = Math.max(4, parseFloat(val) || 14);
+        c.w = +(Math.pow(c.d / 10, 2) * 0.145).toFixed(2);
+        const inferred = inferCableSpecsByDiameter(c.d, c.code);
+        c.form = inferred.form;
+        c.type = inferred.type;
+        c.sec = inferred.sec;
+        c.cores = inferred.cores;
+      } else if (field === "code") {
+        c.code = val.trim();
+        const u = findInUnifilareDict(c.code);
+        if (u) {
+          c.desc = u.desc || c.desc;
+          c.type = u.cable || c.type;
+          c.form = u.form || c.form;
+          c.ib = u.ib || c.ib;
+          c.sec = parseSectionFromForm(c.form, c.sec);
+          c.cores = isUnipolarCable(c) ? 1 : c.cores;
+        }
+      } else if (field === "form") {
+        c.form = val;
+        c.sec = parseSectionFromForm(val, c.sec);
+        c.cores = isUnipolarCable(c) ? 1 : (val.includes("5G") || val.includes("4G") ? 3 : 2);
+      } else {
+        c[field] = val;
+      }
+      recalculateAll();
+    }
+
+    function deleteCable(idx) { state.cables.splice(idx, 1); recalculateAll(); }
+    function clearCables() { state.cables = []; recalculateAll(); }
+
+    // ============================================================================
+    // 5. VERO PARSER GEOMETRICO .DWG (LIBREDWG C/WASM) E MATCHING CON TABELLE/PDF
+    // ============================================================================
+    function extractRawAscii(uint8) {
+      let s = "";
+      for (let i = 0; i < uint8.length; i++) {
+        const b = uint8[i];
+        s += (b >= 32 && b <= 126) || b === 10 || b === 13 ? String.fromCharCode(b) : " ";
+      }
+      return s;
+    }
+
+    // Pulisce codici di formattazione AutoCAD MTEXT (es. \A1; \fArial|b0; {\H0.8x;...})
+    function cleanAcadMText(rawStr) {
+      return String(rawStr || "")
+        .replace(/\\P/g, " ")
+        .replace(/\\[A-Za-z0-9]+[^;]*;/g, "")
+        .replace(/[{}]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    async function importCADFile(inputEl) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      const banner = document.getElementById("statusBanner");
+      const inspBox = document.getElementById("dwgInspectorContent");
+      banner.textContent = `Decompressione binaria di "${file.name}" in corso...`;
+
+      try {
+        const buf = await file.arrayBuffer();
+        const uint8 = new Uint8Array(buf);
+        const rawAscii = extractRawAscii(uint8);
+        const headerVer = rawAscii.substring(0, 6).trim();
+
+        if (file.name.toLowerCase().endsWith(".dxf") || (rawAscii.includes("SECTION") && rawAscii.includes("ENTITIES"))) {
+          const log = parseDXFTextContent(rawAscii, file.name);
+          inspBox.textContent = log;
+          banner.textContent = `✓ File DXF "${file.name}" letto: L=${state.width}xH=${state.height}mm (${state.cables.length} cavi geometrici reali)`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+          return;
+        }
+
+        if (!globalLibreDwgInstance) {
+          globalLibreDwgInstance = await loadLibreDwgWasmInstance();
+        }
+
+        const fileType = (globalLibreDwgLib && globalLibreDwgLib.Dwg_File_Type) ? globalLibreDwgLib.Dwg_File_Type.DWG : 0;
+
+        let dwgDataPtr;
+        try {
+          dwgDataPtr = globalLibreDwgInstance.dwg_read_data(buf, fileType);
+        } catch (eRead) {
+          dwgDataPtr = globalLibreDwgInstance.dwg_read_data(uint8, fileType);
+        }
+
+        if (!dwgDataPtr) {
+          throw new Error(`Il file DWG (${headerVer}) non è stato decodificato dal parser (puntatore nullo).`);
+        }
+
+        const db = globalLibreDwgInstance.convert(dwgDataPtr);
+
+        let allEntities = (db && Array.isArray(db.entities)) ? [...db.entities] : [];
+        if (allEntities.length === 0 && db && db.tables && db.tables.BLOCK_RECORD && Array.isArray(db.tables.BLOCK_RECORD.entries)) {
+          db.tables.BLOCK_RECORD.entries.forEach(br => {
+            if (Array.isArray(br.entities)) allEntities.push(...br.entities);
+          });
+        }
+
+        if (allEntities.length > 0) {
+          const log = processRealWasmEntities(allEntities, file.name, headerVer);
+          inspBox.textContent = log;
+          document.getElementById("dwgInspectorModal").classList.remove("hidden");
+          banner.textContent = `✓ DWG "${file.name}" (${headerVer}) decompresso via LibreDWG: L=${state.width}xH=${state.height}mm — ${state.cables.length} cavi estratti!`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+          return;
+        } else {
+          throw new Error(`Lettura completata, ma 0 entità visibili estratte dal DWG (${headerVer}).`);
+        }
+      } catch (err) {
+        console.error("Errore decompressione DWG:", err);
+        banner.textContent = `Errore lettura DWG: ${err.message || err}`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold";
+      } finally {
+        inputEl.value = "";
+      }
+    }
+
+    // Estrazione geometrica avanzata + ricostruzione catene Bandierine + lettura Tabelle DWG interne
+    function processRealWasmEntities(entities, fileName, headerVer) {
+      const traySegments = [];
+      const rawCircles = [];
+      const rawTexts = [];
+      const bandierineSegments = [];
+
+      entities.forEach(ent => {
+        const lay = String(ent.layer || "0").trim();
+        const t = String(ent.type || "").toUpperCase();
+
+        if (t === "LINE" && ent.startPoint && ent.endPoint) {
+          if (/CANALINA/i.test(lay)) {
+            traySegments.push({ x1: ent.startPoint.x, y1: ent.startPoint.y, x2: ent.endPoint.x, y2: ent.endPoint.y, lay });
+          } else if (/BANDIERINE|LEADER|RICHIAM/i.test(lay)) {
+            bandierineSegments.push({ x1: ent.startPoint.x, y1: ent.startPoint.y, x2: ent.endPoint.x, y2: ent.endPoint.y });
+          }
+        } else if ((t === "LWPOLYLINE" || t === "POLYLINE") && Array.isArray(ent.vertices)) {
+          for (let i = 0; i < ent.vertices.length - 1; i++) {
+            const seg = { x1: ent.vertices[i].x, y1: ent.vertices[i].y, x2: ent.vertices[i + 1].x, y2: ent.vertices[i + 1].y, lay };
+            if (/CANALINA/i.test(lay)) traySegments.push(seg);
+            else if (/BANDIERINE|LEADER|RICHIAM/i.test(lay)) bandierineSegments.push(seg);
+          }
+        } else if (t === "CIRCLE" && ent.center && typeof ent.radius === "number") {
+          const d = +(ent.radius * 2).toFixed(1);
+          // Escludiamo i micro-cerchi delle anime interne (< 4.5 mm) o simboli cornice
+          if (d >= 4.5 && d <= 110.0 && (/CAVI/i.test(lay) || !/ANIME|CORNICE|CARTIGLIO|SIMB/i.test(lay))) {
+            rawCircles.push({ cx: +ent.center.x.toFixed(2), cy: +ent.center.y.toFixed(2), r: +ent.radius.toFixed(2), d, lay });
+          }
+        } else if (t === "TEXT" || t === "MTEXT") {
+          const rawStr = ent.text || ent.value || ent.string || "";
+          const str = cleanAcadMText(rawStr);
+          const pt = ent.startPoint || ent.insertionPoint || ent.position || { x: 0, y: 0 };
+          if (str.length > 0) {
+            rawTexts.push({ str, x: +(pt.x || 0).toFixed(2), y: +(pt.y || 0).toFixed(2), lay });
+          }
+        }
+      });
+
+      // Filtra eventuali cerchi concentrici (es. guaina interna disegnata sul layer Cavi dentro il cavo esterno)
+      rawCircles.sort((a, b) => b.r - a.r);
+      const outerCircles = [];
+      rawCircles.forEach(c => {
+        const isInsideExisting = outerCircles.some(outer => Math.hypot(c.cx - outer.cx, c.cy - outer.cy) < outer.r * 0.85);
+        if (!isInsideExisting) outerCircles.push(c);
+      });
+
+      // 1. Calcola Origine (minX, minY) e Dimensioni Reali (Base L, Altezza H) dalle linee sul layer 'Canalina'
+      let origX = 0, origY = 0;
+      let geomW = state.width, geomH = state.height;
+
+      if (traySegments.length > 0) {
+        const xs = traySegments.flatMap(s => [s.x1, s.x2]);
+        const ys = traySegments.flatMap(s => [s.y1, s.y2]);
+        origX = Math.min(...xs);
+        origY = Math.min(...ys);
+        const spanX = Math.round(Math.max(...xs) - origX);
+        const spanY = Math.round(Math.max(...ys) - origY);
+        if (spanX >= 40 && spanX <= 1200) geomW = spanX;
+        if (spanY >= 30 && spanY <= 400) geomH = spanY;
+      } else if (outerCircles.length > 0) {
+        origX = Math.min(...outerCircles.map(c => c.cx - c.r)) - 12;
+        origY = Math.min(...outerCircles.map(c => c.cy - c.r));
+      }
+
+      // 2. Verifica titolo della canalina nei testi del DWG
+      const allTextCorpus = rawTexts.map(t => t.str).join(" | ");
+      const mTitle = allTextCorpus.match(/CANALINA\s*([0-9A-Z_.-]+)\s*-\s*L\s*=\s*(\d+)\s*mm\s*H\s*=\s*(\d+)\s*mm/i);
+      if (mTitle) {
+        geomW = parseInt(mTitle[2], 10);
+        geomH = parseInt(mTitle[3], 10);
+        state.title = mTitle[0].trim();
+      } else {
+        const mAnyTitle = rawTexts.find(t => /CANALINA/i.test(t.str) && !/DISTINTA|TABELLA|PARTICOLARE/i.test(t.str));
+        state.title = mAnyTitle ? mAnyTitle.str.trim() : `${fileName.replace(/\.[^.]+$/, "").toUpperCase()} - L=${geomW}mm H=${geomH}mm`;
+      }
+
+      state.width = geomW;
+      state.height = geomH;
+      state.packing = "input";
+      document.getElementById("inpPacking").value = "input";
+
+      // 3. RICOSTRUZIONE EVENTUALI TABELLE CAVI PRESENTI NEL DWG (Raggruppamento per Righe Y)
+      // Se nel DWG c'è già una tabella o legenda con Sigla, Descrizione, Tipo Cavo e Formazione, la leggiamo!
+      const dwgTableByCode = {};
+      const rowToleranceY = 2.8;
+      const textRows = [];
+      rawTexts.forEach(t => {
+        let row = textRows.find(r => Math.abs(r.y - t.y) <= rowToleranceY);
+        if (!row) {
+          row = { y: t.y, items: [] };
+          textRows.push(row);
+        }
+        row.items.push(t);
+      });
+
+      textRows.forEach(row => {
+        if (row.items.length < 2) return;
+        row.items.sort((a, b) => a.x - b.x);
+        const textsInRow = row.items.map(it => it.str.trim());
+
+        // Cerca se nella riga c'è una sigla utenza (es. "QGBT-P C-22" o "QP1-DX-N C-4")
+        const codeCandidate = textsInRow.find(s =>
+          /^[A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+C-\d+/i.test(s) ||
+          /^(?:QGBT|QP|QE|QUADRO|UPS|IRAI|EVAC|TD)[A-Z0-9_.-]*(?:\s+C-\d+)?$/i.test(s)
+        );
+        if (!codeCandidate) return;
+
+        const formCandidate = textsInRow.find(s => /\d*\s*\(\s*\d+[xXGg]\d+(?:[.,]\d+)?\s*\)|\b\d+[xXGg]\d+(?:[.,]\d+)?\b/i.test(s) && s !== codeCandidate);
+        const typeCandidate = textsInRow.find(s => /FG16|FTG18|FS17|FG17|H07|RG16|UTP|CAT\./i.test(s) && s !== codeCandidate && s !== formCandidate);
+        const descCandidate = textsInRow.find(s =>
+          s !== codeCandidate &&
+          s !== formCandidate &&
+          s !== typeCandidate &&
+          !/^#?\d+$/.test(s) &&
+          !/^\d+(?:[.,]\d+)?\s*(?:mm|kg|daN)?$/i.test(s) &&
+          !/^(?:BT|ELV|POS|SIGLA|TIPO|FORMAZIONE)$/i.test(s) &&
+          s.length >= 4
+        );
+
+        const normKey = normalizeLineKey(codeCandidate);
+        dwgTableByCode[normKey] = {
+          rawCode: codeCandidate,
+          form: formCandidate || null,
+          type: typeCandidate || null,
+          desc: descCandidate || null
+        };
+      });
+
+      // 4. ESTRAZIONE SIGLE SULLE BANDIERINE VICINO ALLA SEZIONE
+      const isCodeLike = (s) =>
+        !/^CANALINA\b|^SCALA|^DATA|^DISEGNATORE|^VISTO|^DESCRIZIONE|^REV\b|^POS\b|^SIGLA\b|^Base\s+L|^H\s*=/i.test(s) &&
+        (/[A-Z0-9]+.*C-\d+/i.test(s) || /^(?:QGBT|QP|QE|UPS|IRAI|EVAC|TD|LINEA|CAVO)/i.test(s) || /^#\d+\s+/i.test(s));
+
+      const calloutTexts = rawTexts.filter(t =>
+        (isCodeLike(t.str) || /Testi|Bandierine/i.test(t.lay)) &&
+        t.x >= origX - 350 && t.x <= origX + geomW + 350 &&
+        !/^CANALINA\b|^Base\s+L|^H\s*=/i.test(t.str) &&
+        !/^\d+$/.test(t.str.trim()) 
+      );
+
+      function traceLeaderFromCircle(cir) {
+        const startSegs = bandierineSegments.filter(seg => {
+          const d1 = Math.hypot(seg.x1 - cir.cx, seg.y1 - cir.cy);
+          const d2 = Math.hypot(seg.x2 - cir.cx, seg.y2 - cir.cy);
+          return d1 <= cir.r + 4.5 || d2 <= cir.r + 4.5;
+        });
+
+        let bestLabel = null;
+        let bestLabelDist = 9999;
+
+        for (const s0 of startSegs) {
+          const d1 = Math.hypot(s0.x1 - cir.cx, s0.y1 - cir.cy);
+          const d2 = Math.hypot(s0.x2 - cir.cx, s0.y2 - cir.cy);
+          let curEnd = d1 < d2 ? { x: s0.x2, y: s0.y2 } : { x: s0.x1, y: s0.y1 };
+          const visited = new Set([s0]);
+
+          for (let hop = 0; hop < 3; hop++) {
+            const nextSeg = bandierineSegments.find(s => {
+              if (visited.has(s)) return false;
+              return Math.hypot(s.x1 - curEnd.x, s.y1 - curEnd.y) < 3.5 || Math.hypot(s.x2 - curEnd.x, s.y2 - curEnd.y) < 3.5;
+            });
+            if (!nextSeg) break;
+            visited.add(nextSeg);
+            const nd1 = Math.hypot(nextSeg.x1 - curEnd.x, nextSeg.y1 - curEnd.y);
+            curEnd = nd1 < 3.5 ? { x: nextSeg.x2, y: nextSeg.y2 } : { x: nextSeg.x1, y: nextSeg.y1 };
+          }
+
+          calloutTexts.forEach(lbl => {
+            const dy = Math.abs(lbl.y - curEnd.y);
+            const dx = Math.abs(lbl.x - curEnd.x);
+            const dist = Math.hypot(dx * 0.45, dy * 2.2); 
+            if (dy < 12 && dx < 120 && dist < bestLabelDist) {
+              bestLabelDist = dist;
+              bestLabel = lbl;
+            }
+          });
+        }
+        return bestLabel;
+      }
+
+      outerCircles.sort((a, b) => (a.cy - b.cy) || (a.cx - b.cx));
+
+      function parseCalloutLabelString(rawLblStr) {
+        let s = String(rawLblStr || "").trim();
+        s = s.replace(/^#\d+\s+/, "").trim();
+        let inlineForm = null;
+        const mParen = s.match(/\(([^)]+)\)\s*$/);
+        if (mParen && /[xXGg]\d+|Ø/i.test(mParen[1])) {
+          const fm = mParen[1].match(/\d*\(\d+[xXGg]\d+(?:[.,]\d+)?\)|\b\d+[xXGg]\d+(?:[.,]\d+)?\b/i);
+          if (fm) inlineForm = fm[0];
+          s = s.substring(0, mParen.index).trim();
+        }
+        return { cleanCode: s, inlineForm };
+      }
+
+      const usedCalloutSet = new Set();
+
+      state.cables = outerCircles.map((cir, idx) => {
+        let matchedLblObj = traceLeaderFromCircle(cir);
+
+        if (!matchedLblObj) {
+          const unused = calloutTexts.filter(l => !usedCalloutSet.has(l));
+          if (unused.length > 0) {
+            unused.sort((a, b) => Math.hypot(a.x - cir.cx, a.y - cir.cy) - Math.hypot(b.x - cir.cx, b.y - cir.cy));
+            matchedLblObj = unused[0];
+          }
+        }
+        if (matchedLblObj) usedCalloutSet.add(matchedLblObj);
+
+        const parsedLbl = parseCalloutLabelString(matchedLblObj ? matchedLblObj.str : `CAVO-${idx + 1}`);
+        const exactCode = parsedLbl.cleanCode || `CAVO-${idx + 1}`;
+        const normKey = normalizeLineKey(exactCode);
+
+        const relX = +(cir.cx - origX).toFixed(1);
+        const relY = +(cir.cy - origY).toFixed(1);
+        const d = cir.d;
+
+        const uInfo = findInUnifilareDict(exactCode);
+        const dwgRow = dwgTableByCode[normKey];
+        const diamSpec = inferCableSpecsByDiameter(d, exactCode);
+
+        const finalForm = (uInfo && uInfo.form) || (dwgRow && dwgRow.form) || parsedLbl.inlineForm || diamSpec.form;
+        const finalType = (uInfo && uInfo.cable) || (dwgRow && dwgRow.type) || diamSpec.type;
+        const finalDesc = (uInfo && uInfo.desc) || (dwgRow && dwgRow.desc) || `Alimentazione linea ${exactCode}`;
+        const finalSec  = parseSectionFromForm(finalForm, diamSpec.sec);
+        const isUni     = /\b1X\d+|\(\s*1X\d+/i.test(finalForm) || /\bFG16M16\b|\bFS17\b|\bFG17\b/i.test(finalType);
+        const finalCores = isUni ? 1 : (finalForm.includes("5G") || finalForm.includes("4G") ? 3 : 2);
+
+        return {
+          id: idx + 1,
+          code: exactCode,
+          d,
+          w: +(Math.pow(d / 10, 2) * 0.145).toFixed(2),
+          sec: finalSec,
+          cores: finalCores,
+          iz0: diamSpec.iz0,
+          ib: (state.pdfLoaded && uInfo) ? uInfo.ib : 0,
+          bendK: diamSpec.bendK,
+          trefoil: false,
+          origX: relX,
+          origY: relY,
+          x: relX,
+          y: relY,
+          desc: finalDesc,
+          type: finalType,
+          form: finalForm,
+          sys: diamSpec.sys
+        };
+      });
+
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+
+      let log = `=== REPORT DECOMPRESSIONE REALE LIBREDWG (${fileName} — ${headerVer}) ===\n`;
+      log += `• Entità totali lette nel ModelSpace: ${entities.length}\n`;
+      log += `• Segmenti sul layer 'Canalina': ${traySegments.length} -> Origine CAD=(${origX.toFixed(1)}, ${origY.toFixed(1)}) -> Dimensioni calcolate: Base L=${geomW}mm, Altezza H=${geomH}mm\n`;
+      log += `• Righe Tabella DWG riconosciute: ${Object.keys(dwgTableByCode).length}\n`;
+      log += `• Cerchi Cavi Estratti: ${outerCircles.length}\n`;
+      state.cables.forEach((c, i) => {
+        log += `   [Cavo #${i + 1}] Locale=(${c.x}, ${c.y}) mm | Ø=${c.d}mm | Sigla DWG: "${c.code}" | Tipo: ${c.type} | Formazione: ${c.form} (${isUnipolarCable(c) ? "UNIPOLARE 1X" : "MULTIPOLARE"}) | Desc: "${c.desc}"\n`;
+      });
+      return log;
+    }
+
+    function parseDXFTextContent(rawText, fileName) {
+      const lines = rawText.split(/\r?\n/);
+      const entities = [];
+      for (let i = 0; i < lines.length - 1; i++) {
+        const code = lines[i].trim(), val = (lines[i + 1] || "").trim();
+        if (code === "0" && (val === "LINE" || val === "CIRCLE" || val === "TEXT" || val === "MTEXT")) {
+          let lay = "0", x1 = 0, y1 = 0, x2 = 0, y2 = 0, r = 0, txt = "";
+          for (let j = i + 2; j < Math.min(lines.length - 1, i + 40); j += 2) {
+            const c = lines[j].trim(), v = (lines[j + 1] || "").trim();
+            if (c === "0") break;
+            if (c === "8") lay = v;
+            if (c === "10") x1 = parseFloat(v) || 0;
+            if (c === "20") y1 = parseFloat(v) || 0;
+            if (c === "11") x2 = parseFloat(v) || 0;
+            if (c === "21") y2 = parseFloat(v) || 0;
+            if (c === "40") r = parseFloat(v) || 0;
+            if (c === "1" || c === "3") txt += v + " ";
+          }
+          if (val === "LINE") entities.push({ type: "LINE", layer: lay, startPoint: { x: x1, y: y1 }, endPoint: { x: x2, y: y2 } });
+          else if (val === "CIRCLE") entities.push({ type: "CIRCLE", layer: lay, center: { x: x1, y: y1 }, radius: r });
+          else entities.push({ type: "TEXT", layer: lay, text: txt.trim(), startPoint: { x: x1, y: y1 } });
+        }
+      }
+      return processRealWasmEntities(entities, fileName, "DXF");
+    }
+
+    // Importazione PDF Unifilare con accoppiamento esatto (Punti 3 e 4)
+    async function importPDFFile(inputEl) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      const badge = document.getElementById("wasmStatusBadge");
+      const banner = document.getElementById("statusBanner");
+      badge.textContent = `Lettura PDF "${file.name}"...`;
+      try {
+        const buf = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        for (let p = 1; p <= pdf.numPages; p++) {
+          const page = await pdf.getPage(p);
+          const tc = await page.getTextContent();
+          const items = tc.items.map(it => ({ str: it.str.trim(), x: it.transform[4], y: it.transform[5] })).filter(it => it.str.length > 0);
+          // Riconosce qualsiasi intestazione colonna di schema unifilare (es. "QGBT-P C-22", "QP1-DX-N C-4", ecc.)
+          const headers = items.filter(it => /^[A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+C-\d+/i.test(it.str));
+          headers.forEach(ch => {
+            const rawCode = ch.str.replace(/\s+/g, " ").trim();
+            const normCode = normalizeLineKey(rawCode);
+            const colItems = items.filter(it => Math.abs(it.x - ch.x) < 46 && it.y < ch.y).sort((a, b) => b.y - a.y);
+            const colTexts = colItems.map(c => c.str);
+
+            const cableMatch = colTexts.find(t => /FG16|FTG18|H1Z2Z2|FS17|FG17|RG16|H07/i.test(t)) || null;
+            const formMatch = colTexts.find(t => /\d+\s*\([0-9xXGg,+]+\)|\b[1-5][xXGg]\d+(?:[.,]\d+)?/i.test(t)) || null;
+            const ibMatch = colTexts.find(t => /^\d+(?:[.,]\d+)?\s*\/\s*0[.,]\d+$/.test(t));
+            const parsedIb = ibMatch ? parseFloat(ibMatch.split("/")[0].replace(",", ".")) : 10;
+
+            // Estrae la descrizione dell'utenza nel blocco descrittivo della colonna unifilare
+            const descLines = colItems.filter(it =>
+              ch.y - it.y > 3 &&
+              ch.y - it.y < 65 &&
+              !/^\d+(?:[.,]\d+)?$/.test(it.str) &&
+              it.str !== cableMatch &&
+              it.str !== formMatch &&
+              !/^C-\d+$/i.test(it.str)
+            );
+            const descStr = descLines.map(d => d.str).join(" ").replace(/\s+/g, " ").trim() || null;
+
+            unifilareDict[normCode] = { rawCode, desc: descStr, cable: cableMatch, form: formMatch, ib: parsedIb };
+            // Registra anche eventuale alias QGBT <-> OGBT per sicurezza OCR nei PDF
+            if (normCode.startsWith("OGBT")) unifilareDict[normCode.replace(/^OGBT/, "QGBT")] = unifilareDict[normCode];
+          });
+        }
+        state.pdfLoaded = true;
+        document.getElementById("kpiElectricalCard").classList.remove("hidden");
+        document.getElementById("kpiBar").className = "grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2";
+        badge.textContent = `PDF Unifilare Attivo (${Object.keys(unifilareDict).length} linee)`;
+
+        let matchedCount = 0;
+        state.cables.forEach(c => {
+          const u = findInUnifilareDict(c.code);
+          if (u) {
+            matchedCount++;
+            if (u.desc) c.desc = u.desc;
+            if (u.cable) c.type = u.cable;
+            if (u.form) {
+              c.form = u.form;
+              c.sec = parseSectionFromForm(u.form, c.sec);
+              c.cores = isUnipolarCable(c) ? 1 : (u.form.includes("5G") || u.form.includes("4G") ? 3 : 2);
+            }
+            c.ib = u.ib || 10;
+          }
+        });
+        banner.textContent = `✓ PDF Unifilare sincronizzato: ${matchedCount}/${state.cables.length} cavi DWG abbinati per Sigla Utenza, Descrizione e Formazione!`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/40 font-bold";
+        recalculateAll();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        inputEl.value = "";
+      }
+    }
+
+    // ============================================================================
+    // 6. COSTRUZIONE SCENA VETTORIALE 1:1 (CON UNIPOLARI 1X & MORSETTO PE REALISTICO)
+    // ============================================================================
+    function buildCADScene() {
+      const prims = [];
+      const W = state.width, H = state.height, thk = state.thk;
+      const isLight = state.theme === "light";
+      const mat = MAT_SPECS[state.material] || MAT_SPECS.sendzimir;
+      const sup = SUPPORT_SPECS[state.support] || SUPPORT_SPECS.wall_med;
+      const txtCol = isLight ? "#0f172a" : "#f8fafc";
+      const boxBg = isLight ? "#f1f5f9" : "#0f172a";
+      const boxAlt = isLight ? "#e2e8f0" : "#1e293b";
+
+      const line = (layer, x1, y1, x2, y2, color, lw = 0.4, alpha = 1) => prims.push({ t: "line", layer, x1, y1, x2, y2, color, lw, alpha });
+      const rect = (layer, x, y, w, h, color, fill, solid = false) => prims.push({ t: "rect", layer, x, y, w, h, color, fill, solid });
+      const circle = (layer, cx, cy, r, color, fill, solid = false) => prims.push({ t: "circle", layer, cx, cy, r, color, fill, solid });
+      const text = (layer, x, y, h, str, color, align = "left", maxW = null) => {
+        let s = String(str || "");
+        if (maxW) {
+          const maxCh = Math.max(4, Math.floor((maxW - 2) / (h * 0.56)));
+          if (s.length > maxCh) s = s.substring(0, maxCh - 2) + "..";
+        }
+        prims.push({ t: "text", layer, x, y, h, str: s, color: isLight && color === "#f8fafc" ? txtCol : color, align });
+      };
+
+      const ceilY = H + (state.clearance > 0 ? 42 : 18);
+      if (state.clearance > 0) {
+        line("STAFFAGGI", -25, ceilY, W + 25, ceilY, "#64748b", 0.6);
+        for (let hx = -22; hx <= W + 20; hx += 8) line("STAFFAGGI", hx, ceilY, hx + 5, ceilY + 5, "#475569", 0.3);
+        line("QUOTE", -15, H, -15, ceilY, "#38bdf8", 0.4);
+        text("QUOTE", -18, (H + ceilY) / 2 - 1, 2.2, `Rispetto >= ${state.clearance}mm`, "#38bdf8", "right");
+      }
+
+      // Profilo Canalina
+      rect("Canalina", -thk, -thk, thk, H + thk, mat.stroke, mat.fill, true);
+      rect("Canalina", W, -thk, thk, H + thk, mat.stroke, mat.fill, true);
+      rect("Canalina", 0, -thk, W, thk, mat.stroke, mat.fill, true);
+      if (state.trayType === "perforated") {
+        for (let x = 10; x < W - 10; x += 16) rect("Canalina", x, -thk, 7, thk, "#f59e0b", isLight ? "#ffffff" : "#04070d", true);
+      }
+      if (state.edgeGuard) {
+        circle("Canalina", 1.3, H - 1.3, 1.4, mat.stroke, mat.fill, true);
+        circle("Canalina", W - 1.3, H - 1.3, 1.4, mat.stroke, mat.fill, true);
+      }
+      if (state.cover !== "none") {
+        const cy = H + (state.cover === "ventilated" ? 8 : 0.8);
+        rect("Canalina", -thk - 2, cy, W + 2 * thk + 4, thk, mat.stroke, mat.fill, true);
+        line("Canalina", -thk - 2, cy - 4, -thk - 2, cy, mat.stroke, 0.6);
+        line("Canalina", W + thk + 2, cy - 4, W + thk + 2, cy, mat.stroke, 0.6);
+      }
+      getSeptumXList().forEach(sx => {
+        rect("Canalina", sx - thk / 2, 0, thk, H - 3, "#38bdf8", "#0e7490", true);
+        rect("Canalina", sx - 6, 0, 12, thk, "#38bdf8", "#0e7490", true);
+      });
+
+      // Staffaggi
+      let lowestY = -thk - 18;
+      if (state.support.startsWith("wall_")) {
+        const wallX = -25, armH = sup.armH;
+        line("STAFFAGGI", wallX, -50, wallX, H + 15, "#64748b", 0.6);
+        rect("STAFFAGGI", wallX, -38, 4, 44, "#94a3b8", "#475569", true);
+        rect("STAFFAGGI", wallX + 4, -thk - armH, W + 38, armH, "#94a3b8", "#334155", true);
+        if (sup.strut) line("STAFFAGGI", wallX + 4, -34, W * 0.7, -thk - armH, "#94a3b8", 0.65);
+        lowestY = -52;
+      } else if (state.support === "ceiling_trap") {
+        rect("STAFFAGGI", -22, -thk - 12, W + 44, 12, "#94a3b8", "#334155", true);
+        [-14, W + 14].forEach(rx => line("STAFFAGGI", rx, -thk - 12, rx, ceilY, "#cbd5e1", 0.5));
+        lowestY = -32;
+      }
+
+      // ==========================================================================
+      // PUNTO 5: PARTICOLARE COSTRUTTIVO REALISTICO MORSETTO PE / TRECCIA DI RAME
+      // Posizionato sul fianco esterno destro della sponda (oppure sinistro) con
+      // bullone M6 esagonale, rondella dentellata, capocorda a occhiello e treccia
+      // ==========================================================================
+      if (state.earth !== "none") {
+        const isGV = state.earth.startsWith("gv");
+        const secPE = state.earth.replace(/\D+/g, "") || "16";
+        // Posizioniamo il morsetto sulla sponda sinistra a metà altezza (Y = H * 0.52)
+        const baseX = -thk;
+        const baseY = H * 0.52;
+
+        // 1. Piastrina / Morsetto equipotenziale in acciaio inox/ottone ancorato alla sponda
+        rect("STAFFAGGI", baseX - 3.2, baseY - 5.5, 3.2, 11.0, "#cbd5e1", "#475569", true);
+        // Rondella zigrinata antisvitamento
+        rect("STAFFAGGI", baseX - 4.0, baseY - 3.8, 0.8, 7.6, "#94a3b8", "#64748b", true);
+        // Bullone di serraggio M6x16 (testa esagonale + asse filettato passante nella sponda)
+        rect("STAFFAGGI", baseX - 6.2, baseY - 2.6, 2.2, 5.2, "#e2e8f0", "#94a3b8", true);
+        line("STAFFAGGI", baseX - 6.2, baseY - 1.2, baseX - 4.0, baseY - 1.2, "#475569", 0.35);
+        line("STAFFAGGI", baseX - 6.2, baseY + 1.2, baseX - 4.0, baseY + 1.2, "#475569", 0.35);
+        // Dado interno M6 sulla sponda
+        rect("STAFFAGGI", 0, baseY - 2.2, 1.4, 4.4, "#cbd5e1", "#64748b", true);
+        // Asse vite M6 (linea tratteggiata rossa/ambra)
+        line("STAFFAGGI", baseX - 7.5, baseY, 2.5, baseY, "#f59e0b", 0.3, 0.8);
+
+        // 2. Capocorda a occhiello / tubolare pressato verso il basso
+        rect("STAFFAGGI", baseX - 4.8, baseY - 9.0, 2.4, 4.2, "#fbbf24", "#b45309", true);
+
+        // 3. Conduttore PE: Treccia piatta in rame stagnato/nudo oppure Cavo Giallo/Verde bicolore
+        const braidTopY = baseY - 9.0;
+        const braidBotY = baseY - 23.0;
+        const braidX = baseX - 3.6;
+
+        if (isGV) {
+          // Cavo unipolare Giallo/Verde con fasciatura elicoidale bicolore realistica
+          const segments = 6;
+          const segH = (braidTopY - braidBotY) / segments;
+          for (let s = 0; s < segments; s++) {
+            const sy = braidBotY + s * segH;
+            const colFill = s % 2 === 0 ? "#16a34a" : "#eab308";
+            const colStroke = s % 2 === 0 ? "#4ade80" : "#fde047";
+            rect("STAFFAGGI", braidX - 1.3, sy, 2.6, segH, colStroke, colFill, true);
+          }
+          // Sezione terminale del cavo PE in vista (anima in rame + isolamento G/V)
+          circle("STAFFAGGI", braidX, braidBotY - 2.2, 2.6, "#fde047", "#16a34a", true);
+          circle("STAFFAGGI", braidX, braidBotY - 2.2, 1.4, "#fb923c", "#ea580c", true);
+        } else {
+          // Treccia piatta flessibile in rame con trama incrociata a losanghe
+          rect("STAFFAGGI", braidX - 1.8, braidBotY, 3.6, braidTopY - braidBotY, "#fb923c", "#9a3412", true);
+          for (let ty = braidBotY + 1; ty < braidTopY - 1.5; ty += 2.2) {
+            line("STAFFAGGI", braidX - 1.6, ty, braidX + 1.6, ty + 1.8, "#fdba74", 0.35);
+            line("STAFFAGGI", braidX + 1.6, ty, braidX - 1.6, ty + 1.8, "#fdba74", 0.35);
+          }
+        }
+
+        // 4. Cartellino tecnico di richiamo del nodo equipotenziale PE
+        const tagX = baseX - 11.5;
+        const tagY = baseY - 11.0;
+        line("Bandierine", baseX - 6.2, baseY, tagX + 2, tagY + 4.5, isGV ? "#4ade80" : "#fb923c", 0.35);
+        line("Bandierine", tagX + 2, tagY + 4.5, tagX - 36, tagY + 4.5, isGV ? "#4ade80" : "#fb923c", 0.35);
+        text("Testi", tagX - 2, tagY + 6.0, 1.95, `NODO PE M6 (${isGV ? `FS17 G/V ${secPE}mmq` : `Treccia Cu ${secPE}mmq`})`, isGV ? "#4ade80" : "#fb923c", "right");
+        text("Testi", tagX - 2, tagY + 1.8, 1.65, `Continuità CEI 64-8 Art.543`, "#94a3b8", "right");
+      }
+
+      // ==========================================================================
+      // PUNTO 2: DISEGNO DIFFERENZIATO CAVI UNIPOLARI (1X) VS MULTIPOLARI
+      // ==========================================================================
+      const leftC = [], rightC = [];
+      state.cables.forEach((c, idx) => {
+        const r = c.d / 2;
+        const isUni = isUnipolarCable(c);
+        const col = c.sys === "SPECIAL_ELV" ? "#38bdf8" : c.sys === "BT_FIRE" ? "#f87171" : isUni ? "#fbbf24" : "#f59e0b";
+        const fill = c.sys === "SPECIAL_ELV" ? "#0e7490" : c.sys === "BT_FIRE" ? "#991b1b" : isUni ? "#451a03" : "#78350f";
+
+        // Guaina esterna
+        circle("Cavi", c.x, c.y, r, col, fill, true);
+        // Isolamento interno (anello elastomerico HEPR/G16)
+        circle("Cavi", c.x, c.y, r * 0.78, col, isUni ? "#1e293b" : null, isUni);
+
+        if (isUni) {
+          // STILIZZAZIONE CAVO UNIPOLARE (1X): Unica anima centrale in rame cordato con corona di trefoli!
+          const rCu = r * 0.50;
+          circle("Anime_Cavi", c.x, c.y, rCu, "#fdba74", "#ea580c", true);
+          // Corona di 6 trefoli elementari attorno al trefolo centrale per rendere evidente la cordatura 1X
+          if (r >= 4.0) {
+            circle("Anime_Cavi", c.x, c.y, rCu * 0.34, "#fed7aa", null, false);
+            for (let s = 0; s < 6; s++) {
+              const ang = (s * Math.PI) / 3;
+              circle("Anime_Cavi", c.x + Math.cos(ang) * rCu * 0.64, c.y + Math.sin(ang) * rCu * 0.64, rCu * 0.28, "#fed7aa", null, false);
+            }
+          }
+          // Croce assiale sottile da vero simbolo unipolare CAD
+          line("Anime_Cavi", c.x - r * 0.68, c.y, c.x + r * 0.68, c.y, "#fde047", 0.22, 0.65);
+          line("Anime_Cavi", c.x, c.y - r * 0.68, c.x, c.y + r * 0.68, "#fde047", 0.22, 0.65);
+        } else {
+          // STILIZZAZIONE CAVO MULTIPOLARE (2x, 3G, 4G, 5G): Anime multiple distribuite a stella
+          const nCores = c.form.includes("5G") ? 5 : c.form.includes("4G") || c.form.includes("4x") ? 4 : c.form.includes("2x") ? 2 : 3;
+          const ringR = nCores === 2 ? r * 0.36 : r * 0.42;
+          const coreR = nCores === 5 ? r * 0.18 : r * 0.21;
+          for (let k = 0; k < nCores; k++) {
+            const a = (k * 2 * Math.PI) / nCores + Math.PI / 6;
+            // Se c'è il conduttore G/V (formazione con 'G') coloriamo l'ultima anima in verde/giallo
+            const isPECore = /G/i.test(c.form) && k === nCores - 1;
+            circle(
+              "Anime_Cavi",
+              c.x + Math.cos(a) * ringR,
+              c.y + Math.sin(a) * ringR,
+              coreR,
+              isPECore ? "#fde047" : "#fb923c",
+              isPECore ? "#16a34a" : "#ea580c",
+              true
+            );
+          }
+        }
+
+        // Numero identificativo posizione cavo
+        text("Testi", c.x, c.y - 0.7, Math.max(1.5, Math.min(2.8, r * 0.40)), String(idx + 1), "#ffffff", "center");
+        if (c.x <= W / 2) leftC.push({ c, idx }); else rightC.push({ c, idx });
+      });
+
+      // Disegna fascetta amagnetica per eventuali terne posate a Trifoglio
+      const trfGroups = {};
+      state.cables.forEach(c => {
+        if (c.trefoil && c.trefoilGroupId) {
+          if (!trfGroups[c.trefoilGroupId]) trfGroups[c.trefoilGroupId] = [];
+          trfGroups[c.trefoilGroupId].push(c);
+        }
+      });
+      Object.values(trfGroups).forEach(grp => {
+        if (grp.length === 3) {
+          const gcx = (grp[0].x + grp[1].x + grp[2].x) / 3;
+          const gcy = (grp[0].y + grp[1].y + grp[2].y) / 3;
+          const gr = grp[0].d * 1.08;
+          circle("STAFFAGGI", gcx, gcy, gr, "#22d3ee", null, false);
+        }
+      });
+
+      const calloutBaseY = ceilY + 8, stepY = 6.2;
+      let maxLW = 75, maxRW = 75;
+      leftC.forEach((it, i) => {
+        const ty = calloutBaseY + i * stepY;
+        const lbl = `#${it.idx + 1} ${it.c.code} (${it.c.form} Ø${it.c.d})`;
+        maxLW = Math.max(maxLW, lbl.length * 1.35);
+        line("Bandierine", it.c.x, it.c.y + it.c.d / 2, -16, ty, "#fbbf24", 0.22, 0.6);
+        line("Bandierine", -16, ty, -24, ty, "#fbbf24", 0.22, 0.6);
+        text("Testi", -26, ty - 0.6, 2.0, lbl, "#cbd5e1", "right");
+      });
+      rightC.forEach((it, i) => {
+        const ty = calloutBaseY + i * stepY;
+        const lbl = `#${it.idx + 1} ${it.c.code} (${it.c.form} Ø${it.c.d})`;
+        maxRW = Math.max(maxRW, lbl.length * 1.35);
+        line("Bandierine", it.c.x, it.c.y + it.c.d / 2, W + 16, ty, "#fbbf24", 0.22, 0.6);
+        line("Bandierine", W + 16, ty, W + 24, ty, "#fbbf24", 0.22, 0.6);
+        text("Testi", W + 26, ty - 0.6, 2.0, lbl, "#cbd5e1", "left");
+      });
+
+      const qY = -thk - 22;
+      line("QUOTE", 0, qY, W, qY, "#f59e0b", 0.45);
+      text("QUOTE", W / 2, qY + 2.5, 2.6, `Base L = ${W} mm`, "#fbbf24", "center");
+      line("QUOTE", W + 10, 0, W + 10, H, "#f59e0b", 0.45);
+      text("QUOTE", W + 12, H / 2 - 1, 2.4, `H=${H}mm`, "#fbbf24", "left");
+
+      const leftBoxX = -48, leftBoxW = Math.max(200, W + 92);
+      if (state.showPlanTag) {
+        const ptY = lowestY - 38;
+        rect("ETICHETTA_PIANTA", leftBoxX, ptY, leftBoxW, 24, "#4ade80", boxBg, true);
+        text("ETICHETTA_PIANTA", leftBoxX + 5, ptY + 16, 2.3, `ETICHETTA PLANIMETRIA: ${state.title} (${state.planTag})`, "#4ade80", "left", leftBoxW - 10);
+        text("ETICHETTA_PIANTA", leftBoxX + 5, ptY + 6, 2.0, `Riempimento: ${metrics.fillPct}% (Riserva +${metrics.sparePct}%) | Carico: ${metrics.totalKgM} kg/m`, "#f8fafc", "left", leftBoxW - 10);
+        lowestY = ptY;
+      }
+
+      if (state.showIso3D) {
+        const isoH = 82, isoY = lowestY - isoH - 12;
+        rect("VISTA_3D_ISO", leftBoxX, isoY, leftBoxW, isoH, "#475569", boxBg, true);
+        text("VISTA_3D_ISO", leftBoxX + 5, isoY + isoH - 7, 2.1, `ASSONOMETRIA 3D PASSO STAFFAGGIO (Ls = ${state.spanM.toFixed(2)} m)`, "#38bdf8", "left", leftBoxW - 10);
+        const sc = Math.min(0.32, 45 / Math.max(110, W + H));
+        const ox = leftBoxX + 35, oy = isoY + 24 + W * sc * 0.4;
+        const iso = (x, y, z) => ({ px: ox + (x * sc + z * 0.5) * 0.866, py: oy - x * sc * 0.5 + y * sc + z * 0.25 });
+        const iLine = (x1, y1, z1, x2, y2, z2, c) => {
+          const p1 = iso(x1, y1, z1), p2 = iso(x2, y2, z2);
+          line("VISTA_3D_ISO", p1.px, p1.py, p2.px, p2.py, c, 0.45);
+        };
+        [0, 85].forEach(z => { iLine(0, H, z, 0, 0, z, mat.stroke); iLine(0, 0, z, W, 0, z, mat.stroke); iLine(W, 0, z, W, H, z, mat.stroke); });
+        iLine(0, 0, 0, 0, 0, 85, mat.stroke); iLine(W, 0, 0, W, 0, 85, mat.stroke);
+        iLine(0, H, 0, 0, H, 85, mat.stroke); iLine(W, H, 0, W, H, 85, mat.stroke);
+        [15, 70].forEach(z => iLine(-10, -4, z, W + 10, -4, z, "#f59e0b"));
+        if (state.reiCount > 0) {
+          iLine(-14, -8, 42, -14, H + 12, 42, "#ef4444");
+          iLine(-14, H + 12, 42, W + 14, H + 12, 42, "#ef4444");
+          iLine(W + 14, H + 12, 42, W + 14, -8, 42, "#ef4444");
+          iLine(W + 14, -8, 42, -14, -8, 42, "#ef4444");
+          const pRei = iso(W + 18, H / 2, 42);
+          text("VISTA_3D_ISO", pRei.px + 2, pRei.py, 1.85, `SETTO EI120 (${state.reiCount}x)`, "#f87171", "left");
+        }
+        lowestY = isoY;
+      }
+
+      // Colonna Destra: Tabella Cavi
+      const rightX = Math.max(W + 35 + maxRW, leftBoxX + leftBoxW) + 24;
+      const topY = Math.max(H + 38, calloutBaseY + Math.max(leftC.length, rightC.length) * stepY);
+      const colW = [14, 48, 76, 44, 40, 18, 24, 28];
+      const tabW = colW.reduce((a, b) => a + b, 0), rowH = 8.0;
+
+      rect("TABELLA", rightX, topY, tabW, 10, "#38bdf8", boxBg, true);
+      text("TABELLA", rightX + 4, topY + 3, 2.7, `1. DISTINTA CAVI POSATI NELLA SEZIONE — ${state.title}`, "#38bdf8", "left", tabW - 8);
+
+      const headers = ["POS", "SIGLA LINEA", "DESCRIZIONE UTENZA", "TIPO CAVO", "FORMAZIONE", "Ø mm", "R_min", "POSA"];
+      const headY = topY - rowH;
+      rect("TABELLA", rightX, headY, tabW, rowH, "#64748b", boxAlt, true);
+      let cx = rightX;
+      headers.forEach((h, i) => {
+        text("TABELLA", cx + 1.5, headY + 2.4, 2.0, h, "#cbd5e1", "left", colW[i]);
+        cx += colW[i];
+      });
+
+      const nRows = Math.max(1, state.cables.length);
+      if (state.cables.length === 0) {
+        const ry = headY - rowH;
+        rect("TABELLA", rightX, ry, tabW, rowH, "#475569", boxBg, true);
+        text("TABELLA", rightX + 6, ry + 2.5, 2.0, "Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", "#94a3b8", "left", tabW - 12);
+      } else {
+        state.cables.forEach((c, idx) => {
+          const ry = headY - (idx + 1) * rowH;
+          const isUni = isUnipolarCable(c);
+          rect("TABELLA", rightX, ry, tabW, rowH, "#475569", idx % 2 === 0 ? boxBg : boxAlt, true);
+          const vals = [
+            `#${idx + 1}`,
+            c.code,
+            c.desc,
+            c.type,
+            c.form,
+            String(c.d),
+            `${Math.round(c.d * (c.bendK || 10))}mm`,
+            isUni ? "1X UNI" : (c.sys === "SPECIAL_ELV" ? "ELV" : "MULTI")
+          ];
+          let rx = rightX;
+          vals.forEach((v, i) => {
+            text("TABELLA", rx + 1.5, ry + 2.4, 1.95, v, i === 1 ? "#38bdf8" : (i === 7 && isUni ? "#fbbf24" : "#f8fafc"), "left", colW[i]);
+            rx += colW[i];
+          });
+        });
+      }
+
+      // Diagramma Curva di Carico in Tavola CAD
+      const chartH = 54, chartY = headY - nRows * rowH - chartH - 22;
+      rect("CURVA_CARICO", rightX, chartY, tabW, chartH + 16, "#38bdf8", boxBg, true);
+      line("CURVA_CARICO", rightX, chartY + chartH + 1, rightX + tabW, chartY + chartH + 1, "#334155", 0.4);
+      text("CURVA_CARICO", rightX + 4, chartY + chartH + 9.5, 2.5, `2. DIAGRAMMA CURVA DI CARICO E FRECCIA — RIF. CEI EN 61537 (SWL)`, "#38bdf8", "left", tabW - 8);
+      text("CURVA_CARICO", rightX + 4, chartY + chartH + 3.8, 2.0, `Supporto: ${sup.name} | Passo Ls = ${state.spanM.toFixed(2)} m | Freccia f = ${metrics.deflectionMm} mm (Lim. ${metrics.maxDeflectionMm} mm)`, "#cbd5e1", "left", tabW - 8);
+
+      const gx0 = rightX + 26, gy0 = chartY + 11, gw = tabW - 42, gh = chartH - 14;
+      line("CURVA_CARICO", gx0, gy0, gx0 + gw, gy0, "#94a3b8", 0.55);
+      line("CURVA_CARICO", gx0, gy0, gx0, gy0 + gh, "#94a3b8", 0.55);
+
+      const qAt1m = calcAllowedLinearLoadKgM(state.support, 1.0);
+      const maxScaleKgM = Math.max(25, Math.ceil(Math.max(qAt1m, metrics.totalKgM * 1.3) / 10) * 10);
+      for (let frac = 0; frac <= 1.0; frac += 0.25) {
+        const gy = gy0 + frac * gh;
+        line("CURVA_CARICO", gx0, gy, gx0 + gw, gy, "#334155", 0.28);
+        text("CURVA_CARICO", gx0 - 2.5, gy - 0.8, 1.85, `${Math.round(frac * maxScaleKgM)}`, "#94a3b8", "right");
+      }
+      text("CURVA_CARICO", gx0 - 3, gy0 + gh + 1.8, 1.85, "kg/m", "#38bdf8", "right");
+
+      const spans = [1.0, 1.1, 1.25, 1.4, 1.5, 1.65, 1.75, 1.9, 2.0, 2.25, 2.5, 2.75, 3.0];
+      let prevPt = null;
+      spans.forEach(s => {
+        const gx = gx0 + ((s - 1.0) / 2.0) * gw;
+        if (Math.abs(s * 2 - Math.round(s * 2)) < 0.01) {
+          line("CURVA_CARICO", gx, gy0 - 1.5, gx, gy0 + gh, "#334155", 0.28);
+          text("CURVA_CARICO", gx, gy0 - 4.8, 1.85, `Ls=${s.toFixed(1)}m`, "#94a3b8", "center");
+        }
+        const qVal = Math.min(maxScaleKgM, calcAllowedLinearLoadKgM(state.support, s));
+        const gy = gy0 + (qVal / maxScaleKgM) * gh;
+        if (prevPt) line("CURVA_CARICO", prevPt.x, prevPt.y, gx, gy, "#22c55e", 0.85);
+        prevPt = { x: gx, y: gy };
+      });
+
+      const wpX = gx0 + ((state.spanM - 1.0) / 2.0) * gw;
+      const wpY = gy0 + Math.min(1.0, metrics.totalKgM / maxScaleKgM) * gh;
+      const limY = gy0 + Math.min(1.0, metrics.qMaxKgM / maxScaleKgM) * gh;
+
+      line("CURVA_CARICO", wpX, gy0, wpX, limY, "#f59e0b", 0.5, 0.85);
+      line("CURVA_CARICO", gx0, wpY, wpX, wpY, "#f59e0b", 0.5, 0.85);
+      circle("CURVA_CARICO", wpX, limY, 1.6, "#22c55e", "#22c55e", true);
+      circle("CURVA_CARICO", wpX, wpY, 2.4, metrics.totalKgM <= metrics.qMaxKgM ? "#f59e0b" : "#ef4444", metrics.totalKgM <= metrics.qMaxKgM ? "#fbbf24" : "#ef4444", true);
+
+      const wpAlign = wpX > gx0 + gw * 0.55 ? "right" : "left";
+      const wpTextX = wpAlign === "right" ? wpX - 4 : wpX + 4;
+      text("CURVA_CARICO", wpTextX, wpY + 1.5, 2.0, `Lavoro: ${metrics.totalKgM} kg/m @ ${state.spanM}m (Max ${metrics.qMaxKgM} kg/m)`, "#fbbf24", wpAlign);
+
+      // Computo BOM
+      const bomTopY = chartY - 6;
+      rect("TABELLA", rightX, bomTopY - 9, tabW, 9, "#4ade80", boxBg, true);
+      text("TABELLA", rightX + 4, bomTopY - 6.2, 2.5, `3. COMPUTO METRICO E DISTINTA MATERIALI (BOM ${state.brand} — Tratto ${state.lengthM}m)`, "#4ade80", "left", tabW - 8);
+      let lowRightY = bomTopY - 9;
+      metrics.bom.forEach((b, i) => {
+        const by = bomTopY - 9 - (i + 1) * 7;
+        lowRightY = by;
+        rect("TABELLA", rightX, by, tabW, 7, "#334155", i % 2 === 0 ? boxBg : boxAlt, true);
+        text("TABELLA", rightX + 3, by + 2.2, 1.95, `${b.code} | ${b.desc}`, "#f8fafc", "left", tabW - 75);
+        text("TABELLA", rightX + tabW - 70, by + 2.2, 1.95, `Q.ta: ${b.qty} ${b.um} (${b.note})`, "#4ade80", "left", 68);
+      });
+
+      const tbY = lowRightY - 24;
+      lowRightY = tbY;
+      rect("CORNICE", rightX, tbY, tabW, 20, "#38bdf8", boxBg, true);
+      text("CORNICE", rightX + 4, tbY + 12, 2.3, `COMMITTENTE: ${state.tb.client} | CODICE: ${state.tb.docCode}`, "#f8fafc", "left", tabW - 8);
+      text("CORNICE", rightX + 4, tbY + 4, 2.2, `PROGETTISTA: ${state.tb.author} | ${state.tb.scaleRev} — ${state.title}`, "#fbbf24", "left", tabW - 8);
+
+      const minX = Math.min(-48 - maxLW - 10, leftBoxX - 10);
+      const maxX = rightX + tabW + 12;
+      const minY = Math.min(lowestY - 12, lowRightY - 10);
+      const maxY = topY + 22;
+      rect("CORNICE", minX, minY, maxX - minX, maxY - minY, "#475569", null, false);
+      text("CORNICE", minX + 6, maxY - 8, 3.4, `PARTICOLARE COSTRUTTIVO ESECUTIVO: ${state.title}`, "#f8fafc", "left", (maxX - minX) * 0.65);
+
+      return { prims, bounds: { minX, maxX, minY, maxY }, rightBounds: { minX: rightX - 8, maxX, minY: lowRightY - 8, maxY: topY + 12 } };
+    }
+
+    // ============================================================================
+    // 7. MOTORE GRAFICO INTERATTIVO (PAN, ZOOM, DRAG CAVI, RIGHELLO)
+    // ============================================================================
+    const canvas = document.getElementById("cadCanvas");
+    const ctx = canvas.getContext("2d");
+    let camScale = 1.4, camX = 260, camY = 260;
+    let draggedCable = null, panning = false, panOrigin = { x: 0, y: 0 };
+    let rulerActive = false, rulerP1 = null, rulerP2 = null;
+
+    function screenToWorld(sx, sy) { return { x: (sx - camX) / camScale, y: (camY - sy) / camScale }; }
+
+    function toggleRuler() {
+      rulerActive = !rulerActive;
+      rulerP1 = null; rulerP2 = null;
+      document.getElementById("btnRuler").textContent = rulerActive ? "📏 Righello CAD: ATTIVO" : "📏 Righello CAD: OFF";
+      drawScene();
+    }
+
+    function drawScene() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(300, rect.width), h = Math.max(520, rect.height - 38);
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+        canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
+      }
+      document.getElementById("lblZoom").textContent = `${Math.round(camScale * 75)}%`;
+
+      const { prims } = buildCADScene();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.translate(camX, camY);
+      ctx.scale(camScale, camScale);
+
+      prims.forEach(p => {
+        if (p.t === "rect" && p.fill) {
+          ctx.fillStyle = p.fill; ctx.fillRect(p.x, -(p.y + p.h), p.w, p.h);
+        } else if (p.t === "circle" && p.fill) {
+          ctx.beginPath(); ctx.arc(p.cx, -p.cy, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.fill; ctx.fill();
+        }
+      });
+
+      prims.forEach(p => {
+        if (p.t === "line") {
+          ctx.save();
+          if (p.alpha) ctx.globalAlpha = p.alpha;
+          ctx.strokeStyle = p.color; ctx.lineWidth = p.lw || 0.4;
+          ctx.beginPath(); ctx.moveTo(p.x1, -p.y1); ctx.lineTo(p.x2, -p.y2); ctx.stroke();
+          ctx.restore();
+        } else if (p.t === "rect") {
+          ctx.strokeStyle = p.color; ctx.lineWidth = 0.4;
+          ctx.strokeRect(p.x, -(p.y + p.h), p.w, p.h);
+        } else if (p.t === "circle") {
+          ctx.beginPath(); ctx.arc(p.cx, -p.cy, p.r, 0, Math.PI * 2);
+          ctx.strokeStyle = p.color; ctx.lineWidth = 0.45; ctx.stroke();
+        } else if (p.t === "text") {
+          ctx.font = `500 ${(p.h || 2.2) * 0.88}px 'JetBrains Mono', monospace`;
+          ctx.fillStyle = p.color; ctx.textAlign = p.align || "left";
+          ctx.fillText(p.str, p.x, -p.y);
+        }
+      });
+
+      if (rulerActive && rulerP1 && rulerP2) {
+        const dist = Math.hypot(rulerP2.x - rulerP1.x, rulerP2.y - rulerP1.y);
+        ctx.strokeStyle = "#22d3ee"; ctx.lineWidth = 0.6;
+        ctx.beginPath(); ctx.moveTo(rulerP1.x, -rulerP1.y); ctx.lineTo(rulerP2.x, -rulerP2.y); ctx.stroke();
+        ctx.fillStyle = "#67e8f9"; ctx.font = "bold 3px 'JetBrains Mono'";
+        ctx.fillText(`${dist.toFixed(1)} mm`, (rulerP1.x + rulerP2.x) / 2, -(rulerP1.y + rulerP2.y) / 2 - 2);
+      }
+
+      ctx.restore();
+    }
+
+    function fitAll() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = Math.max(300, rect.width), h = Math.max(520, rect.height - 38);
+      const { bounds } = buildCADScene();
+      const bw = bounds.maxX - bounds.minX, bh = bounds.maxY - bounds.minY;
+      camScale = Math.min((w - 60) / bw, (h - 60) / bh);
+      camX = (w - bw * camScale) / 2 - bounds.minX * camScale;
+      camY = h - (h - bh * camScale) / 2 + bounds.minY * camScale;
+      drawScene();
+    }
+
+    function zoomSection() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      camScale = 3.2;
+      camX = rect.width * 0.38 - (state.width * camScale) / 2;
+      camY = Math.max(520, rect.height - 38) * 0.55;
+      drawScene();
+    }
+
+    function zoomTables() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = Math.max(300, rect.width), h = Math.max(520, rect.height - 38);
+      const { rightBounds } = buildCADScene();
+      const bw = rightBounds.maxX - rightBounds.minX, bh = rightBounds.maxY - rightBounds.minY;
+      camScale = Math.min((w - 50) / bw, (h - 50) / bh);
+      camX = 25 - rightBounds.minX * camScale;
+      camY = h - 25 + rightBounds.minY * camScale;
+      drawScene();
+    }
+
+    function zoomBy(factor, px = null, py = null) {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const sx = px !== null ? px : rect.width / 2;
+      const sy = py !== null ? py : Math.max(520, rect.height - 38) / 2;
+      const wPt = screenToWorld(sx, sy);
+      camScale = Math.max(0.2, Math.min(25, camScale * factor));
+      camX = sx - wPt.x * camScale;
+      camY = sy + wPt.y * camScale;
+      drawScene();
+    }
+
+    canvas.addEventListener("mousedown", e => {
+      const r = canvas.getBoundingClientRect();
+      const pt = screenToWorld(e.clientX - r.left, e.clientY - r.top);
+      if (rulerActive) {
+        if (!rulerP1 || (rulerP1 && rulerP2)) { rulerP1 = pt; rulerP2 = pt; } else { rulerP2 = pt; }
+        drawScene(); return;
+      }
+      for (let i = state.cables.length - 1; i >= 0; i--) {
+        const c = state.cables[i];
+        if (Math.hypot(pt.x - c.x, pt.y - c.y) <= c.d / 2 + 1) { draggedCable = c; return; }
+      }
+      panning = true;
+      panOrigin = { x: e.clientX - camX, y: e.clientY - camY };
+    });
+
+    window.addEventListener("mousemove", e => {
+      const r = canvas.getBoundingClientRect();
+      const pt = screenToWorld(e.clientX - r.left, e.clientY - r.top);
+      if (rulerActive && rulerP1) { rulerP2 = pt; drawScene(); return; }
+      if (draggedCable) {
+        const oldX = draggedCable.x, oldY = draggedCable.y;
+        const pos = resolveNonOverlappingPosition(draggedCable, pt.x, pt.y);
+        const dx = pos.x - oldX, dy = pos.y - oldY;
+        draggedCable.x = pos.x; draggedCable.y = pos.y;
+        draggedCable.origX = pos.x; draggedCable.origY = pos.y;
+        if (draggedCable.trefoil && draggedCable.trefoilGroupId) {
+          state.cables.forEach(other => {
+            if (other !== draggedCable && other.trefoilGroupId === draggedCable.trefoilGroupId) {
+              other.x = +(other.x + dx).toFixed(1);
+              other.y = +(other.y + dy).toFixed(1);
+              other.origX = other.x;
+              other.origY = other.y;
+            }
+          });
+        }
+        drawScene();
+      } else if (panning) {
+        camX = e.clientX - panOrigin.x;
+        camY = e.clientY - panOrigin.y;
+        drawScene();
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (draggedCable) { draggedCable = null; updateTableUI(); }
+      panning = false;
+    });
+
+    canvas.addEventListener("wheel", e => {
+      e.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      zoomBy(e.deltaY < 0 ? 1.15 : 0.87, e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+
+    const dropArea = document.getElementById("cadDropArea");
+    dropArea.addEventListener("dragover", e => { e.preventDefault(); dropArea.classList.add("border-cyan-400"); });
+    dropArea.addEventListener("dragleave", () => dropArea.classList.remove("border-cyan-400"));
+    dropArea.addEventListener("drop", e => {
+      e.preventDefault();
+      dropArea.classList.remove("border-cyan-400");
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (!files || !files.length) return;
+      if (files[0].name.toLowerCase().endsWith(".pdf")) importPDFFile({ files, value: "" });
+      else importCADFile({ files, value: "" });
+    });
+
+    // ============================================================================
+    // 8. ESPORTATORI CERTIFICATI (.DXF 1:1 FEDELE, .SCR TRUECOLOR, .DOC, .CSV) + MULTI-SEZIONE
+    // ============================================================================
+    let projectSections = [];
+    let currentSectionIdx = 0;
+
+    function cloneStateSnapshot(st) {
+      return JSON.parse(JSON.stringify(st));
+    }
+
+    function syncActiveSectionToMultiStore() {
+      if (projectSections.length === 0) {
+        projectSections.push(cloneStateSnapshot(state));
+        currentSectionIdx = 0;
+      } else {
+        projectSections[currentSectionIdx] = cloneStateSnapshot(state);
+      }
+      renderMultiSectionTabs();
+      try {
+        localStorage.setItem("canalo_v16_multisections", JSON.stringify({ currentSectionIdx, projectSections }));
+      } catch (e) {}
+    }
+
+    function renderMultiSectionTabs() {
+      const box = document.getElementById("multiSectionTabs");
+      if (!box) return;
+      box.innerHTML = "";
+      projectSections.forEach((sec, idx) => {
+        const active = idx === currentSectionIdx;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.onclick = () => switchSectionTab(idx);
+        btn.className = active
+          ? "px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-bold text-xs mono shadow transition whitespace-nowrap"
+          : "px-3 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs mono transition whitespace-nowrap";
+        const shortName = (sec.planTag || sec.title || `Sez.${idx + 1}`).split("|")[0].trim();
+        btn.textContent = `${idx + 1}. ${shortName} (${sec.width}x${sec.height} • ${sec.cables.length} cavi)`;
+        box.appendChild(btn);
+      });
+    }
+
+    function switchSectionTab(idx) {
+      if (idx < 0 || idx >= projectSections.length) return;
+      projectSections[currentSectionIdx] = cloneStateSnapshot(state);
+      currentSectionIdx = idx;
+      state = cloneStateSnapshot(projectSections[currentSectionIdx]);
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+    }
+
+    function addNewSectionTab(duplicateCurrent = false) {
+      projectSections[currentSectionIdx] = cloneStateSnapshot(state);
+      const nextNum = projectSections.length + 1;
+      const letter = String.fromCharCode(64 + Math.min(26, nextNum));
+      let newSec;
+      if (duplicateCurrent) {
+        newSec = cloneStateSnapshot(state);
+        newSec.title = `${state.title.replace(/\s*\(Copia\)/i, "")} (Sez. ${letter}-${letter})`;
+        newSec.planTag = `SEZ. ${letter}-${letter} | H=+3.20m`;
+      } else {
+        newSec = cloneStateSnapshot(state);
+        newSec.title = `NUOVA CANALINA 0${nextNum} - L=${state.width}mm H=${state.height}mm`;
+        newSec.planTag = `SEZ. ${letter}-${letter} | H=+3.20m`;
+        newSec.cables = [];
+      }
+      projectSections.push(newSec);
+      currentSectionIdx = projectSections.length - 1;
+      state = cloneStateSnapshot(newSec);
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+    }
+
+    function deleteCurrentSectionTab() {
+      if (projectSections.length <= 1) {
+        resetProject();
+        return;
+      }
+      projectSections.splice(currentSectionIdx, 1);
+      currentSectionIdx = Math.max(0, currentSectionIdx - 1);
+      state = cloneStateSnapshot(projectSections[currentSectionIdx]);
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+    }
+
+    function exportProjectJSON() {
+      syncActiveSectionToMultiStore();
+      const payload = { version: "16.3-multi", exportedAt: new Date().toISOString(), currentSectionIdx, projectSections };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${(state.tb.docCode || "PROGETTO_CANALINE").replace(/[^a-zA-Z0-9_-]/g, "_")}.json`;
+      a.click();
+    }
+
+    async function importProjectJSON(inputEl) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      try {
+        const txt = await file.text();
+        const data = JSON.parse(txt);
+        if (Array.isArray(data.projectSections) && data.projectSections.length > 0) {
+          projectSections = data.projectSections;
+          currentSectionIdx = Math.min(data.currentSectionIdx || 0, projectSections.length - 1);
+          state = cloneStateSnapshot(projectSections[currentSectionIdx]);
+          pushStateToUI();
+          recalculateAll();
+          fitAll();
+        }
+      } catch (e) {
+        console.error("Errore caricamento JSON:", e);
+      } finally {
+        inputEl.value = "";
+      }
+    }
+
+    function cleanCADStr(s) {
+      return String(s || "")
+        .replace(/•/g, "-")
+        .replace(/Ø/g, "%%c")
+        .replace(/±/g, "%%p")
+        .replace(/°/g, "%%d")
+        .replace(/²/g, "^2")
+        .replace(/≥/g, ">=")
+        .replace(/≤/g, "<=")
+        .replace(/Δ/g, "Delta ")
+        .replace(/[àáâãä]/g, "a'")
+        .replace(/[èéêë]/g, "e'")
+        .replace(/[ìíîï]/g, "i'")
+        .replace(/[òóôõö]/g, "o'")
+        .replace(/[ùúûü]/g, "u'")
+        .replace(/[ÀÁÂÃÄ]/g, "A'")
+        .replace(/[ÈÉÊË]/g, "E'")
+        .replace(/[^\x20-\x7E]/g, "");
+    }
+
+    function hexToACI(hex) {
+      if (!hex) return 7;
+      const h = String(hex).toLowerCase().trim();
+      const map = {
+        "#f59e0b": 30, "#fbbf24": 40, "#fde047": 2,  "#eab308": 50,
+        "#fdba74": 31, "#fb923c": 30, "#ea580c": 20, "#b45309": 32,
+        "#9a3412": 22, "#78350f": 34, "#451a03": 36, "#38bdf8": 140,
+        "#67e8f9": 131,"#22d3ee": 130,"#0e7490": 144,"#164e63": 146,
+        "#0c4a6e": 154,"#4ade80": 80, "#22c55e": 90, "#16a34a": 92,
+        "#f87171": 11, "#ef4444": 1,  "#991b1b": 14, "#f8fafc": 7,
+        "#ffffff": 7,  "#e2e8f0": 7,  "#cbd5e1": 9,  "#94a3b8": 8,
+        "#64748b": 252,"#475569": 251,"#334155": 250,"#1e293b": 250,
+        "#0f172a": 250
+      };
+      return map[h] || 7;
+    }
+
+    function hexToTrueColorInt(hex) {
+      if (!hex || !String(hex).startsWith("#") || hex.length < 7) return null;
+      const r = parseInt(hex.slice(1, 3), 16) || 0;
+      const g = parseInt(hex.slice(3, 5), 16) || 0;
+      const b = parseInt(hex.slice(5, 7), 16) || 0;
+      return (r << 16) | (g << 8) | b;
+    }
+
+    function exportAutoCADDXF() {
+      const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg)$/i, "");
+      const { prims, bounds } = buildCADScene();
+
+      const layers = new Set([
+        "0", "SFONDI_RIEMPIMENTI", "Canalina", "Cavi", "Anime_Cavi", "Bandierine",
+        "Testi", "STAFFAGGI", "QUOTE", "TABELLA", "CURVA_CARICO",
+        "ETICHETTA_PIANTA", "VISTA_3D_ISO", "CORNICE"
+      ]);
+      let dxf = [];
+      const add = (c, v) => dxf.push(String(c), String(v));
+
+      add(0, "SECTION"); add(2, "HEADER");
+      add(9, "$ACADVER"); add(1, "AC1009");
+      add(9, "$EXTMIN"); add(10, bounds.minX.toFixed(2)); add(20, bounds.minY.toFixed(2)); add(30, "0.0");
+      add(9, "$EXTMAX"); add(10, bounds.maxX.toFixed(2)); add(20, bounds.maxY.toFixed(2)); add(30, "0.0");
+      add(0, "ENDSEC");
+
+      add(0, "SECTION"); add(2, "TABLES");
+      add(0, "TABLE"); add(2, "LTYPE"); add(70, 1);
+      add(0, "LTYPE"); add(2, "CONTINUOUS"); add(70, 64); add(3, "Solid line"); add(72, 65); add(73, 0); add(40, "0.0");
+      add(0, "ENDTAB");
+
+      add(0, "TABLE"); add(2, "STYLE"); add(70, 2);
+      add(0, "STYLE"); add(2, "STANDARD"); add(70, 0); add(40, "0.0"); add(41, "0.82"); add(50, "0.0"); add(71, 0); add(42, "2.5"); add(3, "isocp.shx"); add(4, "");
+      add(0, "STYLE"); add(2, "MONO_CAD"); add(70, 0); add(40, "0.0"); add(41, "0.82"); add(50, "0.0"); add(71, 0); add(42, "2.5"); add(3, "consola.ttf"); add(4, "");
+      add(0, "ENDTAB");
+
+      add(0, "TABLE"); add(2, "LAYER"); add(70, layers.size);
+      layers.forEach(l => {
+        add(0, "LAYER"); add(2, l); add(70, 64); add(62, 7); add(6, "CONTINUOUS");
+      });
+      add(0, "ENDTAB"); add(0, "ENDSEC");
+
+      add(0, "SECTION"); add(2, "ENTITIES");
+      const addL = (lay, x1, y1, x2, y2, aci = 7) => {
+        add(0, "LINE"); add(8, lay); add(62, aci);
+        add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
+        add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
+      };
+      const addSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, aci) => {
+        add(0, "SOLID"); add(8, lay); add(62, aci);
+        add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
+        add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
+        add(12, x4.toFixed(3)); add(22, y4.toFixed(3)); add(32, "0.0");
+        add(13, x3.toFixed(3)); add(23, y3.toFixed(3)); add(33, "0.0");
+      };
+      const addSolidDisk = (lay, cx, cy, r, aci) => {
+        const steps = r > 5 ? 24 : 16;
+        for (let i = 0; i < steps; i += 2) {
+          const a1 = (i * 2 * Math.PI) / steps;
+          const a2 = ((i + 1) * 2 * Math.PI) / steps;
+          const a3 = ((i + 2) * 2 * Math.PI) / steps;
+          addSolidQuad(
+            lay, cx, cy,
+            cx + Math.cos(a1) * r, cy + Math.sin(a1) * r,
+            cx + Math.cos(a2) * r, cy + Math.sin(a2) * r,
+            cx + Math.cos(a3) * r, cy + Math.sin(a3) * r, aci
+          );
+        }
+      };
+
+      prims.forEach(p => {
+        if (!p.fill) return;
+        const isDarkBoxBg = p.fill === "#0f172a" && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
+        if (isDarkBoxBg) return;
+        const fillAci = hexToACI(p.fill);
+        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina") ? p.layer : "SFONDI_RIEMPIMENTI";
+        if (p.t === "rect") addSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, fillAci);
+        else if (p.t === "circle") addSolidDisk(fillLay, p.cx, p.cy, p.r, fillAci);
+      });
+
+      prims.forEach(p => {
+        const lay = layers.has(p.layer) ? p.layer : "0";
+        const aci = hexToACI(p.color);
+        if (p.t === "line") {
+          addL(lay, p.x1, p.y1, p.x2, p.y2, aci);
+        } else if (p.t === "rect") {
+          addL(lay, p.x, p.y, p.x + p.w, p.y, aci);
+          addL(lay, p.x + p.w, p.y, p.x + p.w, p.y + p.h, aci);
+          addL(lay, p.x + p.w, p.y + p.h, p.x, p.y + p.h, aci);
+          addL(lay, p.x, p.y + p.h, p.x, p.y, aci);
+        } else if (p.t === "circle") {
+          add(0, "CIRCLE"); add(8, lay); add(62, aci);
+          add(10, p.cx.toFixed(3)); add(20, p.cy.toFixed(3)); add(30, "0.0");
+          add(40, p.r.toFixed(3));
+        } else if (p.t === "text") {
+          const s = cleanCADStr(p.str);
+          if (!s) return;
+          const th = Math.max(1.2, (p.h || 2.2) * 0.80);
+          const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
+          add(0, "TEXT"); add(8, lay); add(7, "MONO_CAD"); add(62, aci);
+          add(10, p.x.toFixed(3)); add(20, p.y.toFixed(3)); add(30, "0.0");
+          add(40, th.toFixed(3)); add(41, "0.82"); add(1, s);
+          if (hAlign !== 0) {
+            add(72, hAlign);
+            add(11, p.x.toFixed(3)); add(21, p.y.toFixed(3)); add(31, "0.0");
+          }
+        }
+      });
+
+      add(0, "ENDSEC"); add(0, "EOF");
+      const blob = new Blob([dxf.join("\r\n") + "\r\n"], { type: "application/dxf" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = `${name}.dxf`; a.click();
+    }
+
+    function exportAutoLISPDWG() {
+      const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg|scr)$/i, "");
+      const { prims } = buildCADScene();
+      let scr = `(defun c:CREACANALINA ()\n  (setvar "CMDECHO" 0)\n  (setvar "OSMODE" 0)\n`;
+      scr += `  (command "_-STYLE" "MONO_CAD" "Consolas" "0" "0.82" "0" "_N" "_N")\n`;
+      const emitL = (lay, x1, y1, x2, y2, hex) => {
+        const aci = hexToACI(hex), tc = hexToTrueColorInt(hex);
+        scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tc !== null ? ` '(420 . ${tc})` : ""} '(10 ${x1.toFixed(3)} ${y1.toFixed(3)} 0.0) '(11 ${x2.toFixed(3)} ${y2.toFixed(3)} 0.0)))\n`;
+      };
+      const emitSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, hex) => {
+        const aci = hexToACI(hex), tc = hexToTrueColorInt(hex);
+        const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
+        scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${x1.toFixed(3)} ${y1.toFixed(3)} 0.0) '(11 ${x2.toFixed(3)} ${y2.toFixed(3)} 0.0) '(12 ${x4.toFixed(3)} ${y4.toFixed(3)} 0.0) '(13 ${x3.toFixed(3)} ${y3.toFixed(3)} 0.0)))\n`;
+      };
+      prims.forEach(p => {
+        if (!p.fill) return;
+        const isDarkBoxBg = p.fill === "#0f172a" && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
+        if (isDarkBoxBg) return;
+        if (p.t === "rect") {
+          emitSolidQuad(p.layer, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.fill);
+        } else if (p.t === "circle") {
+          const steps = p.r > 5 ? 20 : 12;
+          for (let i = 0; i < steps; i += 2) {
+            const a1 = (i * 2 * Math.PI) / steps;
+            const a2 = ((i + 1) * 2 * Math.PI) / steps;
+            const a3 = ((i + 2) * 2 * Math.PI) / steps;
+            emitSolidQuad(
+              p.layer, p.cx, p.cy,
+              p.cx + Math.cos(a1) * p.r, p.cy + Math.sin(a1) * p.r,
+              p.cx + Math.cos(a2) * p.r, p.cy + Math.sin(a2) * p.r,
+              p.cx + Math.cos(a3) * p.r, p.cy + Math.sin(a3) * p.r, p.fill
+            );
+          }
+        }
+      });
+      prims.forEach(p => {
+        const aci = hexToACI(p.color), tc = hexToTrueColorInt(p.color);
+        const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
+        if (p.t === "line") emitL(p.layer, p.x1, p.y1, p.x2, p.y2, p.color);
+        else if (p.t === "rect") {
+          emitL(p.layer, p.x, p.y, p.x + p.w, p.y, p.color);
+          emitL(p.layer, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.color);
+          emitL(p.layer, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.color);
+          emitL(p.layer, p.x, p.y + p.h, p.x, p.y, p.color);
+        } else if (p.t === "circle") {
+          scr += `  (entmake (list '(0 . "CIRCLE") '(8 . "${p.layer}") '(62 . ${aci})${tcStr} '(10 ${p.cx.toFixed(3)} ${p.cy.toFixed(3)} 0.0) '(40 . ${p.r.toFixed(3)})))\n`;
+        } else if (p.t === "text") {
+          const s = cleanCADStr(p.str).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+          if (!s) return;
+          const th = Math.max(1.2, (p.h || 2.2) * 0.80);
+          const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
+          const alignStr = hAlign !== 0 ? ` '(72 . ${hAlign}) '(11 ${p.x.toFixed(3)} ${p.y.toFixed(3)} 0.0)` : "";
+          scr += `  (entmake (list '(0 . "TEXT") '(8 . "${p.layer}") '(7 . "MONO_CAD") '(62 . ${aci})${tcStr} '(10 ${p.x.toFixed(3)} ${p.y.toFixed(3)} 0.0) '(40 . ${th.toFixed(3)}) '(41 . 0.82) '(1 . "${s}")${alignStr}))\n`;
+        }
+      });
+      scr += `  (command "_ZOOM" "_E")\n  (princ)\n)\n(c:CREACANALINA)\n`;
+      const blob = new Blob([scr], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = `${name}_TrascinaInAutoCAD.scr`; a.click();
+    }
+
+    function exportWordReport() {
+      syncActiveSectionToMultiStore();
+      const name = (document.getElementById("exportName").value || "Relazione").trim();
+      const html = `<html><head><meta charset="utf-8"></head><body style="font-family:Arial">
+        <h2>RELAZIONE TECNICA DI POSA: ${state.title}</h2>
+        <p>Dimensioni: L=${state.width}mm x H=${state.height}mm | Riempimento: ${metrics.fillPct}% (Riserva +${metrics.sparePct}%) | Derating CEI 35024 Kr=${metrics.kr} | Segregazione 64-8: ${metrics.segConform ? "CONFORME" : "NON CONFORME"}</p>
+        <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%">
+          <tr><th>Pos</th><th>Sigla</th><th>Descrizione</th><th>Tipo</th><th>Formazione</th><th>Ø (mm)</th></tr>
+          ${state.cables.map((c, i) => `<tr><td>#${i + 1}</td><td>${c.code}</td><td>${c.desc}</td><td>${c.type}</td><td>${c.form}</td><td>${c.d}</td></tr>`).join("")}
+        </table></body></html>`;
+      const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = `${name}.doc`; a.click();
+    }
+
+    function exportCSV() {
+      const name = (document.getElementById("exportName").value || "Computo_BOM").trim();
+      let csv = "CODICE;DESCRIZIONE;QUANTITA;UM;NOTE\n";
+      metrics.bom.forEach(b => { csv += `"${b.code}";"${b.desc}";"${b.qty}";"${b.um}";"${b.note}"\n`; });
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = `${name}.csv`; a.click();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      initCatalogDropdown();
+      populateBrandSeries();
+      resetProject();
+      syncActiveSectionToMultiStore();
+      initLibreDwgEngine();
+      window.addEventListener("resize", drawScene);
+    });
+  </script>
+</body>
+</html>
