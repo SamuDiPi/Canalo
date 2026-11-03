@@ -168,19 +168,19 @@
         <div>
           <label class="block text-[11px] font-semibold text-cyan-300 mb-1">Formato Standard AutoCAD:</label>
           <select id="selDxfFormat" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white">
-            <option value="AC1018" selected>AutoCAD TrueColor 2004..2026 (AC1018) — Fedele 1:1 alla Preview</option>
-            <option value="AC1009">AutoCAD R12 Legacy (AC1009) — Compatibilità Vintage / Macchine CNC</option>
+            <option value="AC1009" selected>AutoCAD Compatibile 100% (AC1009 / R12 - LT 2021..2026) — Consigliato</option>
+            <option value="AC1018">AutoCAD Avanzato TrueColor (AC1018 con gerarchia handle)</option>
           </select>
-          <p class="text-[10px] text-slate-400 mt-1">La modalità TrueColor conserva i colori RGB esatti a 24-bit, la metrica millimetrica (1:1), i caratteri proporzionati e gli spessori linea.</p>
+          <p class="text-[10px] text-slate-400 mt-1">Il formato AC1009 si apre all'istante in AutoCAD LT 2021 senza errori o richieste di premere Invio, preservando colori layer, font TTF e geometria 1:1.</p>
         </div>
 
         <div>
           <label class="block text-[11px] font-semibold text-emerald-300 mb-1">Carattere / Stile Tipografico:</label>
           <select id="selDxfFont" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white">
-            <option value="jetbrains" selected>JetBrains Mono + Inter (Stesso font moderno dell'anteprima)</option>
-            <option value="consolas">Consolas + Arial (Font di sistema standard Microsoft Windows)</option>
+            <option value="consolas" selected>Consolas + Arial (Font di sistema Windows standard — Nessun font mancante)</option>
+            <option value="jetbrains">JetBrains Mono + Inter (Font web moderni — Se installati nel sistema)</option>
           </select>
-          <p class="text-[10px] text-slate-400 mt-1">Larghezza caratteri (Width Factor = 1.0) e altezze calibrate per combaciare perfettamente con le celle delle tabelle.</p>
+          <p class="text-[10px] text-slate-400 mt-1">Larghezza caratteri naturale (Width Factor = 1.0, non schiacciata) e altezze calibrate per combaciare perfettamente con le celle delle tabelle.</p>
         </div>
 
         <div class="pt-2 border-t border-slate-800 space-y-2.5">
@@ -2841,8 +2841,8 @@
     // 8. ESPORTATORI CERTIFICATI FEDELI 1:1 (.DXF TRUECOLOR, .SCR, .DOC, .CSV) + MULTI-SEZIONE
     // ============================================================================
     let exportDxfOptions = {
-      format: "AC1018", // "AC1018" (AutoCAD 2004..2026 TrueColor) o "AC1009" (R12 Legacy)
-      fontFamily: "jetbrains", // "jetbrains" (JetBrains Mono + Inter) o "consolas" (Consolas + Arial)
+      format: "AC1009", // Default: "AC1009" (AutoCAD R12 / LT 100% Compatibile senza blocchi all'avvio)
+      fontFamily: "consolas", // Default: "consolas" (Consolas + Arial: font di sistema garantiti al 100% su Windows)
       includeBackgrounds: true,
       includeLineweights: true,
       includeUnicode: true
@@ -2924,21 +2924,21 @@
       return (r << 16) | (g << 8) | b;
     }
 
-    // Codifica standard AutoCAD Unicode (\U+XXXX) per preservare accenti e simboli identici alla preview
+    // Codifica standard AutoCAD Unicode (\U+XXXX) e codici speciali (%%c, %%d, %%p) per simboli e caratteri
     function formatCADText(s, useUnicode = true) {
       if (!s) return "";
       if (!useUnicode) return cleanCADStr(s);
       return String(s)
+        .replace(/Ø/g, "%%c")
+        .replace(/ø/g, "%%c")
+        .replace(/°/g, "%%d")
+        .replace(/±/g, "%%p")
         .replace(/²/g, "\\U+00B2")
         .replace(/³/g, "\\U+00B3")
-        .replace(/Ø/g, "\\U+00D8")
-        .replace(/ø/g, "\\U+00F8")
-        .replace(/°/g, "\\U+00B0")
-        .replace(/±/g, "\\U+00B1")
         .replace(/≥/g, "\\U+2265")
         .replace(/≤/g, "\\U+2264")
         .replace(/Δ/g, "\\U+0394")
-        .replace(/•/g, "\\U+2022")
+        .replace(/•/g, "-")
         .replace(/à/g, "\\U+00E0")
         .replace(/á/g, "\\U+00E1")
         .replace(/è/g, "\\U+00E8")
@@ -2999,22 +2999,35 @@
       const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg)$/i, "");
       const { prims, bounds } = buildCADScene();
 
-      const isAc1018 = exportDxfOptions.format !== "AC1009";
-      const fontFam = exportDxfOptions.fontFamily || "jetbrains";
+      const isAc1018 = exportDxfOptions.format === "AC1018";
+      const fontFam = exportDxfOptions.fontFamily || "consolas";
       const includeBg = exportDxfOptions.includeBackgrounds !== false;
       const includeLw = exportDxfOptions.includeLineweights !== false;
       const useUnicode = exportDxfOptions.includeUnicode !== false;
 
-      let handleVal = 0x50;
+      let handleVal = 0x20;
       const nextH = () => (handleVal++).toString(16).toUpperCase();
       const dxf = [];
       const add = (c, v) => dxf.push(String(c), String(v));
+
+      // Handle fissi gerarchici per AC1018 (risoluzione vincoli AcDb/330 per AutoCAD LT)
+      const H_BLOCK_RECORD_TAB = "1";
+      const H_MODEL_SPACE_REC  = "2";
+      const H_PAPER_SPACE_REC  = "3";
+      const H_LTYPE_TAB        = "4";
+      const H_LTYPE_CONT       = "5";
+      const H_LTYPE_DASH       = "6";
+      const H_LAYER_TAB        = "7";
+      const H_STYLE_TAB        = "8";
+      const H_APPID_TAB        = "9";
+      const H_APPID_ACAD       = "A";
+      const H_ROOT_DICT        = "B";
 
       // 1. SEZIONE HEADER
       add(0, "SECTION"); add(2, "HEADER");
       add(9, "$ACADVER"); add(1, isAc1018 ? "AC1018" : "AC1009");
       if (isAc1018) {
-        add(9, "$HANDSEED"); add(5, "4000");
+        add(9, "$HANDSEED"); add(5, "2000");
         add(9, "$INSUNITS"); add(70, 4); // 4 = Millimetri (Scala 1:1 rigorosa)
         add(9, "$MEASUREMENT"); add(70, 1); // 1 = Sistema Metrico Decimale
         add(9, "$LUNITS"); add(70, 2); // Decimal
@@ -3024,7 +3037,7 @@
       add(9, "$EXTMAX"); add(10, bounds.maxX.toFixed(2)); add(20, bounds.maxY.toFixed(2)); add(30, "0.0");
       add(0, "ENDSEC");
 
-      // 2. SEZIONE CLASSES (necessaria in AC1018+)
+      // 2. SEZIONE CLASSES (solo per AC1018)
       if (isAc1018) {
         add(0, "SECTION"); add(2, "CLASSES"); add(0, "ENDSEC");
       }
@@ -3032,29 +3045,31 @@
       // 3. SEZIONE TABLES
       add(0, "SECTION"); add(2, "TABLES");
 
-      // Tabella VPORT (Viewports)
+      // Tabella VPORT (Viewports, solo AC1018)
       if (isAc1018) {
-        add(0, "TABLE"); add(2, "VPORT"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 1);
-        add(0, "VPORT"); add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbViewportTableRecord");
+        const hVportTab = nextH();
+        add(0, "TABLE"); add(2, "VPORT"); add(5, hVportTab); add(100, "AcDbSymbolTable"); add(70, 1);
+        add(0, "VPORT"); add(5, nextH()); add(330, hVportTab); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbViewportTableRecord");
         add(2, "*ACTIVE"); add(70, 0); add(10, "0.0"); add(20, "0.0"); add(11, "1.0"); add(21, "1.0");
         add(12, bounds.minX.toFixed(2)); add(22, bounds.minY.toFixed(2)); add(14, "1.0"); add(15, "1.0");
         add(0, "ENDTAB");
       }
 
       // Tabella LTYPE (Tipi linea)
-      add(0, "TABLE"); add(2, "LTYPE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTable"); } add(70, 2);
-      add(0, "LTYPE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLinetypeTableRecord"); }
+      add(0, "TABLE"); add(2, "LTYPE"); if (isAc1018) { add(5, H_LTYPE_TAB); add(100, "AcDbSymbolTable"); } add(70, 2);
+      add(0, "LTYPE"); if (isAc1018) { add(5, H_LTYPE_CONT); add(330, H_LTYPE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLinetypeTableRecord"); }
       add(2, "CONTINUOUS"); add(70, 0); add(3, "Solid line"); add(72, 65); add(73, 0); add(40, "0.0");
-      add(0, "LTYPE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLinetypeTableRecord"); }
+      add(0, "LTYPE"); if (isAc1018) { add(5, H_LTYPE_DASH); add(330, H_LTYPE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLinetypeTableRecord"); }
       add(2, "DASHED"); add(70, 0); add(3, "Dashed __ __ __"); add(72, 65); add(73, 2); add(40, "12.0");
       add(49, "9.0"); add(74, 0); add(49, "-3.0"); add(74, 0);
       add(0, "ENDTAB");
 
-      // Tabella LAYER con TrueColor RGB 24-bit e Lineweights 370
+      // Tabella LAYER con colori ACI calibrati e TrueColor opzionale per AC1018
       const layerList = Object.entries(CAD_LAYERS_SPEC);
-      add(0, "TABLE"); add(2, "LAYER"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTable"); } add(70, layerList.length);
+      add(0, "TABLE"); add(2, "LAYER"); if (isAc1018) { add(5, H_LAYER_TAB); add(100, "AcDbSymbolTable"); } add(70, layerList.length);
       layerList.forEach(([layName, cfg]) => {
-        add(0, "LAYER"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLayerTableRecord"); }
+        add(0, "LAYER");
+        if (isAc1018) { add(5, nextH()); add(330, H_LAYER_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLayerTableRecord"); }
         add(2, layName); add(70, 0); add(62, cfg.aci);
         if (isAc1018) {
           add(420, cfg.tc);
@@ -3065,16 +3080,16 @@
       add(0, "ENDTAB");
 
       // Tabella STYLE (Stili di testo tipografici identici alla preview)
-      add(0, "TABLE"); add(2, "STYLE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTable"); } add(70, 3);
+      add(0, "TABLE"); add(2, "STYLE"); if (isAc1018) { add(5, H_STYLE_TAB); add(100, "AcDbSymbolTable"); } add(70, 3);
 
       // Stile STANDARD
-      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
+      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(330, H_STYLE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
       add(2, "STANDARD"); add(70, 0); add(40, "0.0"); add(41, "1.0"); add(50, "0.0"); add(71, 0); add(42, "2.5");
       add(3, "arial.ttf"); add(4, "");
       if (isAc1018) { add(1001, "ACAD"); add(1000, "Arial"); add(1071, 0); }
 
-      // Stile MONO_CAD (JetBrains Mono / Consolas) con Width Factor naturale 1.0 (senza schiacciamento 0.82)
-      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
+      // Stile MONO_CAD (Consolas / JetBrains Mono) con Width Factor naturale 1.0 (senza compressione 0.82)
+      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(330, H_STYLE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
       add(2, "MONO_CAD"); add(70, 0); add(40, "0.0"); add(41, "1.0"); add(50, "0.0"); add(71, 0); add(42, "2.5");
       if (fontFam === "jetbrains") {
         add(3, "JetBrainsMono-Regular.ttf"); add(4, "");
@@ -3084,8 +3099,8 @@
         if (isAc1018) { add(1001, "ACAD"); add(1000, "Consolas"); add(1071, 0); }
       }
 
-      // Stile TITLE_CAD (Inter / Arial) per intestazioni tabelle, cartiglio e titoli
-      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
+      // Stile TITLE_CAD (Arial / Inter) per intestazioni tabelle, cartiglio e titoli
+      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(330, H_STYLE_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
       add(2, "TITLE_CAD"); add(70, 0); add(40, "0.0"); add(41, "1.0"); add(50, "0.0"); add(71, 0); add(42, "3.0");
       if (fontFam === "jetbrains") {
         add(3, "Inter-Regular.ttf"); add(4, "");
@@ -3096,31 +3111,32 @@
       }
       add(0, "ENDTAB");
 
+      // Tabelle aggiuntive e BLOCK_RECORD per AC1018
       if (isAc1018) {
-        add(0, "TABLE"); add(2, "VIEW"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
-        add(0, "TABLE"); add(2, "UCS"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
-        add(0, "TABLE"); add(2, "APPID"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 1);
-        add(0, "APPID"); add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbRegAppTableRecord");
+        add(0, "TABLE"); add(2, "VIEW"); add(5, nextH()); add(330, "0"); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
+        add(0, "TABLE"); add(2, "UCS"); add(5, nextH()); add(330, "0"); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
+        add(0, "TABLE"); add(2, "APPID"); add(5, H_APPID_TAB); add(100, "AcDbSymbolTable"); add(70, 1);
+        add(0, "APPID"); add(5, H_APPID_ACAD); add(330, H_APPID_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbRegAppTableRecord");
         add(2, "ACAD"); add(70, 0); add(0, "ENDTAB");
-        add(0, "TABLE"); add(2, "DIMSTYLE"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
-        add(0, "TABLE"); add(2, "BLOCK_RECORD"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 2);
-        add(0, "BLOCK_RECORD"); add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbBlockTableRecord"); add(2, "*MODEL_SPACE");
-        add(0, "BLOCK_RECORD"); add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbBlockTableRecord"); add(2, "*PAPER_SPACE");
+        add(0, "TABLE"); add(2, "DIMSTYLE"); add(5, nextH()); add(330, "0"); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
+        add(0, "TABLE"); add(2, "BLOCK_RECORD"); add(5, H_BLOCK_RECORD_TAB); add(100, "AcDbSymbolTable"); add(70, 2);
+        add(0, "BLOCK_RECORD"); add(5, H_MODEL_SPACE_REC); add(330, H_BLOCK_RECORD_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbBlockTableRecord"); add(2, "*MODEL_SPACE");
+        add(0, "BLOCK_RECORD"); add(5, H_PAPER_SPACE_REC); add(330, H_BLOCK_RECORD_TAB); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbBlockTableRecord"); add(2, "*PAPER_SPACE");
         add(0, "ENDTAB");
       }
 
       add(0, "ENDSEC"); // END TABLES
 
-      // 4. SEZIONE BLOCKS
+      // 4. SEZIONE BLOCKS (solo AC1018)
       if (isAc1018) {
         add(0, "SECTION"); add(2, "BLOCKS");
-        add(0, "BLOCK"); add(5, nextH()); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockBegin");
+        add(0, "BLOCK"); add(5, nextH()); add(330, H_MODEL_SPACE_REC); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockBegin");
         add(2, "*MODEL_SPACE"); add(70, 0); add(10, "0.0"); add(20, "0.0"); add(30, "0.0"); add(3, "*MODEL_SPACE"); add(1, "");
-        add(0, "ENDBLK"); add(5, nextH()); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockEnd");
+        add(0, "ENDBLK"); add(5, nextH()); add(330, H_MODEL_SPACE_REC); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockEnd");
 
-        add(0, "BLOCK"); add(5, nextH()); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockBegin");
+        add(0, "BLOCK"); add(5, nextH()); add(330, H_PAPER_SPACE_REC); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockBegin");
         add(2, "*PAPER_SPACE"); add(70, 0); add(10, "0.0"); add(20, "0.0"); add(30, "0.0"); add(3, "*PAPER_SPACE"); add(1, "");
-        add(0, "ENDBLK"); add(5, nextH()); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockEnd");
+        add(0, "ENDBLK"); add(5, nextH()); add(330, H_PAPER_SPACE_REC); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockEnd");
         add(0, "ENDSEC");
       }
 
@@ -3129,7 +3145,11 @@
 
       const emitEntityHeader = (type, lay, colorHex, lwMm) => {
         add(0, type);
-        if (isAc1018) { add(5, nextH()); add(100, "AcDbEntity"); }
+        if (isAc1018) {
+          add(5, nextH());
+          add(330, H_MODEL_SPACE_REC); // Collegamento essenziale al ModelSpace per AutoCAD LT
+          add(100, "AcDbEntity");
+        }
         add(8, CAD_LAYERS_SPEC[lay] ? lay : "0");
         const aci = hexToClosestACI(colorHex);
         add(62, aci);
@@ -3242,17 +3262,16 @@
           if (hAlign !== 0) {
             add(72, hAlign);
             add(11, p.x.toFixed(3)); add(21, p.y.toFixed(3)); add(31, "0.0");
-            add(73, 0); // Allineamento verticale baseline
           }
         }
       });
 
       add(0, "ENDSEC"); // ENTITIES
 
-      // 6. SEZIONE OBJECTS
+      // 6. SEZIONE OBJECTS (solo AC1018)
       if (isAc1018) {
         add(0, "SECTION"); add(2, "OBJECTS");
-        add(0, "DICTIONARY"); add(5, nextH()); add(100, "AcDbDictionary"); add(281, 1);
+        add(0, "DICTIONARY"); add(5, H_ROOT_DICT); add(100, "AcDbDictionary"); add(281, 1);
         add(0, "ENDSEC");
       }
 
@@ -3267,7 +3286,7 @@
     function exportAutoLISPDWG() {
       const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg|scr)$/i, "");
       const { prims } = buildCADScene();
-      const fontFam = exportDxfOptions.fontFamily || "jetbrains";
+      const fontFam = exportDxfOptions.fontFamily || "consolas";
       const monoFont = fontFam === "jetbrains" ? "JetBrains Mono,Consolas" : "Consolas";
       const titleFont = fontFam === "jetbrains" ? "Inter,Arial" : "Arial";
 
