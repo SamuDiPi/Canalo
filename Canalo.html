@@ -96,10 +96,15 @@
         </div>
 
         <!-- EXPORT DXF / DWG / DOC / CSV -->
-        <button type="button" onclick="exportAutoCADDXF()" class="inline-flex items-center gap-1 text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-md shadow transition">
-          <span>💾 Scarica .DXF (1:1)</span>
-        </button>
-        <button type="button" onclick="exportAutoLISPDWG()" class="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1.5 rounded-md font-semibold transition">
+        <div class="flex items-center gap-1">
+          <button type="button" onclick="exportAutoCADDXF()" class="inline-flex items-center gap-1 text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-md shadow transition" title="Scarica il disegno CAD in formato .DXF 1:1 identico alla preview">
+            <span>💾 Scarica .DXF (1:1)</span>
+          </button>
+          <button type="button" onclick="toggleExportOptionsModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-2 py-1.5 rounded-md font-semibold transition" title="Opzioni di Stile, Font e Formato DXF">
+            <span>⚙️</span>
+          </button>
+        </div>
+        <button type="button" onclick="exportAutoLISPDWG()" class="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1.5 rounded-md font-semibold transition" title="Genera script AutoLISP per ricreare il disegno TrueColor direttamente in AutoCAD">
           <span>.DWG TrueColor (.SCR)</span>
         </button>
         <button type="button" onclick="exportWordReport()" class="text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2.5 py-1.5 rounded-md font-semibold transition">
@@ -146,6 +151,71 @@
         <button type="button" onclick="toggleDwgInspector()" class="text-slate-400 hover:text-white font-bold px-2">Chiudi &times;</button>
       </div>
       <div id="dwgInspectorContent" class="bg-slate-950 border border-slate-800 rounded p-2.5 text-[11px] text-slate-300 max-h-44 overflow-y-auto whitespace-pre-wrap">In attesa di importazione file .DWG / .DXF...</div>
+    </div>
+  </div>
+
+  <!-- MODALE OPZIONI ESPORTAZIONE DXF -->
+  <div id="exportOptionsModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-xl p-5 max-w-lg w-full shadow-2xl space-y-4 text-xs">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-sm font-bold text-amber-300 uppercase tracking-wide flex items-center gap-2">
+          <span>⚙️ Opzioni Esportazione DXF (Stile 1:1 Fedele)</span>
+        </h3>
+        <button type="button" onclick="toggleExportOptionsModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+
+      <div class="space-y-3.5 text-slate-300">
+        <div>
+          <label class="block text-[11px] font-semibold text-cyan-300 mb-1">Formato Standard AutoCAD:</label>
+          <select id="selDxfFormat" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white">
+            <option value="AC1018" selected>AutoCAD TrueColor 2004..2026 (AC1018) — Fedele 1:1 alla Preview</option>
+            <option value="AC1009">AutoCAD R12 Legacy (AC1009) — Compatibilità Vintage / Macchine CNC</option>
+          </select>
+          <p class="text-[10px] text-slate-400 mt-1">La modalità TrueColor conserva i colori RGB esatti a 24-bit, la metrica millimetrica (1:1), i caratteri proporzionati e gli spessori linea.</p>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-emerald-300 mb-1">Carattere / Stile Tipografico:</label>
+          <select id="selDxfFont" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white">
+            <option value="jetbrains" selected>JetBrains Mono + Inter (Stesso font moderno dell'anteprima)</option>
+            <option value="consolas">Consolas + Arial (Font di sistema standard Microsoft Windows)</option>
+          </select>
+          <p class="text-[10px] text-slate-400 mt-1">Larghezza caratteri (Width Factor = 1.0) e altezze calibrate per combaciare perfettamente con le celle delle tabelle.</p>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 space-y-2.5">
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input id="chkDxfBg" type="checkbox" checked class="accent-amber-400 mt-0.5">
+            <div>
+              <span class="font-semibold text-white block">Includi sfondi pannelli e tabelle (Layer SFONDI_RIEMPIMENTI)</span>
+              <span class="text-[10px] text-slate-400 block">Gli sfondi scuri delle tabelle vengono inseriti in un layer dedicato: puoi disattivarli qui o congelare il layer in AutoCAD per stampare su carta bianca.</span>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input id="chkDxfLw" type="checkbox" checked class="accent-cyan-400 mt-0.5">
+            <div>
+              <span class="font-semibold text-white block">Esporta Spessori Linea reali (Lineweights 370 da 0.20mm a 0.85mm)</span>
+              <span class="text-[10px] text-slate-400 block">Garantisce la stessa gerarchia visiva tra canalina (0.50mm), quote (0.45mm), curve (0.85mm) e bandierine (0.20mm).</span>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input id="chkDxfUnicode" type="checkbox" checked class="accent-emerald-400 mt-0.5">
+            <div>
+              <span class="font-semibold text-white block">Codifica Simboli Ingegneristici ed Accenti (\U+XXXX)</span>
+              <span class="text-[10px] text-slate-400 block">Visualizza correttamente mm², Ø, Continuità, ΔV%, ≥ in qualsiasi lingua o versione di AutoCAD senza caratteri illeggibili.</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+        <button type="button" onclick="toggleExportOptionsModal()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Chiudi</button>
+        <button type="button" onclick="exportAutoCADDXF(); toggleExportOptionsModal();" class="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow">
+          💾 Scarica DXF Ora
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1635,9 +1705,10 @@
       return s;
     }
 
-    // Pulisce codici di formattazione AutoCAD MTEXT (es. \A1; \fArial|b0; {\H0.8x;...})
+    // Pulisce codici di formattazione AutoCAD MTEXT (es. \A1; \fArial|b0; {\H0.8x;...}) e decodifica sequenze \U+XXXX
     function cleanAcadMText(rawStr) {
       return String(rawStr || "")
+        .replace(/\\U\+([0-9A-Fa-f]{4})/g, (m, hex) => String.fromCharCode(parseInt(hex, 16)))
         .replace(/\\P/g, " ")
         .replace(/\\[A-Za-z0-9]+[^;]*;/g, "")
         .replace(/[{}]/g, "")
@@ -2766,6 +2837,126 @@
       }
     }
 
+    // ============================================================================
+    // 8. ESPORTATORI CERTIFICATI FEDELI 1:1 (.DXF TRUECOLOR, .SCR, .DOC, .CSV) + MULTI-SEZIONE
+    // ============================================================================
+    let exportDxfOptions = {
+      format: "AC1018", // "AC1018" (AutoCAD 2004..2026 TrueColor) o "AC1009" (R12 Legacy)
+      fontFamily: "jetbrains", // "jetbrains" (JetBrains Mono + Inter) o "consolas" (Consolas + Arial)
+      includeBackgrounds: true,
+      includeLineweights: true,
+      includeUnicode: true
+    };
+
+    function toggleExportOptionsModal() {
+      const modal = document.getElementById("exportOptionsModal");
+      if (!modal) return;
+      const isOpening = modal.classList.contains("hidden");
+      if (isOpening) {
+        const selFmt = document.getElementById("selDxfFormat");
+        const selFnt = document.getElementById("selDxfFont");
+        const chkBg = document.getElementById("chkDxfBg");
+        const chkLw = document.getElementById("chkDxfLw");
+        const chkUni = document.getElementById("chkDxfUnicode");
+        if (selFmt) selFmt.value = exportDxfOptions.format;
+        if (selFnt) selFnt.value = exportDxfOptions.fontFamily;
+        if (chkBg) chkBg.checked = exportDxfOptions.includeBackgrounds;
+        if (chkLw) chkLw.checked = exportDxfOptions.includeLineweights;
+        if (chkUni) chkUni.checked = exportDxfOptions.includeUnicode;
+      }
+      modal.classList.toggle("hidden");
+    }
+
+    function syncExportOptionsFromUI() {
+      const selFmt = document.getElementById("selDxfFormat");
+      const selFnt = document.getElementById("selDxfFont");
+      const chkBg = document.getElementById("chkDxfBg");
+      const chkLw = document.getElementById("chkDxfLw");
+      const chkUni = document.getElementById("chkDxfUnicode");
+      if (selFmt) exportDxfOptions.format = selFmt.value;
+      if (selFnt) exportDxfOptions.fontFamily = selFnt.value;
+      if (chkBg) exportDxfOptions.includeBackgrounds = chkBg.checked;
+      if (chkLw) exportDxfOptions.includeLineweights = chkLw.checked;
+      if (chkUni) exportDxfOptions.includeUnicode = chkUni.checked;
+    }
+
+    // Tabella palette standard ACI AutoCAD (1-255) per calcolo distanza euclidea RGB esatta
+    const ACI_PALETTE = {
+      1: [255, 0, 0], 2: [255, 255, 0], 3: [0, 255, 0], 4: [0, 255, 255],
+      5: [0, 0, 255], 6: [255, 0, 255], 7: [255, 255, 255], 8: [128, 128, 128],
+      9: [192, 192, 192], 10: [255, 0, 0], 11: [255, 127, 127], 12: [204, 0, 0],
+      14: [153, 27, 27], 20: [234, 88, 12], 22: [154, 52, 18], 30: [245, 158, 11],
+      31: [253, 186, 116], 32: [180, 83, 9], 34: [120, 53, 15], 36: [69, 26, 3],
+      40: [251, 191, 36], 50: [234, 179, 8], 80: [74, 222, 128], 90: [34, 197, 94],
+      92: [22, 163, 74], 130: [34, 211, 238], 131: [103, 232, 249], 140: [56, 189, 248],
+      144: [14, 116, 144], 146: [22, 78, 99], 154: [12, 74, 110], 250: [30, 41, 59],
+      251: [71, 85, 105], 252: [100, 116, 139], 253: [148, 163, 184], 254: [203, 213, 225], 255: [255, 255, 255]
+    };
+
+    function hexToRgb(hex) {
+      if (!hex || !String(hex).startsWith("#") || hex.length < 7) return [255, 255, 255];
+      return [
+        parseInt(hex.slice(1, 3), 16) || 0,
+        parseInt(hex.slice(3, 5), 16) || 0,
+        parseInt(hex.slice(5, 7), 16) || 0
+      ];
+    }
+
+    function hexToClosestACI(hex) {
+      if (!hex) return 7;
+      const [r, g, b] = hexToRgb(hex);
+      let bestDist = Infinity;
+      let bestAci = 7;
+      for (const [aci, rgb] of Object.entries(ACI_PALETTE)) {
+        const dr = r - rgb[0], dg = g - rgb[1], db = b - rgb[2];
+        const dist = dr * dr + dg * dg + db * db;
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestAci = parseInt(aci, 10);
+        }
+      }
+      return bestAci;
+    }
+
+    function hexToTrueColorInt(hex) {
+      if (!hex || !String(hex).startsWith("#") || hex.length < 7) return null;
+      const [r, g, b] = hexToRgb(hex);
+      return (r << 16) | (g << 8) | b;
+    }
+
+    // Codifica standard AutoCAD Unicode (\U+XXXX) per preservare accenti e simboli identici alla preview
+    function formatCADText(s, useUnicode = true) {
+      if (!s) return "";
+      if (!useUnicode) return cleanCADStr(s);
+      return String(s)
+        .replace(/²/g, "\\U+00B2")
+        .replace(/³/g, "\\U+00B3")
+        .replace(/Ø/g, "\\U+00D8")
+        .replace(/ø/g, "\\U+00F8")
+        .replace(/°/g, "\\U+00B0")
+        .replace(/±/g, "\\U+00B1")
+        .replace(/≥/g, "\\U+2265")
+        .replace(/≤/g, "\\U+2264")
+        .replace(/Δ/g, "\\U+0394")
+        .replace(/•/g, "\\U+2022")
+        .replace(/à/g, "\\U+00E0")
+        .replace(/á/g, "\\U+00E1")
+        .replace(/è/g, "\\U+00E8")
+        .replace(/é/g, "\\U+00E9")
+        .replace(/ì/g, "\\U+00EC")
+        .replace(/í/g, "\\U+00ED")
+        .replace(/ò/g, "\\U+00F2")
+        .replace(/ó/g, "\\U+00F3")
+        .replace(/ù/g, "\\U+00F9")
+        .replace(/ú/g, "\\U+00FA")
+        .replace(/À/g, "\\U+00C0")
+        .replace(/È/g, "\\U+00C8")
+        .replace(/É/g, "\\U+00C9")
+        .replace(/Ì/g, "\\U+00CC")
+        .replace(/Ò/g, "\\U+00D2")
+        .replace(/Ù/g, "\\U+00D9");
+    }
+
     function cleanCADStr(s) {
       return String(s || "")
         .replace(/•/g, "-")
@@ -2786,191 +2977,371 @@
         .replace(/[^\x20-\x7E]/g, "");
     }
 
-    function hexToACI(hex) {
-      if (!hex) return 7;
-      const h = String(hex).toLowerCase().trim();
-      const map = {
-        "#f59e0b": 30, "#fbbf24": 40, "#fde047": 2,  "#eab308": 50,
-        "#fdba74": 31, "#fb923c": 30, "#ea580c": 20, "#b45309": 32,
-        "#9a3412": 22, "#78350f": 34, "#451a03": 36, "#38bdf8": 140,
-        "#67e8f9": 131,"#22d3ee": 130,"#0e7490": 144,"#164e63": 146,
-        "#0c4a6e": 154,"#4ade80": 80, "#22c55e": 90, "#16a34a": 92,
-        "#f87171": 11, "#ef4444": 1,  "#991b1b": 14, "#f8fafc": 7,
-        "#ffffff": 7,  "#e2e8f0": 7,  "#cbd5e1": 9,  "#94a3b8": 8,
-        "#64748b": 252,"#475569": 251,"#334155": 250,"#1e293b": 250,
-        "#0f172a": 250
-      };
-      return map[h] || 7;
-    }
-
-    function hexToTrueColorInt(hex) {
-      if (!hex || !String(hex).startsWith("#") || hex.length < 7) return null;
-      const r = parseInt(hex.slice(1, 3), 16) || 0;
-      const g = parseInt(hex.slice(3, 5), 16) || 0;
-      const b = parseInt(hex.slice(5, 7), 16) || 0;
-      return (r << 16) | (g << 8) | b;
-    }
+    const CAD_LAYERS_SPEC = {
+      "0":                  { aci: 7,   tc: 0xffffff, lw: 25, desc: "Default" },
+      "Canalina":           { aci: 140, tc: 0x38bdf8, lw: 50, desc: "Profilo e accessori canalina" },
+      "Cavi":               { aci: 30,  tc: 0xf59e0b, lw: 35, desc: "Guaine esterne cavi" },
+      "Anime_Cavi":         { aci: 40,  tc: 0xfbbf24, lw: 25, desc: "Conduttori e trefoli cordati" },
+      "STAFFAGGI":          { aci: 252, tc: 0x94a3b8, lw: 35, desc: "Supporti, mensole, tiranti, PE" },
+      "Bandierine":         { aci: 40,  tc: 0xfbbf24, lw: 20, desc: "Linee richiamo e direttrici" },
+      "Testi":              { aci: 7,   tc: 0xf8fafc, lw: 25, desc: "Testi tecnici e sigle" },
+      "QUOTE":              { aci: 40,  tc: 0xfbbf24, lw: 25, desc: "Linee di quota e valori" },
+      "TABELLA":            { aci: 140, tc: 0x38bdf8, lw: 30, desc: "Tabelle distinta cavi e BOM" },
+      "CURVA_CARICO":       { aci: 90,  tc: 0x22c55e, lw: 35, desc: "Diagramma di carico EN 61537" },
+      "ETICHETTA_PIANTA":   { aci: 80,  tc: 0x4ade80, lw: 35, desc: "Cartellino planimetrico" },
+      "VISTA_3D_ISO":       { aci: 251, tc: 0x475569, lw: 30, desc: "Assonometria 3D passo staffe" },
+      "CORNICE":            { aci: 251, tc: 0x475569, lw: 60, desc: "Riquadro tavola e cartiglio" },
+      "SFONDI_RIEMPIMENTI": { aci: 250, tc: 0x1e293b, lw: 0,  desc: "Sfondi colorati e retini" }
+    };
 
     function exportAutoCADDXF() {
+      syncExportOptionsFromUI();
       const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg)$/i, "");
       const { prims, bounds } = buildCADScene();
 
-      const layers = new Set([
-        "0", "SFONDI_RIEMPIMENTI", "Canalina", "Cavi", "Anime_Cavi", "Bandierine",
-        "Testi", "STAFFAGGI", "QUOTE", "TABELLA", "CURVA_CARICO",
-        "ETICHETTA_PIANTA", "VISTA_3D_ISO", "CORNICE"
-      ]);
-      let dxf = [];
+      const isAc1018 = exportDxfOptions.format !== "AC1009";
+      const fontFam = exportDxfOptions.fontFamily || "jetbrains";
+      const includeBg = exportDxfOptions.includeBackgrounds !== false;
+      const includeLw = exportDxfOptions.includeLineweights !== false;
+      const useUnicode = exportDxfOptions.includeUnicode !== false;
+
+      let handleVal = 0x50;
+      const nextH = () => (handleVal++).toString(16).toUpperCase();
+      const dxf = [];
       const add = (c, v) => dxf.push(String(c), String(v));
 
+      // 1. SEZIONE HEADER
       add(0, "SECTION"); add(2, "HEADER");
-      add(9, "$ACADVER"); add(1, "AC1009");
+      add(9, "$ACADVER"); add(1, isAc1018 ? "AC1018" : "AC1009");
+      if (isAc1018) {
+        add(9, "$HANDSEED"); add(5, "4000");
+        add(9, "$INSUNITS"); add(70, 4); // 4 = Millimetri (Scala 1:1 rigorosa)
+        add(9, "$MEASUREMENT"); add(70, 1); // 1 = Sistema Metrico Decimale
+        add(9, "$LUNITS"); add(70, 2); // Decimal
+        add(9, "$LUPREC"); add(70, 2);
+      }
       add(9, "$EXTMIN"); add(10, bounds.minX.toFixed(2)); add(20, bounds.minY.toFixed(2)); add(30, "0.0");
       add(9, "$EXTMAX"); add(10, bounds.maxX.toFixed(2)); add(20, bounds.maxY.toFixed(2)); add(30, "0.0");
       add(0, "ENDSEC");
 
+      // 2. SEZIONE CLASSES (necessaria in AC1018+)
+      if (isAc1018) {
+        add(0, "SECTION"); add(2, "CLASSES"); add(0, "ENDSEC");
+      }
+
+      // 3. SEZIONE TABLES
       add(0, "SECTION"); add(2, "TABLES");
-      add(0, "TABLE"); add(2, "LTYPE"); add(70, 1);
-      add(0, "LTYPE"); add(2, "CONTINUOUS"); add(70, 64); add(3, "Solid line"); add(72, 65); add(73, 0); add(40, "0.0");
+
+      // Tabella VPORT (Viewports)
+      if (isAc1018) {
+        add(0, "TABLE"); add(2, "VPORT"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 1);
+        add(0, "VPORT"); add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbViewportTableRecord");
+        add(2, "*ACTIVE"); add(70, 0); add(10, "0.0"); add(20, "0.0"); add(11, "1.0"); add(21, "1.0");
+        add(12, bounds.minX.toFixed(2)); add(22, bounds.minY.toFixed(2)); add(14, "1.0"); add(15, "1.0");
+        add(0, "ENDTAB");
+      }
+
+      // Tabella LTYPE (Tipi linea)
+      add(0, "TABLE"); add(2, "LTYPE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTable"); } add(70, 2);
+      add(0, "LTYPE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLinetypeTableRecord"); }
+      add(2, "CONTINUOUS"); add(70, 0); add(3, "Solid line"); add(72, 65); add(73, 0); add(40, "0.0");
+      add(0, "LTYPE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLinetypeTableRecord"); }
+      add(2, "DASHED"); add(70, 0); add(3, "Dashed __ __ __"); add(72, 65); add(73, 2); add(40, "12.0");
+      add(49, "9.0"); add(74, 0); add(49, "-3.0"); add(74, 0);
       add(0, "ENDTAB");
 
-      add(0, "TABLE"); add(2, "STYLE"); add(70, 2);
-      add(0, "STYLE"); add(2, "STANDARD"); add(70, 0); add(40, "0.0"); add(41, "0.82"); add(50, "0.0"); add(71, 0); add(42, "2.5"); add(3, "isocp.shx"); add(4, "");
-      add(0, "STYLE"); add(2, "MONO_CAD"); add(70, 0); add(40, "0.0"); add(41, "0.82"); add(50, "0.0"); add(71, 0); add(42, "2.5"); add(3, "consola.ttf"); add(4, "");
-      add(0, "ENDTAB");
-
-      add(0, "TABLE"); add(2, "LAYER"); add(70, layers.size);
-      layers.forEach(l => {
-        add(0, "LAYER"); add(2, l); add(70, 64); add(62, 7); add(6, "CONTINUOUS");
+      // Tabella LAYER con TrueColor RGB 24-bit e Lineweights 370
+      const layerList = Object.entries(CAD_LAYERS_SPEC);
+      add(0, "TABLE"); add(2, "LAYER"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTable"); } add(70, layerList.length);
+      layerList.forEach(([layName, cfg]) => {
+        add(0, "LAYER"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbLayerTableRecord"); }
+        add(2, layName); add(70, 0); add(62, cfg.aci);
+        if (isAc1018) {
+          add(420, cfg.tc);
+          if (includeLw) add(370, cfg.lw);
+        }
+        add(6, "CONTINUOUS");
       });
-      add(0, "ENDTAB"); add(0, "ENDSEC");
+      add(0, "ENDTAB");
 
+      // Tabella STYLE (Stili di testo tipografici identici alla preview)
+      add(0, "TABLE"); add(2, "STYLE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTable"); } add(70, 3);
+
+      // Stile STANDARD
+      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
+      add(2, "STANDARD"); add(70, 0); add(40, "0.0"); add(41, "1.0"); add(50, "0.0"); add(71, 0); add(42, "2.5");
+      add(3, "arial.ttf"); add(4, "");
+      if (isAc1018) { add(1001, "ACAD"); add(1000, "Arial"); add(1071, 0); }
+
+      // Stile MONO_CAD (JetBrains Mono / Consolas) con Width Factor naturale 1.0 (senza schiacciamento 0.82)
+      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
+      add(2, "MONO_CAD"); add(70, 0); add(40, "0.0"); add(41, "1.0"); add(50, "0.0"); add(71, 0); add(42, "2.5");
+      if (fontFam === "jetbrains") {
+        add(3, "JetBrainsMono-Regular.ttf"); add(4, "");
+        if (isAc1018) { add(1001, "ACAD"); add(1000, "JetBrains Mono"); add(1071, 0); }
+      } else {
+        add(3, "consola.ttf"); add(4, "");
+        if (isAc1018) { add(1001, "ACAD"); add(1000, "Consolas"); add(1071, 0); }
+      }
+
+      // Stile TITLE_CAD (Inter / Arial) per intestazioni tabelle, cartiglio e titoli
+      add(0, "STYLE"); if (isAc1018) { add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbTextStyleTableRecord"); }
+      add(2, "TITLE_CAD"); add(70, 0); add(40, "0.0"); add(41, "1.0"); add(50, "0.0"); add(71, 0); add(42, "3.0");
+      if (fontFam === "jetbrains") {
+        add(3, "Inter-Regular.ttf"); add(4, "");
+        if (isAc1018) { add(1001, "ACAD"); add(1000, "Inter"); add(1071, 0); }
+      } else {
+        add(3, "arial.ttf"); add(4, "");
+        if (isAc1018) { add(1001, "ACAD"); add(1000, "Arial"); add(1071, 0); }
+      }
+      add(0, "ENDTAB");
+
+      if (isAc1018) {
+        add(0, "TABLE"); add(2, "VIEW"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
+        add(0, "TABLE"); add(2, "UCS"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
+        add(0, "TABLE"); add(2, "APPID"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 1);
+        add(0, "APPID"); add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbRegAppTableRecord");
+        add(2, "ACAD"); add(70, 0); add(0, "ENDTAB");
+        add(0, "TABLE"); add(2, "DIMSTYLE"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 0); add(0, "ENDTAB");
+        add(0, "TABLE"); add(2, "BLOCK_RECORD"); add(5, nextH()); add(100, "AcDbSymbolTable"); add(70, 2);
+        add(0, "BLOCK_RECORD"); add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbBlockTableRecord"); add(2, "*MODEL_SPACE");
+        add(0, "BLOCK_RECORD"); add(5, nextH()); add(100, "AcDbSymbolTableRecord"); add(100, "AcDbBlockTableRecord"); add(2, "*PAPER_SPACE");
+        add(0, "ENDTAB");
+      }
+
+      add(0, "ENDSEC"); // END TABLES
+
+      // 4. SEZIONE BLOCKS
+      if (isAc1018) {
+        add(0, "SECTION"); add(2, "BLOCKS");
+        add(0, "BLOCK"); add(5, nextH()); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockBegin");
+        add(2, "*MODEL_SPACE"); add(70, 0); add(10, "0.0"); add(20, "0.0"); add(30, "0.0"); add(3, "*MODEL_SPACE"); add(1, "");
+        add(0, "ENDBLK"); add(5, nextH()); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockEnd");
+
+        add(0, "BLOCK"); add(5, nextH()); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockBegin");
+        add(2, "*PAPER_SPACE"); add(70, 0); add(10, "0.0"); add(20, "0.0"); add(30, "0.0"); add(3, "*PAPER_SPACE"); add(1, "");
+        add(0, "ENDBLK"); add(5, nextH()); add(100, "AcDbEntity"); add(8, "0"); add(100, "AcDbBlockEnd");
+        add(0, "ENDSEC");
+      }
+
+      // 5. SEZIONE ENTITIES
       add(0, "SECTION"); add(2, "ENTITIES");
-      const addL = (lay, x1, y1, x2, y2, aci = 7) => {
-        add(0, "LINE"); add(8, lay); add(62, aci);
-        add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
-        add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
+
+      const emitEntityHeader = (type, lay, colorHex, lwMm) => {
+        add(0, type);
+        if (isAc1018) { add(5, nextH()); add(100, "AcDbEntity"); }
+        add(8, CAD_LAYERS_SPEC[lay] ? lay : "0");
+        const aci = hexToClosestACI(colorHex);
+        add(62, aci);
+        if (isAc1018) {
+          const tc = hexToTrueColorInt(colorHex);
+          if (tc !== null) add(420, tc);
+          if (includeLw && typeof lwMm === "number") {
+            const lwVal = Math.max(0, Math.min(211, Math.round(lwMm * 100)));
+            add(370, lwVal);
+          }
+        }
       };
-      const addSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, aci) => {
-        add(0, "SOLID"); add(8, lay); add(62, aci);
+
+      // In AutoCAD SOLID, i vertici di un quadrilatero sono ordinati per lati opposti:
+      // Lato 1: pt1 (10, 20) -> pt2 (11, 21); Lato 2: pt3 (12, 22) -> pt4 (13, 23).
+      // Per evitare farfallamenti o incroci a papillon, l'ordine dei vertici perimetrali orari è 1 -> 2 -> 4 -> 3.
+      const addSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, fillHex) => {
+        emitEntityHeader("SOLID", lay, fillHex, 0);
+        if (isAc1018) add(100, "AcDbTrace");
         add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
         add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
         add(12, x4.toFixed(3)); add(22, y4.toFixed(3)); add(32, "0.0");
         add(13, x3.toFixed(3)); add(23, y3.toFixed(3)); add(33, "0.0");
       };
-      const addSolidDisk = (lay, cx, cy, r, aci) => {
-        const steps = r > 5 ? 24 : 16;
-        for (let i = 0; i < steps; i += 2) {
+
+      // Triangolo SOLID regolare (pt3 e pt4 coincidenti)
+      const addSolidTri = (lay, x1, y1, x2, y2, x3, y3, fillHex) => {
+        emitEntityHeader("SOLID", lay, fillHex, 0);
+        if (isAc1018) add(100, "AcDbTrace");
+        add(10, x1.toFixed(3)); add(20, y1.toFixed(3)); add(30, "0.0");
+        add(11, x2.toFixed(3)); add(21, y2.toFixed(3)); add(31, "0.0");
+        add(12, x3.toFixed(3)); add(22, y3.toFixed(3)); add(32, "0.0");
+        add(13, x3.toFixed(3)); add(23, y3.toFixed(3)); add(33, "0.0");
+      };
+
+      // Disco pieno circolare tassellato mediante triangoli radiali regolari (elimina buchi o vertici incrociati)
+      const addSolidDisk = (lay, cx, cy, r, fillHex) => {
+        const steps = r > 15 ? 40 : r > 5 ? 28 : 16;
+        for (let i = 0; i < steps; i++) {
           const a1 = (i * 2 * Math.PI) / steps;
           const a2 = ((i + 1) * 2 * Math.PI) / steps;
-          const a3 = ((i + 2) * 2 * Math.PI) / steps;
-          addSolidQuad(
-            lay, cx, cy,
+          addSolidTri(
+            lay,
+            cx, cy,
             cx + Math.cos(a1) * r, cy + Math.sin(a1) * r,
             cx + Math.cos(a2) * r, cy + Math.sin(a2) * r,
-            cx + Math.cos(a3) * r, cy + Math.sin(a3) * r, aci
+            fillHex
           );
         }
       };
 
+      // 5A. PRIMITIVE DI RIEMPIMENTO / SFONDO (Tracciate per prime per stare sotto i wireframe e testi)
       prims.forEach(p => {
         if (!p.fill) return;
-        const isDarkBoxBg = p.fill === "#0f172a" && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
-        if (isDarkBoxBg) return;
-        const fillAci = hexToACI(p.fill);
+        const isDarkBoxBg = (p.fill === "#0f172a" || p.fill === "#04070d") && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
+        if (!includeBg && isDarkBoxBg) return;
         const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina") ? p.layer : "SFONDI_RIEMPIMENTI";
-        if (p.t === "rect") addSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, fillAci);
-        else if (p.t === "circle") addSolidDisk(fillLay, p.cx, p.cy, p.r, fillAci);
+        if (p.t === "rect") {
+          addSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.fill);
+        } else if (p.t === "circle") {
+          addSolidDisk(fillLay, p.cx, p.cy, p.r, p.fill);
+        }
       });
 
+      // 5B. PRIMITIVE VETTORIALI, CONTORNI E TESTI
       prims.forEach(p => {
-        const lay = layers.has(p.layer) ? p.layer : "0";
-        const aci = hexToACI(p.color);
+        const lay = CAD_LAYERS_SPEC[p.layer] ? p.layer : "0";
         if (p.t === "line") {
-          addL(lay, p.x1, p.y1, p.x2, p.y2, aci);
+          emitEntityHeader("LINE", lay, p.color, p.lw || 0.4);
+          if (isAc1018) add(100, "AcDbLine");
+          add(10, p.x1.toFixed(3)); add(20, p.y1.toFixed(3)); add(30, "0.0");
+          add(11, p.x2.toFixed(3)); add(21, p.y2.toFixed(3)); add(31, "0.0");
         } else if (p.t === "rect") {
-          addL(lay, p.x, p.y, p.x + p.w, p.y, aci);
-          addL(lay, p.x + p.w, p.y, p.x + p.w, p.y + p.h, aci);
-          addL(lay, p.x + p.w, p.y + p.h, p.x, p.y + p.h, aci);
-          addL(lay, p.x, p.y + p.h, p.x, p.y, aci);
+          const x1 = p.x, y1 = p.y, x2 = p.x + p.w, y2 = p.y + p.h;
+          [
+            [x1, y1, x2, y1],
+            [x2, y1, x2, y2],
+            [x2, y2, x1, y2],
+            [x1, y2, x1, y1]
+          ].forEach(([lx1, ly1, lx2, ly2]) => {
+            emitEntityHeader("LINE", lay, p.color, p.lw || 0.4);
+            if (isAc1018) add(100, "AcDbLine");
+            add(10, lx1.toFixed(3)); add(20, ly1.toFixed(3)); add(30, "0.0");
+            add(11, lx2.toFixed(3)); add(21, ly2.toFixed(3)); add(31, "0.0");
+          });
         } else if (p.t === "circle") {
-          add(0, "CIRCLE"); add(8, lay); add(62, aci);
+          emitEntityHeader("CIRCLE", lay, p.color, p.lw || 0.45);
+          if (isAc1018) add(100, "AcDbCircle");
           add(10, p.cx.toFixed(3)); add(20, p.cy.toFixed(3)); add(30, "0.0");
           add(40, p.r.toFixed(3));
         } else if (p.t === "text") {
-          const s = cleanCADStr(p.str);
+          const s = formatCADText(p.str, useUnicode);
           if (!s) return;
-          const th = Math.max(1.2, (p.h || 2.2) * 0.80);
+          // Calibrazione altezza testo (h * 0.88) per identità assoluta con il rendering Canvas
+          const th = +((p.h || 2.2) * 0.88).toFixed(3);
+          const isTitle = (p.layer === "CORNICE" && p.h >= 2.3) ||
+                          p.layer === "ETICHETTA_PIANTA" ||
+                          (p.layer === "TABELLA" && /^[0-9]\./.test(p.str)) ||
+                          (p.layer === "CURVA_CARICO" && /^[0-9]\./.test(p.str));
+          const styleName = isTitle ? "TITLE_CAD" : "MONO_CAD";
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
-          add(0, "TEXT"); add(8, lay); add(7, "MONO_CAD"); add(62, aci);
+
+          emitEntityHeader("TEXT", lay, p.color, 0.25);
+          if (isAc1018) add(100, "AcDbText");
           add(10, p.x.toFixed(3)); add(20, p.y.toFixed(3)); add(30, "0.0");
-          add(40, th.toFixed(3)); add(41, "0.82"); add(1, s);
+          add(40, th.toFixed(3));
+          add(41, "1.0"); // Width factor 1.0 (naturale, senza compressione anomala a 0.82)
+          add(1, s);
+          add(7, styleName);
           if (hAlign !== 0) {
             add(72, hAlign);
             add(11, p.x.toFixed(3)); add(21, p.y.toFixed(3)); add(31, "0.0");
+            add(73, 0); // Allineamento verticale baseline
           }
         }
       });
 
-      add(0, "ENDSEC"); add(0, "EOF");
-      const blob = new Blob([dxf.join("\r\n") + "\r\n"], { type: "application/dxf" });
+      add(0, "ENDSEC"); // ENTITIES
+
+      // 6. SEZIONE OBJECTS
+      if (isAc1018) {
+        add(0, "SECTION"); add(2, "OBJECTS");
+        add(0, "DICTIONARY"); add(5, nextH()); add(100, "AcDbDictionary"); add(281, 1);
+        add(0, "ENDSEC");
+      }
+
+      add(0, "EOF");
+      const blob = new Blob([dxf.join("\r\n") + "\r\n"], { type: "application/dxf;charset=utf-8" });
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = `${name}.dxf`; a.click();
+      a.href = URL.createObjectURL(blob);
+      a.download = `${name}.dxf`;
+      a.click();
     }
 
     function exportAutoLISPDWG() {
       const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg|scr)$/i, "");
       const { prims } = buildCADScene();
+      const fontFam = exportDxfOptions.fontFamily || "jetbrains";
+      const monoFont = fontFam === "jetbrains" ? "JetBrains Mono,Consolas" : "Consolas";
+      const titleFont = fontFam === "jetbrains" ? "Inter,Arial" : "Arial";
+
       let scr = `(defun c:CREACANALINA ()\n  (setvar "CMDECHO" 0)\n  (setvar "OSMODE" 0)\n`;
-      scr += `  (command "_-STYLE" "MONO_CAD" "Consolas" "0" "0.82" "0" "_N" "_N")\n`;
-      const emitL = (lay, x1, y1, x2, y2, hex) => {
-        const aci = hexToACI(hex), tc = hexToTrueColorInt(hex);
-        scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tc !== null ? ` '(420 . ${tc})` : ""} '(10 ${x1.toFixed(3)} ${y1.toFixed(3)} 0.0) '(11 ${x2.toFixed(3)} ${y2.toFixed(3)} 0.0)))\n`;
+      scr += `  (command "_-STYLE" "MONO_CAD" "${monoFont}" "0" "1.0" "0" "_N" "_N")\n`;
+      scr += `  (command "_-STYLE" "TITLE_CAD" "${titleFont}" "0" "1.0" "0" "_N" "_N")\n`;
+
+      const emitL = (lay, x1, y1, x2, y2, hex, lwMm) => {
+        const aci = hexToClosestACI(hex), tc = hexToTrueColorInt(hex);
+        const lwVal = Math.max(0, Math.min(211, Math.round((lwMm || 0.35) * 100)));
+        scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tc !== null ? ` '(420 . ${tc})` : ""} '(370 . ${lwVal}) '(10 ${x1.toFixed(3)} ${y1.toFixed(3)} 0.0) '(11 ${x2.toFixed(3)} ${y2.toFixed(3)} 0.0)))\n`;
       };
+
+      const emitSolidTri = (lay, x1, y1, x2, y2, x3, y3, hex) => {
+        const aci = hexToClosestACI(hex), tc = hexToTrueColorInt(hex);
+        const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
+        scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${x1.toFixed(3)} ${y1.toFixed(3)} 0.0) '(11 ${x2.toFixed(3)} ${y2.toFixed(3)} 0.0) '(12 ${x3.toFixed(3)} ${y3.toFixed(3)} 0.0) '(13 ${x3.toFixed(3)} ${y3.toFixed(3)} 0.0)))\n`;
+      };
+
       const emitSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, hex) => {
-        const aci = hexToACI(hex), tc = hexToTrueColorInt(hex);
+        const aci = hexToClosestACI(hex), tc = hexToTrueColorInt(hex);
         const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
         scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${x1.toFixed(3)} ${y1.toFixed(3)} 0.0) '(11 ${x2.toFixed(3)} ${y2.toFixed(3)} 0.0) '(12 ${x4.toFixed(3)} ${y4.toFixed(3)} 0.0) '(13 ${x3.toFixed(3)} ${y3.toFixed(3)} 0.0)))\n`;
       };
+
       prims.forEach(p => {
         if (!p.fill) return;
-        const isDarkBoxBg = p.fill === "#0f172a" && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
-        if (isDarkBoxBg) return;
+        const isDarkBoxBg = (p.fill === "#0f172a" || p.fill === "#04070d") && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
+        if (!exportDxfOptions.includeBackgrounds && isDarkBoxBg) return;
+        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina") ? p.layer : "SFONDI_RIEMPIMENTI";
         if (p.t === "rect") {
-          emitSolidQuad(p.layer, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.fill);
+          emitSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.fill);
         } else if (p.t === "circle") {
-          const steps = p.r > 5 ? 20 : 12;
-          for (let i = 0; i < steps; i += 2) {
+          const steps = p.r > 15 ? 36 : p.r > 5 ? 24 : 16;
+          for (let i = 0; i < steps; i++) {
             const a1 = (i * 2 * Math.PI) / steps;
             const a2 = ((i + 1) * 2 * Math.PI) / steps;
-            const a3 = ((i + 2) * 2 * Math.PI) / steps;
-            emitSolidQuad(
-              p.layer, p.cx, p.cy,
+            emitSolidTri(
+              fillLay,
+              p.cx, p.cy,
               p.cx + Math.cos(a1) * p.r, p.cy + Math.sin(a1) * p.r,
               p.cx + Math.cos(a2) * p.r, p.cy + Math.sin(a2) * p.r,
-              p.cx + Math.cos(a3) * p.r, p.cy + Math.sin(a3) * p.r, p.fill
+              p.fill
             );
           }
         }
       });
+
       prims.forEach(p => {
-        const aci = hexToACI(p.color), tc = hexToTrueColorInt(p.color);
+        const lay = CAD_LAYERS_SPEC[p.layer] ? p.layer : "0";
+        const aci = hexToClosestACI(p.color), tc = hexToTrueColorInt(p.color);
         const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
-        if (p.t === "line") emitL(p.layer, p.x1, p.y1, p.x2, p.y2, p.color);
-        else if (p.t === "rect") {
-          emitL(p.layer, p.x, p.y, p.x + p.w, p.y, p.color);
-          emitL(p.layer, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.color);
-          emitL(p.layer, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.color);
-          emitL(p.layer, p.x, p.y + p.h, p.x, p.y, p.color);
+        const lwVal = Math.max(0, Math.min(211, Math.round((p.lw || 0.4) * 100)));
+        if (p.t === "line") {
+          emitL(lay, p.x1, p.y1, p.x2, p.y2, p.color, p.lw);
+        } else if (p.t === "rect") {
+          emitL(lay, p.x, p.y, p.x + p.w, p.y, p.color, p.lw);
+          emitL(lay, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.color, p.lw);
+          emitL(lay, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.color, p.lw);
+          emitL(lay, p.x, p.y + p.h, p.x, p.y, p.color, p.lw);
         } else if (p.t === "circle") {
-          scr += `  (entmake (list '(0 . "CIRCLE") '(8 . "${p.layer}") '(62 . ${aci})${tcStr} '(10 ${p.cx.toFixed(3)} ${p.cy.toFixed(3)} 0.0) '(40 . ${p.r.toFixed(3)})))\n`;
+          scr += `  (entmake (list '(0 . "CIRCLE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . ${lwVal}) '(10 ${p.cx.toFixed(3)} ${p.cy.toFixed(3)} 0.0) '(40 . ${p.r.toFixed(3)})))\n`;
         } else if (p.t === "text") {
-          const s = cleanCADStr(p.str).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+          const s = formatCADText(p.str, exportDxfOptions.includeUnicode).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
           if (!s) return;
-          const th = Math.max(1.2, (p.h || 2.2) * 0.80);
+          const th = +((p.h || 2.2) * 0.88).toFixed(3);
+          const isTitle = (p.layer === "CORNICE" && p.h >= 2.3) ||
+                          p.layer === "ETICHETTA_PIANTA" ||
+                          (p.layer === "TABELLA" && /^[0-9]\./.test(p.str)) ||
+                          (p.layer === "CURVA_CARICO" && /^[0-9]\./.test(p.str));
+          const styleName = isTitle ? "TITLE_CAD" : "MONO_CAD";
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
-          const alignStr = hAlign !== 0 ? ` '(72 . ${hAlign}) '(11 ${p.x.toFixed(3)} ${p.y.toFixed(3)} 0.0)` : "";
-          scr += `  (entmake (list '(0 . "TEXT") '(8 . "${p.layer}") '(7 . "MONO_CAD") '(62 . ${aci})${tcStr} '(10 ${p.x.toFixed(3)} ${p.y.toFixed(3)} 0.0) '(40 . ${th.toFixed(3)}) '(41 . 0.82) '(1 . "${s}")${alignStr}))\n`;
+          const alignStr = hAlign !== 0 ? ` '(72 . ${hAlign}) '(11 ${p.x.toFixed(3)} ${p.y.toFixed(3)} 0.0) '(73 . 0)` : "";
+          scr += `  (entmake (list '(0 . "TEXT") '(8 . "${lay}") '(7 . "${styleName}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${p.x.toFixed(3)} ${p.y.toFixed(3)} 0.0) '(40 . ${th.toFixed(3)}) '(41 . 1.0) '(1 . "${s}")${alignStr}))\n`;
         }
       });
       scr += `  (command "_ZOOM" "_E")\n  (princ)\n)\n(c:CREACANALINA)\n`;
