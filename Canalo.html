@@ -5404,7 +5404,7 @@
       // (altezza testo = altezza delle maiuscole), così valgono anche in AutoCAD.
       // ------------------------------------------------------------------------
       const TAB_MAX_W = 200;
-      const T_BODY = 2.5, T_HEAD = 2.5, T_TITLE = 2.5, T_BOM = 1.95; // testi della distinta: 2,5 mm (standard di tavola)
+      const T_BODY = 2.5, T_HEAD = 2.5, T_TITLE = 2.5, T_BOM = 2.5, T_TB = 2.5; // testi di distinta, computo e cartiglio: 2,5 mm (standard di tavola)
       const PAD_X = 1.4, PAD_Y = 1.8, LINE_K = 1.45;
       const effH = h => h * txtMul;
       const tw = (s, h) => cadTextWidth(s, effH(h));
@@ -5615,15 +5615,15 @@
 
       // 4. CARTIGLIO PROGETTO E COMMITTENTE (Opzionale - escluso in Stampa Minimal)
       if (!isMinimal && state.showCartiglio !== false) {
-        const c1 = wrap(`COMMITTENTE: ${state.tb.client} | CODICE: ${state.tb.docCode}`, tabW - 8, 2.3);
-        const c2 = wrap(`PROGETTISTA: ${state.tb.author} | SCALA: ${state.scale || "1:1"} (${state.tb.scaleRev})`, tabW - 8, 2.2);
-        const h1 = blockH(c1.length, 2.3), h2 = blockH(c2.length, 2.2);
+        const c1 = wrap(`COMMITTENTE: ${state.tb.client} | CODICE: ${state.tb.docCode}`, tabW - 8, T_TB);
+        const c2 = wrap(`PROGETTISTA: ${state.tb.author} | SCALA: ${state.scale || "1:1"} (${state.tb.scaleRev})`, tabW - 8, T_TB);
+        const h1 = blockH(c1.length, T_TB), h2 = blockH(c2.length, T_TB);
         const tbH = Math.max(20, h1 + h2 - PAD_Y);
         const tbY = currentRightY - 4 - tbH;
         currentRightY = tbY;
         rect("CORNICE", rightX, tbY, tabW, tbH, "#38bdf8", boxBg, true);
-        textLines("CORNICE", rightX + 4, tbY + tbH, 2.3, c1, "#f8fafc");
-        textLines("CORNICE", rightX + 4, tbY + tbH - h1 + PAD_Y, 2.2, c2, "#fbbf24");
+        textLines("CORNICE", rightX + 4, tbY + tbH, T_TB, c1, "#f8fafc");
+        textLines("CORNICE", rightX + 4, tbY + tbH - h1 + PAD_Y, T_TB, c2, "#fbbf24");
       }
 
       let minX, maxX, minY, maxY;
