@@ -7273,32 +7273,40 @@
       const { prims } = buildCADScene();
       const s = getScaleFactor(state.scale);
 
-      let scr = `;; SCRIPT AUTOLISP AUTONOMO - SEZIONE CANALINA 1:1 CON COLORI TRUECOLOR ED ACCENTI CEI\n`;
-      scr += `;; Trascina questo file .SCR direttamente nella finestra di disegno di AutoCAD o lancia il comando: SCRIPT\n\n`;
-      scr += `(defun c:CREACANALINA ()\n`;
-      scr += `  (setvar "CMDECHO" 0)\n`;
-      scr += `  (setvar "OSMODE" 0)\n`;
+      // Uno script .SCR viene letto da AutoCAD come tasti premuti, riga per riga. Per questo:
+      // - nessuna riga vuota (equivale a INVIO e ripeterebbe l'ultimo comando dell'utente);
+      // - nessun comando interattivo (STYLE/LAYER fanno domande che variano per font e versione
+      //   e lasciavano AutoCAD in attesa): stili e layer sono creati con entmake;
+      // - ogni riga è un'espressione AutoLISP completa, così un errore non blocca le righe seguenti.
+      let scr = `;; CanaloCAD v${APP_VERSION} - sezione canalina 1:1. Trascina il file nel disegno o usa il comando SCRIPT.\n`;
+      scr += `(setq ccad:oldecho (getvar "CMDECHO") ccad:oldos (getvar "OSMODE"))\n`;
+      scr += `(setvar "CMDECHO" 0)\n`;
+      scr += `(setvar "OSMODE" 0)\n`;
+      // ccad:e crea un'entità senza stampare la lista restituita (molto più veloce su disegni grandi)
+      scr += `(defun ccad:e (l) (entmake l) (princ))\n`;
 
-      scr += `  (command "_STYLE" "STANDARD" "isocp.shx" 0.0 1.0 0 "_N" "_N" "_N")\n`;
-      scr += `  (command "_STYLE" "MONO_CAD" "isocp.shx" 0.0 1.0 0 "_N" "_N" "_N")\n`;
-      scr += `  (command "_STYLE" "TITLE_CAD" "arial.ttf" 0.0 1.0 0 "_N" "_N" "_N")\n`;
+      const styleRec = (name, font) =>
+        `(if (not (tblsearch "STYLE" "${name}")) (entmake '((0 . "STYLE") (100 . "AcDbSymbolTableRecord") (100 . "AcDbTextStyleTableRecord") (2 . "${name}") (70 . 0) (40 . 0.0) (41 . 1.0) (50 . 0.0) (71 . 0) (42 . 2.5) (3 . "${font}") (4 . ""))))\n`;
+      scr += styleRec("MONO_CAD", "isocp.shx");
+      scr += styleRec("TITLE_CAD", "arial.ttf");
 
       Object.entries(CAD_LAYERS_SPEC).forEach(([lay, cfg]) => {
-        scr += `  (command "_LAYER" "_M" "${lay}" "_C" ${cfg.aci || 7} "${lay}" "")\n`;
+        if (lay === "0") return; // il layer 0 esiste sempre
+        scr += `(if (not (tblsearch "LAYER" "${lay}")) (entmake '((0 . "LAYER") (100 . "AcDbSymbolTableRecord") (100 . "AcDbLayerTableRecord") (2 . "${lay}") (70 . 0) (62 . ${cfg.aci || 7}) (6 . "Continuous") (370 . ${cfg.lw != null ? cfg.lw : 25}))))\n`;
       });
 
       const emitSolidTri = (lay, x1, y1, x2, y2, x3, y3, hex) => {
         const aci = hexToClosestACI(hex);
         const rgb = hexToRGB(hex);
         const tcStr = rgb ? ` '(420 . ${(rgb.r << 16) + (rgb.g << 8) + rgb.b})` : "";
-        scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(12 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0) '(13 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0)))\n`;
+        scr += `(ccad:e (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(12 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0) '(13 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0)))\n`;
       };
 
       const emitSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, hex) => {
         const aci = hexToClosestACI(hex);
         const rgb = hexToRGB(hex);
         const tcStr = rgb ? ` '(420 . ${(rgb.r << 16) + (rgb.g << 8) + rgb.b})` : "";
-        scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(12 ${(x4 * s).toFixed(3)} ${(y4 * s).toFixed(3)} 0.0) '(13 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0)))\n`;
+        scr += `(ccad:e (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(12 ${(x4 * s).toFixed(3)} ${(y4 * s).toFixed(3)} 0.0) '(13 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0)))\n`;
       };
 
       prims.forEach(p => {
@@ -7341,23 +7349,24 @@
         const tcStr = rgb ? ` '(420 . ${(rgb.r << 16) + (rgb.g << 8) + rgb.b})` : "";
 
         if (p.t === "line") {
-          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.x1 * s).toFixed(3)} ${(p.y1 * s).toFixed(3)} 0.0) '(11 ${(p.x2 * s).toFixed(3)} ${(p.y2 * s).toFixed(3)} 0.0)))\n`;
+          scr += `(ccad:e (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.x1 * s).toFixed(3)} ${(p.y1 * s).toFixed(3)} 0.0) '(11 ${(p.x2 * s).toFixed(3)} ${(p.y2 * s).toFixed(3)} 0.0)))\n`;
         } else if (p.t === "rect") {
           const x1 = p.x, y1 = p.y, x2 = p.x + p.w, y2 = p.y + p.h;
-          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0)))\n`;
-          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x2 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0)))\n`;
-          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(11 ${(x1 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0)))\n`;
-          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x1 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(11 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0)))\n`;
+          scr += `(ccad:e (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0)))\n`;
+          scr += `(ccad:e (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x2 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0)))\n`;
+          scr += `(ccad:e (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(11 ${(x1 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0)))\n`;
+          scr += `(ccad:e (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x1 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(11 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0)))\n`;
         } else if (p.t === "circle") {
-          scr += `  (entmake (list '(0 . "CIRCLE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.cx * s).toFixed(3)} ${(p.cy * s).toFixed(3)} 0.0) '(40 . ${(p.r * s).toFixed(3)})))\n`;
+          scr += `(ccad:e (list '(0 . "CIRCLE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.cx * s).toFixed(3)} ${(p.cy * s).toFixed(3)} 0.0) '(40 . ${(p.r * s).toFixed(3)})))\n`;
         } else if (p.t === "poly" && p.pts && p.pts.length >= 2) {
           for (let i = 0; i < p.pts.length; i++) {
             const pt1 = p.pts[i];
             const pt2 = p.pts[(i + 1) % p.pts.length];
-            scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(pt1.x * s).toFixed(3)} ${(pt1.y * s).toFixed(3)} 0.0) '(11 ${(pt2.x * s).toFixed(3)} ${(pt2.y * s).toFixed(3)} 0.0)))\n`;
+            scr += `(ccad:e (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(pt1.x * s).toFixed(3)} ${(pt1.y * s).toFixed(3)} 0.0) '(11 ${(pt2.x * s).toFixed(3)} ${(pt2.y * s).toFixed(3)} 0.0)))\n`;
           }
         } else if (p.t === "text") {
-          const sText = formatCADText(p.str, exportDxfOptions.includeUnicode).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+          // Un a-capo dentro il testo spezzerebbe la riga dello script: lo sostituisco con uno spazio
+          const sText = formatCADText(String(p.str || "").replace(/[\r\n\t]+/g, " "), exportDxfOptions.includeUnicode).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
           if (!sText) return;
           const th = Math.max(0.0001, +(((p.h || 2.2) * 0.88 * s)).toFixed(5));
           const isTitle = (p.layer === "CORNICE" && p.h >= 2.3) ||
@@ -7368,10 +7377,13 @@
           const styleName = isTitle ? "TITLE_CAD" : "MONO_CAD";
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
           const alignStr = hAlign !== 0 ? ` '(72 . ${hAlign}) '(11 ${(p.x * s).toFixed(3)} ${(p.y * s).toFixed(3)} 0.0) '(73 . 0)` : "";
-          scr += `  (entmake (list '(0 . "TEXT") '(8 . "${lay}") '(7 . "${styleName}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.x * s).toFixed(3)} ${(p.y * s).toFixed(3)} 0.0) '(40 . ${th.toFixed(5)}) '(41 . 1.0) '(1 . "${sText}")${alignStr}))\n`;
+          scr += `(ccad:e (list '(0 . "TEXT") '(8 . "${lay}") '(7 . "${styleName}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.x * s).toFixed(3)} ${(p.y * s).toFixed(3)} 0.0) '(40 . ${th.toFixed(5)}) '(41 . 1.0) '(1 . "${sText}")${alignStr}))\n`;
         }
       });
-      scr += `  (command "_ZOOM" "_E")\n  (princ)\n)\n(c:CREACANALINA)\n`;
+      scr += `(setvar "OSMODE" ccad:oldos)\n`;
+      scr += `(setvar "CMDECHO" ccad:oldecho)\n`;
+      scr += `(command "_.ZOOM" "_E")\n`;
+      scr += `(princ "\\nCanaloCAD: sezione disegnata.")\n`;
       return scr;
     }
 
