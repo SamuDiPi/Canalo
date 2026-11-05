@@ -785,8 +785,9 @@
         <div>
           <label class="block text-[10px] text-slate-400 mb-0.5">Tipologia Supporto (CEI EN 61537)</label>
           <select id="inpSupport" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+            <option value="none" selected>🚫 No Staffaggio (Nessun Supporto CAD)</option>
             <option value="wall_light">Mensola Parete Leggera C30 (SWL 35 kg @ 1.5m)</option>
-            <option value="wall_med" selected>Mensola Rinforzata con Saetta (SWL 75 kg @ 1.5m)</option>
+            <option value="wall_med">Mensola Rinforzata con Saetta (SWL 75 kg @ 1.5m)</option>
             <option value="wall_heavy">Mensola Pesante Doppia C50 (SWL 150 kg @ 1.5m)</option>
             <option value="ceiling_trap">Trapezio Soffitto 2xM10 + C40 (SWL 210 kg @ 1.5m)</option>
             <option value="ceiling_single">Pendino Monotirante M10 (SWL 45 kg @ 1.5m)</option>
@@ -1283,6 +1284,78 @@
     </div>
   </div>
 
+  <!-- MODALE SCELTA AMBITO IMPORTAZIONE PDF UNIFILARE (SCHEDA CORRENTE VS TUTTE LE SCHEDE) -->
+  <div id="pdfImportScopeModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border border-purple-500/50 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-xs flex flex-col">
+      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-purple-500/20 text-purple-300 font-bold flex items-center justify-center border border-purple-500/40">📄</span>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Importazione Schema Unifilare PDF</h3>
+        </div>
+        <button type="button" onclick="closePdfImportScopeModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+
+      <div class="p-4 space-y-3.5 text-slate-300">
+        <div class="bg-slate-950 p-2.5 rounded-lg border border-purple-500/30 flex items-center justify-between">
+          <div class="truncate mr-2">
+            <span class="text-[10px] text-purple-400 font-mono block">FILE SCHEMA CARICATO</span>
+            <span id="pdfScopeFileName" class="text-xs font-semibold text-white truncate block">schema_unifilare.pdf</span>
+          </div>
+          <span id="pdfScopeLinesCount" class="text-[11px] mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold whitespace-nowrap">
+            0 linee
+          </span>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Nel progetto sono attualmente aperte <strong id="pdfScopeOpenTabsCount" class="text-amber-300">N schede canalina</strong>.
+          Dove desideri applicare le descrizioni, sezioni e formazioni cavi rilevate dal PDF?
+        </p>
+
+        <div class="grid grid-cols-1 gap-2.5 pt-1">
+          <!-- OPZIONE 1: SOLO SCHEDA CORRENTE -->
+          <button type="button" onclick="applyPdfImportScope('current')" class="group text-left p-3 rounded-xl bg-slate-950 hover:bg-cyan-950/40 border border-slate-800 hover:border-cyan-500/70 transition flex items-start gap-3">
+            <span class="text-2xl mt-0.5">🎯</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white group-hover:text-cyan-300 transition">Solo per la Scheda Corrente</span>
+                <span id="pdfScopeCurrentBadge" class="text-[9px] mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">#1</span>
+              </div>
+              <div id="pdfScopeCurrentDetails" class="text-[11px] text-slate-400 truncate mt-0.5">
+                Canalina Principale (400x100 mm &bull; 14 cavi)
+              </div>
+              <div class="text-[10px] text-slate-500 mt-1">
+                Aggiorna unicamente la tratta attualmente visualizzata a video.
+              </div>
+            </div>
+          </button>
+
+          <!-- OPZIONE 2: PER TUTTE LE SCHEDE APERTE -->
+          <button type="button" onclick="applyPdfImportScope('all')" class="group text-left p-3 rounded-xl bg-slate-950 hover:bg-emerald-950/40 border border-slate-800 hover:border-emerald-500/70 transition flex items-start gap-3">
+            <span class="text-2xl mt-0.5">📑</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white group-hover:text-emerald-300 transition">Per Tutte le Schede Aperte</span>
+                <span id="pdfScopeAllBadge" class="text-[9px] mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">Tutte (N)</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5">
+                Sincronizza tutte le canaline aperte nel progetto con le relative utenze.
+              </div>
+              <div class="text-[10px] text-emerald-400/80 mt-1">
+                Consigliato per progetti multi-tratta che condividono lo stesso quadro generale.
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-end">
+        <button type="button" onclick="closePdfImportScopeModal()" class="px-3.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs transition">
+          Annulla
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     if (window.pdfjsLib) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -1621,6 +1694,12 @@
     }
 
     const SUPPORT_SPECS = {
+      none: {
+        name: "No Staffaggio",
+        desc: "Nessun supporto CAD o mensola prevista per questo tratto di canalizzazione",
+        swl10m: 0, swl15m: 0, swl20m: 0, swl25m: 0, swl30m: 0,
+        armH: 0, strut: false, type: "none"
+      },
       wall_light: {
         name: "Mensola Parete Leggera C30",
         desc: "Profilato a C 30x15 sp.1.5mm, fissaggio a parete con 1 tassello M8, indicata per carichi leggeri e segnali",
@@ -1696,7 +1775,7 @@
       clamps: true,
       showIso3D: true,
       showPlanTag: true,
-      support: "wall_med",
+      support: "none",
       spanM: 1.5,
       scale: "1:1",
       textScale: parseFloat(localStorage.getItem("canaloCAD_textScale")) || 1.0,
@@ -1767,6 +1846,7 @@
     }
 
     function calcAllowedLinearLoadKgM(supportKey, spanM) {
+      if (!supportKey || supportKey === "none") return 0;
       const spec = SUPPORT_SPECS[supportKey] || SUPPORT_SPECS.wall_med;
       const baseKgMAt15 = (spec.swl15m || 75) / 1.5;
       const hFactor = Math.pow(state.height / 75, 0.35) * Math.pow(state.thk / 1.5, 0.5);
@@ -1774,6 +1854,7 @@
     }
 
     function calcElasticDeflectionMm(qTotKgM, supportKey, spanM) {
+      if (!supportKey || supportKey === "none") return 0;
       const qAmm = calcAllowedLinearLoadKgM(supportKey, spanM);
       const fLim = Math.min(10.0, (spanM * 1000) / 200);
       return +Math.min(25.0, fLim * (qTotKgM / Math.max(1, qAmm))).toFixed(2);
@@ -1808,6 +1889,7 @@
 
     function initCatalogDropdown() {
       const sel = document.getElementById("selCableCatalog");
+      if (!sel) return;
       sel.innerHTML = "";
       const categories = [
         { cat: "bt_uni",   label: "⚡ Cavi BT Unipolari (1X) — FG16M16 / FS17" },
@@ -1902,6 +1984,7 @@
       state.showLoadChart = true;
       state.showBOM = true;
       state.showCartiglio = true;
+      state.support = "none";
       pushStateToUI();
       recalculateAll();
       fitAll();
@@ -2373,13 +2456,14 @@
       const trayKgM = +(unfolded * state.thk * 0.00785 * (state.trayType === "perforated" ? 0.85 : 1.0)).toFixed(2);
       const totalKgM = +(cablesKgM + trayKgM).toFixed(2);
 
-      const supSpec = SUPPORT_SPECS[state.support] || SUPPORT_SPECS.wall_med;
-      const qMaxKgM = calcAllowedLinearLoadKgM(state.support, state.spanM);
+      const hasSupport = state.support && state.support !== "none";
+      const supSpec = SUPPORT_SPECS[state.support] || SUPPORT_SPECS.none;
+      const qMaxKgM = hasSupport ? calcAllowedLinearLoadKgM(state.support, state.spanM) : 999;
       const pointLoad = +(totalKgM * state.spanM).toFixed(1);
-      const maxPoint = Math.round(qMaxKgM * state.spanM);
-      const loadPct = +((totalKgM / qMaxKgM) * 100).toFixed(1);
+      const maxPoint = hasSupport ? Math.round(qMaxKgM * state.spanM) : 0;
+      const loadPct = hasSupport && qMaxKgM > 0 ? +((totalKgM / qMaxKgM) * 100).toFixed(1) : 0;
       const maxDeflectionMm = +Math.min(10.0, (state.spanM * 1000) / 200).toFixed(1);
-      const deflectionMm = calcElasticDeflectionMm(totalKgM, state.support, state.spanM);
+      const deflectionMm = hasSupport ? calcElasticDeflectionMm(totalKgM, state.support, state.spanM) : 0;
 
       const pullDaN = +(cablesKgM * state.lengthM * 0.35 * Math.exp(0.35 * state.bends90 * (Math.PI / 2))).toFixed(1);
       const maxPullDaN = Math.round(Math.max(15, cuArea * 5.0));
@@ -2399,7 +2483,7 @@
         ...(state.cover !== "none" ? [{ code: `${pCode}-COP-${W}`, desc: `Coperchio superiore (${state.cover}) L=${W}mm`, qty: nVerghe * 3, um: "m", note: "Inclusi fermacoperchi" }] : []),
         ...(state.septums > 0 ? [{ code: `${pCode}-SET-H${H}`, desc: `Setto separatore longitudinale H=${H}mm (${state.septums} file)`, qty: nVerghe * 3 * state.septums, um: "m", note: "Segregazione CEI 64-8" }] : []),
         { code: `${pCode}-GIU-M6`, desc: `Kit giunzione lineare rinforzata con bulloneria M6`, qty: nVerghe, um: "cad", note: "1 ogni 3m" },
-        { code: `${pCode}-STF-${W}`, desc: `${supSpec.name} L=${W + 50}mm (Passo Ls=${state.spanM}m)`, qty: nStaffe, um: "cad", note: `Inclusi ${nStaffe * 2} tasselli M10` },
+        ...(hasSupport ? [{ code: `${pCode}-STF-${W}`, desc: `${supSpec.name} L=${W + 50}mm (Passo Ls=${state.spanM}m)`, qty: nStaffe, um: "cad", note: `Inclusi ${nStaffe * 2} tasselli M10` }] : []),
         ...(state.bends90 > 0 ? [{ code: `${pCode}-CRV90-${W}-R${fitR}`, desc: `Curva piana 90° L=${W}mm H=${H}mm (R_acc=${fitR}mm >= R_min=${maxBendR}mm)`, qty: state.bends90, um: "cad", note: `Cavo critico: ${critCode}` }] : []),
         ...(state.tees > 0 ? [{ code: `${pCode}-DEVT-${W}`, desc: `Deviazione piana a T L=${W}mm H=${H}mm completa di giunti`, qty: state.tees, um: "cad", note: "Raggio R=" + fitR + "mm" }] : []),
         ...(state.reducers > 0 ? [{ code: `${pCode}-RID-${W}`, desc: `Riduzione simmetrica/asimmetrica di larghezza L=${W}mm`, qty: state.reducers, um: "cad", note: "Acciaio zincato" }] : []),
@@ -2427,8 +2511,14 @@
       safeSetText("kpiSpan", `${state.spanM.toFixed(2)}m`);
       const kpiLoadEl = document.getElementById("kpiLoadTxt");
       if (kpiLoadEl) {
-        kpiLoadEl.textContent = loadPct <= 100 ? `${pointLoad} kg / ${maxPoint} kg OK` : `SOVRACCARICO (${pointLoad}/${maxPoint} kg)!`;
-        kpiLoadEl.className = loadPct <= 100 ? "text-[10px] text-emerald-400" : "text-[10px] text-red-400 font-bold";
+        if (!hasSupport) {
+          kpiLoadEl.textContent = "No Staffaggio";
+          kpiLoadEl.className = "text-[10px] text-slate-400";
+          safeSetText("kpiLoadPct", "N/D");
+        } else {
+          kpiLoadEl.textContent = loadPct <= 100 ? `${pointLoad} kg / ${maxPoint} kg OK` : `SOVRACCARICO (${pointLoad}/${maxPoint} kg)!`;
+          kpiLoadEl.className = loadPct <= 100 ? "text-[10px] text-emerald-400" : "text-[10px] text-red-400 font-bold";
+        }
       }
       safeSetText("kpiPull", pullDaN);
       safeSetText("kpiBendR", maxBendR);
@@ -2490,6 +2580,17 @@
     function drawInteractiveLoadCurveWidget() {
       const w = lcCanvas.width, h = lcCanvas.height;
       lcCtx.clearRect(0, 0, w, h);
+
+      if (state.support === "none") {
+        lcCtx.fillStyle = "#64748b";
+        lcCtx.font = "11px 'JetBrains Mono', monospace";
+        lcCtx.textAlign = "center";
+        lcCtx.fillText("Staffaggio escluso (No Staffaggio)", w / 2, h / 2 - 6);
+        lcCtx.font = "10px 'JetBrains Mono', monospace";
+        lcCtx.fillStyle = "#475569";
+        lcCtx.fillText("Seleziona una mensola o pendino per calcolare la curva SWL", w / 2, h / 2 + 10);
+        return;
+      }
 
       const padL = 38, padR = 36, padT = 18, padB = 26;
       const gw = w - padL - padR, gh = h - padT - padB;
@@ -2804,7 +2905,14 @@
     function onCableCodeInput(idx, val) {
       const c = state.cables[idx];
       if (!c) return;
-      c.code = val.trim();
+      const parsed = parseCalloutLabelString(val);
+      const cleanCode = parsed.cleanCode || val.trim();
+      c.code = cleanCode;
+      if (parsed.inlineDesc && (!c.desc || c.desc.startsWith("Alimentazione") || c.desc.startsWith("Utenza"))) {
+        c.desc = parsed.inlineDesc;
+        const inpDesc = document.getElementById(`descInp_${idx}`);
+        if (inpDesc && inpDesc.value !== c.desc) inpDesc.value = c.desc;
+      }
       const u = findInUnifilareDict(c.code) || findInUnifilareDict(getBaseCircuitCode(c.code));
       if (u) {
         if (u.desc) {
@@ -3208,11 +3316,11 @@
 
       const trayNameInfo = extractTrayNameFromInput(rawTexts, fileName, state.width, state.height);
       state.title = trayNameInfo.title;
-      document.getElementById("exportName").value = trayNameInfo.exportFile;
+      const elExp = document.getElementById("exportName"); if (elExp) elExp.value = trayNameInfo.exportFile;
 
-      document.getElementById("inpWidth").value = state.width;
-      document.getElementById("inpHeight").value = state.height;
-      document.getElementById("inpTitle").value = state.title;
+      const elW = document.getElementById("inpWidth"); if (elW) elW.value = state.width;
+      const elH = document.getElementById("inpHeight"); if (elH) elH.value = state.height;
+      const elT = document.getElementById("inpTitle"); if (elT) elT.value = state.title;
       const qTitleWasm = document.getElementById("inpTitleQuick");
       if (qTitleWasm) qTitleWasm.value = state.title;
       const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
@@ -3220,7 +3328,7 @@
 
       // Default modalità di posa: Gravità & Scomparti (salvando le coordinate DWG in origX/origY)
       state.packing = "gravity";
-      document.getElementById("inpPacking").value = "gravity";
+      const elPack = document.getElementById("inpPacking"); if (elPack) elPack.value = "gravity";
 
       // 3. RICOSTRUZIONE EVENTUALI TABELLE CAVI PRESENTI NEL DWG (Raggruppamento per Righe Y)
       // Se nel DWG c'è già una tabella o legenda con Sigla, Descrizione, Tipo Cavo e Formazione, la leggiamo!
@@ -3722,13 +3830,40 @@
             if (normCode.startsWith("OGBT")) unifilareDict[normCode.replace(/^OGBT/, "QGBT")] = entry;
           });
         }
-        state.pdfLoaded = true;
-        const elElec = document.getElementById("kpiElectricalCard"); if (elElec) elElec.classList.remove("hidden");
-        const elBar = document.getElementById("kpiBar"); if (elBar) elBar.className = "grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2";
-        if (badge) badge.textContent = `PDF Unifilare Attivo (${Object.keys(unifilareDict).length} linee)`;
+        const linesCount = Object.keys(unifilareDict).length;
+        if (badge) badge.textContent = `PDF Unifilare Attivo (${linesCount} linee)`;
 
-        let matchedCount = 0;
-        state.cables.forEach(c => {
+        // Se c'è solo una scheda aperta, la scelta è immediata e automatica (nessun popup)
+        if (!projectSections || projectSections.length <= 1) {
+          pendingPdfImport = { fileName: file.name, allPdfItems, linesCount };
+          applyPdfImportScope("current");
+        } else {
+          // Più schede aperte: apri il modal per permettere all'utente di scegliere
+          openPdfImportScopeModal(file.name, linesCount, allPdfItems);
+        }
+      } catch (err) {
+        console.error("Errore lettura PDF:", err);
+        if (banner) {
+          banner.textContent = `Errore lettura PDF "${file.name}": ${err.message || err}`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold";
+        }
+      } finally {
+        if (inputEl) inputEl.value = "";
+      }
+    }
+
+    // ============================================================================
+    // GESTIONE AMBITO IMPORTAZIONE PDF UNIFILARE (SCHEDA CORRENTE VS TUTTE LE SCHEDE)
+    // ============================================================================
+    let pendingPdfImport = null;
+
+    function applyUnifilareToSection(sec, dict, allPdfItems, fileName, isCurrentSection = false) {
+      if (!sec) return 0;
+      let matchedCount = 0;
+      sec.pdfLoaded = true;
+
+      if (Array.isArray(sec.cables)) {
+        sec.cables.forEach(c => {
           const u = findInUnifilareDict(c.code) || findInUnifilareDict(getBaseCircuitCode(c.code));
           if (u) {
             matchedCount++;
@@ -3744,7 +3879,7 @@
 
             if (isUnipolarCable(c)) {
               const base = getBaseCircuitCode(c.code);
-              state.cables.forEach(other => {
+              sec.cables.forEach(other => {
                 if (other !== c && getBaseCircuitCode(other.code) === base) {
                   if (u.desc) other.desc = u.desc;
                   if (u.cable && !(/PE|TERRA/i.test(other.code))) other.type = u.cable;
@@ -3761,46 +3896,130 @@
         });
 
         // Registra automaticamente nel DB qualsiasi nuovo cavo identificato dallo schema
-        state.cables.forEach(c => registerCableInCatalog(c));
+        sec.cables.forEach(c => registerCableInCatalog(c));
+      }
 
-        // Aggiorna titolo canalina e nome file se era rimasto default o se trovato nel documento
-        const pdfTrayName = extractTrayNameFromInput(allPdfItems, file.name, state.width, state.height);
-        if (pdfTrayName && pdfTrayName.isExplicit) {
-          state.title = pdfTrayName.title;
-          const elInpTitle = document.getElementById("inpTitle"); if (elInpTitle) elInpTitle.value = state.title;
-          const qTitlePdf = document.getElementById("inpTitleQuick"); if (qTitlePdf) qTitlePdf.value = state.title;
-          const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
-          const elExpName = document.getElementById("exportName"); if (elExpName) elExpName.value = pdfTrayName.exportFile;
-        } else if (state.title.startsWith("NUOVA CANALINA") && file.name) {
-          const pdfBase = file.name.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_-]+/g, " ").trim();
+      // Aggiorna titolo canalina e nome file se era generico o se trovato nel documento
+      if (allPdfItems && fileName) {
+        const pdfTrayName = extractTrayNameFromInput(allPdfItems, fileName, sec.width, sec.height);
+        if (pdfTrayName && pdfTrayName.isExplicit && (isCurrentSection || (sec.title && sec.title.startsWith("NUOVA CANALINA")))) {
+          sec.title = pdfTrayName.title;
+          if (isCurrentSection) {
+            const elInpTitle = document.getElementById("inpTitle"); if (elInpTitle) elInpTitle.value = sec.title;
+            const qTitlePdf = document.getElementById("inpTitleQuick"); if (qTitlePdf) qTitlePdf.value = sec.title;
+            const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = sec.title;
+            const elExpName = document.getElementById("exportName"); if (elExpName) elExpName.value = pdfTrayName.exportFile;
+          }
+        } else if (sec.title && sec.title.startsWith("NUOVA CANALINA") && fileName) {
+          const pdfBase = fileName.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_-]+/g, " ").trim();
           if (pdfBase && !/schema|unifilare/i.test(pdfBase)) {
-            state.title = `${pdfBase} - L=${state.width}mm H=${state.height}mm`;
-            const elInpTitle = document.getElementById("inpTitle"); if (elInpTitle) elInpTitle.value = state.title;
-            const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
-            const cleanTag = pdfBase.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
-            const elExpName = document.getElementById("exportName"); if (elExpName) elExpName.value = cleanTag || "CANALINA_01";
+            sec.title = `${pdfBase} - L=${sec.width}mm H=${sec.height}mm`;
+            if (isCurrentSection) {
+              const elInpTitle = document.getElementById("inpTitle"); if (elInpTitle) elInpTitle.value = sec.title;
+              const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = sec.title;
+              const cleanTag = pdfBase.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+              const elExpName = document.getElementById("exportName"); if (elExpName) elExpName.value = cleanTag || "CANALINA_01";
+            }
           }
         }
-        if (banner) {
-          banner.textContent = `✓ PDF Unifilare sincronizzato: ${matchedCount}/${state.cables.length} cavi DWG abbinati per Sigla Utenza, Descrizione e Formazione!`;
-          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/40 font-bold";
-        }
-        pushStateToUI();
-        recalculateAll();
-        updateTableUI();
-        drawScene();
-      } catch (err) {
-        console.error("Errore lettura PDF:", err);
-        if (banner) {
-          banner.textContent = `Errore lettura PDF "${file.name}": ${err.message || err}`;
-          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold";
-        }
-      } finally {
-        if (inputEl) inputEl.value = "";
       }
+
+      return matchedCount;
     }
 
-    function cleanUtenzaDescription(raw, codeToStrip = "") {
+    function openPdfImportScopeModal(fileName, linesCount, allPdfItems) {
+      pendingPdfImport = { fileName, linesCount, allPdfItems };
+      const m = document.getElementById("pdfImportScopeModal");
+      if (!m) return;
+
+      const elFile = document.getElementById("pdfScopeFileName");
+      if (elFile) elFile.textContent = fileName || "schema_unifilare.pdf";
+
+      const elLines = document.getElementById("pdfScopeLinesCount");
+      if (elLines) elLines.textContent = `${linesCount || 0} linee trovate`;
+
+      const elOpenTabs = document.getElementById("pdfScopeOpenTabsCount");
+      if (elOpenTabs) elOpenTabs.textContent = `${projectSections.length} schede canalina`;
+
+      const mParen = String(state.title || "").match(/\(([^)]+)\)/);
+      const curName = mParen ? mParen[1].trim() : (state.title || `Canalina ${currentSectionIdx + 1}`);
+
+      const elCurBadge = document.getElementById("pdfScopeCurrentBadge");
+      if (elCurBadge) elCurBadge.textContent = `#${currentSectionIdx + 1}`;
+
+      const elCurDetails = document.getElementById("pdfScopeCurrentDetails");
+      if (elCurDetails) {
+        elCurDetails.textContent = `${curName} (${state.width}x${state.height} mm • ${state.cables.length} cavi posati)`;
+      }
+
+      const elAllBadge = document.getElementById("pdfScopeAllBadge");
+      if (elAllBadge) elAllBadge.textContent = `Tutte (${projectSections.length})`;
+
+      m.classList.remove("hidden");
+    }
+
+    function closePdfImportScopeModal() {
+      const m = document.getElementById("pdfImportScopeModal");
+      if (m) m.classList.add("hidden");
+      pendingPdfImport = null;
+    }
+
+    function applyPdfImportScope(scope) {
+      if (!pendingPdfImport) return;
+      const fileName = pendingPdfImport.fileName;
+      const allPdfItems = pendingPdfImport.allPdfItems;
+      closePdfImportScopeModal();
+
+      const badge = document.getElementById("wasmStatusBadge");
+      const banner = document.getElementById("statusBanner");
+
+      if (scope === "all") {
+        syncActiveSectionToMultiStore();
+
+        let totalMatched = 0;
+        let totalCables = 0;
+        let updatedSectionsCount = 0;
+
+        projectSections.forEach((sec, idx) => {
+          const isCur = idx === currentSectionIdx;
+          const matched = applyUnifilareToSection(sec, unifilareDict, allPdfItems, fileName, isCur);
+          totalMatched += matched;
+          totalCables += (sec.cables ? sec.cables.length : 0);
+          if (matched > 0) updatedSectionsCount++;
+        });
+
+        state = cloneStateSnapshot(projectSections[currentSectionIdx]);
+
+        if (badge) badge.textContent = `PDF Unifilare Attivo (${Object.keys(unifilareDict).length} linee)`;
+        if (banner) {
+          banner.textContent = `✓ PDF Unifilare sincronizzato per TUTTE le ${projectSections.length} schede aperte (${totalMatched}/${totalCables} cavi aggiornati in ${updatedSectionsCount} tratte canalina)!`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/40 font-bold";
+        }
+      } else {
+        // Solo scheda corrente
+        const matched = applyUnifilareToSection(state, unifilareDict, allPdfItems, fileName, true);
+        syncActiveSectionToMultiStore();
+
+        if (badge) badge.textContent = `PDF Unifilare Attivo (${Object.keys(unifilareDict).length} linee)`;
+        if (banner) {
+          const mParen = String(state.title || "").match(/\(([^)]+)\)/);
+          const curName = mParen ? mParen[1].trim() : (state.title || `Canalina ${currentSectionIdx + 1}`);
+          banner.textContent = `✓ PDF Unifilare sincronizzato per la scheda corrente #${currentSectionIdx + 1} "${curName}" (${matched}/${state.cables.length} cavi DWG abbinati)!`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/40 font-bold";
+        }
+      }
+
+      const elElec = document.getElementById("kpiElectricalCard"); if (elElec) elElec.classList.remove("hidden");
+      const elBar = document.getElementById("kpiBar"); if (elBar) elBar.className = "grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2";
+
+      pushStateToUI();
+      recalculateAll();
+      updateTableUI();
+      drawScene();
+      renderMultiSectionTabs();
+    }
+
+        function cleanUtenzaDescription(raw, codeToStrip = "") {
       if (!raw) return "";
       let s = String(raw).replace(/\r?\n/g, " ").trim();
 
@@ -3824,8 +4043,10 @@
       s = s.replace(new RegExp(`^${panelPrefix}C-?\\d+\\b\\s*[-:–—]?\\s*`, "i"), "");
       s = s.replace(new RegExp(`\\s*[-:–—]?\\s*${panelPrefix}C-?\\d+\\b\\s*$`, "i"), "");
 
-      // 5. Rimuove rapporti di potenza / corrente anche con unità (es. "1 / 1,053", "1 / 1.053 kW", "15 / 24,5")
+      // 5. Rimuove rapporti di potenza / corrente anche con unità (es. "1 / 1,053", "/ 1,053", "1 / 1.053 kW", "15 / 24,5")
       s = s.replace(/\b\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?\s*(?:k?W|k?VA|k?VAR|Hz|V|A|kA|mA)?\b/gi, "");
+      s = s.replace(/(?:^|\s)\/?\s*\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?\s*(?:k?W|k?VA|k?VAR|Hz|V|A|kA|mA)?\b/gi, "");
+      s = s.replace(/(?:^|\s)\/\s*\d+(?:[.,]\d+)?\s*(?:k?W|k?VA|k?VAR|Hz|V|A|kA|mA)?\b/gi, "");
 
       // 6. Rimuove grandezze elettriche pure isolate (potenza, tensione, frequenza, corrente, cosphi)
       s = s.replace(/\b(?:P\s*=\s*)?\d+(?:[.,]\d+)?\s*(?:k?W|k?VA|k?VAR)\b/gi, "");
@@ -4170,13 +4391,16 @@
         iPoly(ptsInner, "#d97706", cCoreFill, 0.5);
       };
 
-      // 1. PARETE DI FONDO (Linea guida e retino)
-      iLine(1.18, -0.42, 0.3, 1.18, -0.42, zMax - 0.1, isLight ? "#cbd5e1" : "#334155", 0.35);
-      iLine(1.18, 0.60, 0.3, 1.18, 0.60, zMax - 0.1, isLight ? "#cbd5e1" : "#334155", 0.35);
+      // 1. PARETE DI FONDO (Linea guida e retino - disegnata solo con staffe a parete)
+      if (state.support && state.support.startsWith("wall_")) {
+        iLine(1.18, -0.42, 0.3, 1.18, -0.42, zMax - 0.1, isLight ? "#cbd5e1" : "#334155", 0.35);
+        iLine(1.18, 0.60, 0.3, 1.18, 0.60, zMax - 0.1, isLight ? "#cbd5e1" : "#334155", 0.35);
+      }
 
-      // 2. SUPPORTI E MENSOLE A SBALZO (z1 = 1.4, z2 = 5.0)
-      [z1, z2].forEach(zs => {
-        if (state.support.startsWith("wall_")) {
+      // 2. SUPPORTI E MENSOLE A SBALZO (disegnati solo se presente staffaggio)
+      if (state.support && state.support !== "none") {
+        [z1, z2].forEach(zs => {
+          if (state.support.startsWith("wall_")) {
           // Piastra profilata di ancoraggio a parete
           iPoly([
             { x: 1.18, y: -0.40, z: zs - 0.07 },
@@ -4244,7 +4468,7 @@
             { x: 1.08, y: -0.12, z: zs - 0.04 },
             { x: -0.08, y: -0.12, z: zs - 0.04 }
           ], colSteelStroke, colArmSide, 0.65);
-        } else {
+        } else if (state.support === "floor_omega") {
           // Supporto a pavimento omega
           iPoly([
             { x: -0.06, y: -0.05, z: zs },
@@ -4261,6 +4485,7 @@
           iLine(-0.10, -0.32, zs, 1.10, -0.32, "#64748b", 0.5);
         }
       });
+      }
 
       // 3. CANALINA — PARETE POSTERIORE E FONDO IN 3D
       // Parete posteriore solida (x = 1.0)
@@ -4560,19 +4785,29 @@
         }
       }
 
-      // Staffaggi
+      // Staffaggi (Disegnati sul layer STAFFAGGI solo se configurato un supporto)
       let lowestY = -thk - 18;
-      if (state.support.startsWith("wall_")) {
-        const wallX = -25, armH = sup.armH;
-        line("STAFFAGGI", wallX, -50, wallX, H + 15, "#64748b", 0.6);
-        rect("STAFFAGGI", wallX, -38, 4, 44, "#94a3b8", "#475569", true);
-        rect("STAFFAGGI", wallX + 4, -thk - armH, W + 38, armH, "#94a3b8", "#334155", true);
-        if (sup.strut) line("STAFFAGGI", wallX + 4, -34, W * 0.7, -thk - armH, "#94a3b8", 0.65);
-        lowestY = -52;
-      } else if (state.support === "ceiling_trap") {
-        rect("STAFFAGGI", -22, -thk - 12, W + 44, 12, "#94a3b8", "#334155", true);
-        [-14, W + 14].forEach(rx => line("STAFFAGGI", rx, -thk - 12, rx, ceilY, "#cbd5e1", 0.5));
-        lowestY = -32;
+      if (state.support && state.support !== "none") {
+        if (state.support.startsWith("wall_")) {
+          const wallX = -25, armH = sup.armH;
+          line("STAFFAGGI", wallX, -50, wallX, H + 15, "#64748b", 0.6);
+          rect("STAFFAGGI", wallX, -38, 4, 44, "#94a3b8", "#475569", true);
+          rect("STAFFAGGI", wallX + 4, -thk - armH, W + 38, armH, "#94a3b8", "#334155", true);
+          if (sup.strut) line("STAFFAGGI", wallX + 4, -34, W * 0.7, -thk - armH, "#94a3b8", 0.65);
+          lowestY = -52;
+        } else if (state.support === "ceiling_trap") {
+          rect("STAFFAGGI", -22, -thk - 12, W + 44, 12, "#94a3b8", "#334155", true);
+          [-14, W + 14].forEach(rx => line("STAFFAGGI", rx, -thk - 12, rx, ceilY, "#cbd5e1", 0.5));
+          lowestY = -32;
+        } else if (state.support === "ceiling_single") {
+          line("STAFFAGGI", W / 2, -thk - 10, W / 2, ceilY, "#cbd5e1", 0.5);
+          rect("STAFFAGGI", -15, -thk - 10, W + 30, 10, "#94a3b8", "#334155", true);
+          lowestY = -28;
+        } else if (state.support === "floor_omega") {
+          rect("STAFFAGGI", -10, -thk - 18, 12, 18, "#94a3b8", "#334155", true);
+          rect("STAFFAGGI", W - 2, -thk - 18, 12, 18, "#94a3b8", "#334155", true);
+          lowestY = -36;
+        }
       }
 
       // ==========================================================================
@@ -4844,6 +5079,12 @@
         currentRightY = chartY - 6;
         rect("CURVA_CARICO", rightX, chartY, tabW, chartH + 16, "#38bdf8", boxBg, true);
         line("CURVA_CARICO", rightX, chartY + chartH + 1, rightX + tabW, chartY + chartH + 1, "#334155", 0.4);
+        if (state.support === "none") {
+          text("CURVA_CARICO", rightX + 4, chartY + chartH + 9.5, 2.5, `2. DIAGRAMMA CURVA DI CARICO E FRECCIA - RIF. CEI EN 61537 (SWL)`, "#38bdf8", "left", tabW - 8);
+          text("CURVA_CARICO", rightX + 4, chartY + chartH + 3.8, 2.0, `Configurazione: Nessun supporto previsto (No Staffaggio)`, "#cbd5e1", "left", tabW - 8);
+          text("CURVA_CARICO", rightX + tabW / 2, chartY + chartH / 2 + 2, 2.6, `STAFFAGGIO NON PREVISTO (NO STAFFAGGIO)`, "#64748b", "center");
+          text("CURVA_CARICO", rightX + tabW / 2, chartY + chartH / 2 - 5, 1.85, `Canalizzazione autoportante / staffata a cura dell'installatore`, "#475569", "center");
+        } else {
         text("CURVA_CARICO", rightX + 4, chartY + chartH + 9.5, 2.5, `2. DIAGRAMMA CURVA DI CARICO E FRECCIA - RIF. CEI EN 61537 (SWL)`, "#38bdf8", "left", tabW - 8);
         text("CURVA_CARICO", rightX + 4, chartY + chartH + 3.8, 2.0, `Supporto: ${sup.name} | Passo Ls = ${state.spanM.toFixed(2)} m | Freccia f = ${metrics.deflectionMm} mm (Lim. ${metrics.maxDeflectionMm} mm)`, "#cbd5e1", "left", tabW - 8);
 
@@ -4886,6 +5127,7 @@
         const wpAlign = wpX > gx0 + gw * 0.55 ? "right" : "left";
         const wpTextX = wpAlign === "right" ? wpX - 4 : wpX + 4;
         text("CURVA_CARICO", wpTextX, wpY + 1.5, 2.0, `Lavoro: ${metrics.totalKgM} kg/m @ ${state.spanM}m (Max ${metrics.qMaxKgM} kg/m)`, "#fbbf24", wpAlign);
+        }
       }
 
       // 3. COMPUTO METRICO BOM (Opzionale)
@@ -5621,22 +5863,25 @@
         if (searchTxt && !spec.name.toLowerCase().includes(searchTxt) && !spec.desc.toLowerCase().includes(searchTxt)) return;
         const card = document.createElement("div");
         card.className = "bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between";
+        const badgeType = spec.type === "none" ? "NO STAFFAGGIO" : spec.type === "wall" ? "PARETE" : spec.type === "ceiling" ? "SOFFITTO" : "PAVIMENTO";
+        const badgeSwl = spec.type === "none" ? "SWL: N/D" : `SWL: ${spec.swl15m} kg @1.5m`;
         card.innerHTML = `
           <div>
             <div class="flex items-center justify-between mb-1">
-              <span class="text-[10px] mono font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">${spec.type === "wall" ? "PARETE" : spec.type === "ceiling" ? "SOFFITTO" : "PAVIMENTO"}</span>
-              <span class="text-[10px] text-emerald-400 font-bold mono">SWL: ${spec.swl15m} kg @1.5m</span>
+              <span class="text-[10px] mono font-bold px-1.5 py-0.5 rounded ${spec.type === 'none' ? 'bg-slate-800 text-slate-300' : 'bg-cyan-500/20 text-cyan-300'}">${badgeType}</span>
+              <span class="text-[10px] text-emerald-400 font-bold mono">${badgeSwl}</span>
             </div>
             <h5 class="text-xs font-bold text-white mb-1">${spec.name}</h5>
             <p class="text-[10px] text-slate-400 mb-2 leading-relaxed">${spec.desc}</p>
+            ${spec.type !== 'none' ? `
             <div class="grid grid-cols-4 gap-1 text-[9px] mono text-center bg-slate-900/80 p-1 rounded border border-slate-800 mb-2">
               <div><span class="text-slate-500">1.0m:</span> <span class="text-amber-300">${spec.swl10m}kg</span></div>
               <div><span class="text-slate-500">1.5m:</span> <span class="text-emerald-400 font-bold">${spec.swl15m}kg</span></div>
               <div><span class="text-slate-500">2.0m:</span> <span class="text-cyan-300">${spec.swl20m}kg</span></div>
               <div><span class="text-slate-500">2.5m:</span> <span class="text-purple-300">${spec.swl25m}kg</span></div>
-            </div>
+            </div>` : ''}
           </div>
-          <button type="button" onclick="applySupportFromDb('${key}')" class="w-full py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded font-semibold text-[10px] transition">
+          <button type="button" onclick="applySupportFromDb('${key}')" class="w-full py-1 ${key === 'none' ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40'} rounded font-semibold text-[10px] transition">
             ✓ Seleziona Supporto
           </button>`;
         supContainer.appendChild(card);
@@ -5957,6 +6202,7 @@
         newSec.title = `NUOVA CANALINA 0${nextNum} - L=${state.width}mm H=${state.height}mm`;
         newSec.planTag = `SEZ. ${letter}-${letter} | H=+3.20m`;
         newSec.cables = [];
+        newSec.support = "none";
       }
       projectSections.push(newSec);
       currentSectionIdx = projectSections.length - 1;
@@ -7008,6 +7254,7 @@
           closePwaOfflineModal();
           closeCartiglioSettingsModal();
           closeShortcutsModal();
+          closePdfImportScopeModal();
           const dbM = document.getElementById("databaseCatalogModal");
           if (dbM && !dbM.classList.contains("hidden")) toggleDatabaseModal();
           const expM = document.getElementById("exportOptionsModal");
