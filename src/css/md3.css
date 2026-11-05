@@ -1,0 +1,172 @@
+    /* ==========================================================================
+       Material 3 — tema scuro di CanaloCAD (token e componenti dell'interfaccia)
+       Il foglio CAD e gli export hanno colori propri e non dipendono da questi token.
+       ========================================================================== */
+    :root {
+      --md-primary: #A8C7FA;
+      --md-on-primary: #062E6F;
+      --md-primary-container: #284777;
+      --md-on-primary-container: #D6E3FF;
+      --md-secondary-container: #3E4759;
+      --md-on-secondary-container: #DAE2F9;
+      --md-bg: #111318;
+      --md-surface-low: #191C20;
+      --md-surface: #1D2024;
+      --md-surface-high: #272A2F;
+      --md-surface-highest: #32353A;
+      --md-on-surface: #E2E2E9;
+      --md-on-surface-variant: #C4C6D0;
+      --md-outline: #8E9099;
+      --md-outline-variant: #43474E;
+      --md-divider: #2B2E33;
+      --md-ok: #82D99B;
+      --md-warn: #FFB95C;
+      --md-warn-container: #2E2410;
+      --md-warn-outline: #8A5A00;
+      --md-error: #FFB4AB;
+      --md-error-container: #3A1513;
+      --md-error-outline: #93000A;
+      --md-info: #A8C7FA;
+      color-scheme: dark;
+    }
+    /* "hidden" di Tailwind deve vincere sui display dei componenti qui sotto */
+    .md :is(.rail-badge, .menu-item, .chip, .btn, .icon-btn, .check, .switch-row, .field, .seg, .tag, .side-panel, .sheet-toolbar).hidden { display: none; }
+    body.md { background: var(--md-bg); color: var(--md-on-surface); font-family: 'Inter', system-ui, sans-serif; }
+    .md .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+    /* Icone (sprite SVG inline) */
+    .ico { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .ico-s { width: 18px; height: 18px; }
+
+    /* Pulsanti */
+    .icon-btn { width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; color: var(--md-on-surface-variant); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
+    .icon-btn:hover { background: rgba(226,226,233,.08); color: var(--md-on-surface); }
+    .icon-btn:disabled { opacity: .38; cursor: default; background: transparent; }
+    .btn { height: 40px; padding: 0 20px; border-radius: 20px; border: 0; font: 600 14px 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; white-space: nowrap; }
+    .btn-filled { background: var(--md-primary); color: var(--md-on-primary); }
+    .btn-filled:hover { filter: brightness(1.08); }
+    .btn-tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+    .btn-tonal:hover { background: #485266; }
+    .btn-outlined { background: transparent; color: var(--md-on-surface); border: 1px solid var(--md-outline); }
+    .btn-outlined:hover { background: rgba(226,226,233,.06); }
+    .btn-text { background: transparent; color: var(--md-primary); padding: 0 12px; }
+    .btn-text:hover { background: rgba(168,199,250,.08); }
+    .btn-sm { height: 36px; padding: 0 16px; }
+    .fab { height: 56px; border-radius: 16px; padding: 0 20px; box-shadow: 0 4px 12px rgba(0,0,0,.45); }
+
+    /* Focus da tastiera */
+    .md :focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+    .md .field input:focus-visible, .md .field select:focus-visible { outline: none; }
+
+    /* Rail di navigazione */
+    .rail { width: 88px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 0; background: var(--md-bg); }
+    .rail-item { width: 72px; border: 0; background: transparent; color: var(--md-on-surface-variant); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0 8px; cursor: pointer; font: 500 12px 'Inter', sans-serif; }
+    .rail-pill { width: 56px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; position: relative; }
+    .rail-item:hover .rail-pill { background: rgba(226,226,233,.08); }
+    .rail-item.active { color: var(--md-on-surface); font-weight: 600; }
+    .rail-item.active .rail-pill { background: var(--md-primary-container); color: var(--md-on-primary-container); }
+    .rail-badge { position: absolute; top: 2px; right: 10px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--md-warn); color: #2A1800; font: 700 10px 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; }
+    .rail-badge.err { background: var(--md-error); color: #690005; }
+
+    /* Pannello laterale */
+    .side-panel { width: 372px; flex: none; background: var(--md-surface-low); border-radius: 16px 0 0 0; display: flex; flex-direction: column; min-height: 0; }
+    .side-panel.collapsed { display: none; }
+    .panel-body { flex: 1; overflow-y: auto; padding: 22px 22px 28px; display: flex; flex-direction: column; gap: 22px; }
+    .panel-title { font: 600 22px 'Inter', sans-serif; margin: 0; color: var(--md-on-surface); }
+    .group-title { font: 600 13px 'Inter', sans-serif; color: var(--md-on-surface-variant); margin: 0; letter-spacing: .2px; }
+    .group { display: flex; flex-direction: column; gap: 14px; }
+    .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    @media (max-width: 1279px) {
+      .side-panel { position: absolute; left: 88px; top: 0; bottom: 0; z-index: 30; width: min(372px, calc(100vw - 88px)); box-shadow: 4px 0 24px rgba(0,0,0,.5); border-radius: 0 16px 16px 0; }
+    }
+
+    /* Campi di testo e selezioni (outlined) */
+    .field { position: relative; }
+    .field input, .field select { width: 100%; height: 48px; border: 1px solid var(--md-outline); border-radius: 6px; background: transparent; color: var(--md-on-surface); font: 500 15px 'Inter', sans-serif; padding: 0 14px; appearance: none; -webkit-appearance: none; }
+    .field select { padding-right: 40px; }
+    .field select option, .field select optgroup { background: var(--md-surface-high); color: var(--md-on-surface); }
+    .field input:focus, .field select:focus { outline: none; border: 2px solid var(--md-primary); padding-left: 13px; }
+    .field > label { position: absolute; top: -9px; left: 10px; padding: 0 4px; background: var(--md-surface-low); color: var(--md-on-surface-variant); font: 500 12px 'Inter', sans-serif; max-width: calc(100% - 24px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .field.on-dialog > label { background: var(--md-surface-high); }
+    .field .suffix { position: absolute; right: 14px; top: 14px; color: var(--md-on-surface-variant); font: 500 14px 'Inter', sans-serif; pointer-events: none; }
+    .field .caret { position: absolute; right: 12px; top: 13px; color: var(--md-on-surface-variant); pointer-events: none; }
+    .field input.has-suffix { padding-right: 44px; }
+    .helper { font: 400 12px/1.45 'Inter', sans-serif; color: var(--md-on-surface-variant); margin: 6px 2px 0; }
+
+    /* Pulsanti segmentati (collegati a una <select> nascosta) */
+    .seg-label { font: 500 13px 'Inter', sans-serif; color: var(--md-on-surface-variant); margin-bottom: 8px; display: block; }
+    .seg { display: flex; border: 1px solid var(--md-outline); border-radius: 20px; overflow: hidden; height: 40px; }
+    .seg button { flex: 1; min-width: 0; border: 0; border-right: 1px solid var(--md-outline); background: transparent; color: var(--md-on-surface); font: 500 14px 'Inter', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; white-space: nowrap; }
+    .seg button:last-child { border-right: 0; }
+    .seg button:hover { background: rgba(226,226,233,.06); }
+    .seg button[aria-pressed="true"] { background: var(--md-secondary-container); color: var(--md-on-secondary-container); font-weight: 600; }
+    .seg button .tick { display: none; }
+    .seg button[aria-pressed="true"] .tick { display: block; }
+
+    /* Interruttori (checkbox reali con role=switch) */
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; }
+    .switch-row > label, .switch-row > span { font: 500 14px 'Inter', sans-serif; color: var(--md-on-surface); }
+    input.sw { appearance: none; -webkit-appearance: none; width: 52px; height: 32px; border-radius: 16px; background: var(--md-surface-highest); border: 2px solid var(--md-outline); position: relative; cursor: pointer; flex: none; margin: 0; }
+    input.sw::before { content: ""; position: absolute; width: 16px; height: 16px; border-radius: 8px; background: var(--md-outline); top: 6px; left: 6px; transition: all .15s; }
+    input.sw:checked { background: var(--md-primary); border-color: var(--md-primary); }
+    input.sw:checked::before { width: 24px; height: 24px; border-radius: 12px; background: var(--md-on-primary); top: 2px; left: 22px; }
+
+    /* Chip */
+    .chip { height: 36px; border-radius: 10px; border: 1px solid var(--md-outline-variant); background: var(--md-surface); color: var(--md-on-surface); font: 500 13px 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 8px; padding: 0 12px; cursor: pointer; white-space: nowrap; }
+    .chip:hover { background: var(--md-surface-high); }
+    .chip .st { flex: none; }
+    .chip.ok .st { color: var(--md-ok); }
+    .chip.info .st { color: var(--md-info); }
+    .chip.warn { border-color: var(--md-warn-outline); background: var(--md-warn-container); }
+    .chip.warn .st { color: var(--md-warn); }
+    .chip.error { border-color: var(--md-error-outline); background: var(--md-error-container); }
+    .chip.error .st { color: var(--md-error); }
+
+    /* Schede delle verifiche */
+    .check { display: flex; gap: 14px; padding: 14px; border-radius: 12px; background: var(--md-surface); }
+    .check .st { flex: none; }
+    .check.ok .st { color: var(--md-ok); }
+    .check.info .st { color: var(--md-info); }
+    .check.warn { background: var(--md-warn-container); outline: 1px solid var(--md-warn-outline); }
+    .check.warn .st { color: var(--md-warn); }
+    .check.error { background: var(--md-error-container); outline: 1px solid var(--md-error-outline); }
+    .check.error .st { color: var(--md-error); }
+    .check h3 { margin: 0; font: 600 14px 'Inter', sans-serif; color: var(--md-on-surface); }
+    .check p { margin: 4px 0 0; font: 400 13px/1.45 'Inter', sans-serif; color: var(--md-on-surface-variant); }
+    .check .ref { font: 400 12px 'Inter', sans-serif; color: var(--md-outline); margin-top: 6px; }
+    .check .head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .val { font: 600 13px 'JetBrains Mono', monospace; color: var(--md-on-surface); white-space: nowrap; }
+
+    /* Menu a tendina */
+    .menu { position: absolute; top: calc(100% + 4px); min-width: 260px; max-width: calc(100vw - 1rem); max-height: calc(100vh - 90px); overflow-y: auto; background: var(--md-surface-high); border-radius: 8px; padding: 8px 0; box-shadow: 0 8px 28px rgba(0,0,0,.55); z-index: 60; }
+    .menu-item { width: 100%; min-height: 44px; border: 0; background: transparent; color: var(--md-on-surface); font: 500 14px 'Inter', sans-serif; display: flex; align-items: center; gap: 12px; padding: 0 16px; text-align: left; cursor: pointer; }
+    .menu-item:hover { background: rgba(226,226,233,.08); }
+    .menu-item .kbd { margin-left: auto; font: 500 12px 'JetBrains Mono', monospace; color: var(--md-on-surface-variant); padding-left: 16px; }
+    .menu-item .ico { color: var(--md-on-surface-variant); }
+    .menu-item input.sw { margin-left: auto; transform: scale(.85); transform-origin: right center; }
+    .menu-sep { height: 1px; background: var(--md-outline-variant); margin: 8px 0; }
+    .menu-label { padding: 6px 16px 4px; font: 600 12px 'Inter', sans-serif; color: var(--md-on-surface-variant); }
+
+    /* Scelte a scheda (dialogo esporta, elenco sezioni) */
+    .choice { display: flex; gap: 14px; align-items: flex-start; padding: 14px; border-radius: 12px; border: 1px solid var(--md-outline-variant); background: transparent; color: var(--md-on-surface); text-align: left; cursor: pointer; width: 100%; }
+    .choice:hover { background: rgba(226,226,233,.04); }
+    .choice[aria-checked="true"], .choice.on { border: 2px solid var(--md-primary); padding: 13px; background: #1F2633; }
+    .radio { width: 20px; height: 20px; border-radius: 10px; border: 2px solid var(--md-on-surface-variant); flex: none; margin-top: 2px; display: flex; align-items: center; justify-content: center; }
+    .choice[aria-checked="true"] .radio { border-color: var(--md-primary); }
+    .choice[aria-checked="true"] .radio::after { content: ""; width: 10px; height: 10px; border-radius: 5px; background: var(--md-primary); }
+    .tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font: 600 11px 'Inter', sans-serif; background: var(--md-surface-highest); color: var(--md-on-surface); }
+    .tag.primary { background: var(--md-primary-container); color: var(--md-on-primary-container); }
+
+    /* Elenco catalogo / sezioni */
+    .list-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--md-surface); }
+
+    /* Distinta: riga selezionata (collegata al cavo evidenziato nel disegno) */
+    #tblBody tr { cursor: pointer; }
+    #tblBody tr.row-sel td { background: #243045 !important; }
+    #tblBody tr.row-sel td:first-child { box-shadow: inset 3px 0 0 var(--md-primary); }
+
+    /* Foglio CAD */
+    .sheet { position: relative; flex: 1; min-height: 0; border-radius: 12px; overflow: hidden; }
+    .sheet-toolbar { display: flex; align-items: center; gap: 2px; background: var(--md-surface); border: 1px solid var(--md-outline-variant); border-radius: 22px; padding: 2px 4px; }
+    .sheet-toolbar .icon-btn { width: 38px; height: 38px; }

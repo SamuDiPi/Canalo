@@ -153,10 +153,8 @@
 
       if (inspBox && logs.length > 0) inspBox.textContent = logs.join("\n\n" + "=".repeat(60) + "\n\n");
       const inspModal = document.getElementById("dwgInspectorModal");
-      if (inspModal && (loadedCount > 0 || errorMsgs.length > 0)) inspModal.classList.remove("hidden");
+      // L'ispettore delle entità resta chiuso: si apre da Importa → Ispettore entità DWG
 
-      if (loadedCount > 0 && errorMsgs.length === 0) toast(`Importati ${loadedCount} file CAD`, "ok");
-      else if (errorMsgs.length > 0) toast(`Errore import CAD — ${errorMsgs[0]}`, loadedCount > 0 ? "warn" : "error", null, 9000);
 
       if (banner) {
         if (loadedCount > 0 && errorMsgs.length === 0) {

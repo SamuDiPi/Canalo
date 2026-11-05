@@ -1,13 +1,10 @@
     // ============================================================================
     // 2. INIZIALIZZAZIONE E CONTROLLI INTERFACCIA
     // ============================================================================
+    // Compatibilità con i vecchi nomi delle schede: ora i pannelli sono quelli della rail
     function showTab(id) {
-      ['geom', 'prod', 'staff', 'cavi'].forEach(t => {
-        document.getElementById(`tabPanel_${t}`).classList.toggle('hidden', t !== id);
-        document.getElementById(`tabBtn_${t}`).className = t === id
-          ? 'py-1.5 rounded-lg bg-amber-500/20 text-amber-300 transition'
-          : 'py-1.5 rounded-lg text-slate-400 hover:text-white transition';
-      });
+      const map = { geom: "sezione", prod: "sezione", staff: "staffaggio", cavi: "cavi" };
+      showPanel(map[id] || id, true);
     }
 
     function populateBrandSeries() {
@@ -152,7 +149,10 @@
 
     function applyThemeUI() {
       const bTheme = document.getElementById("btnTheme");
-      if (bTheme) bTheme.textContent = state.theme === "dark" ? "Foglio: Scuro" : "Foglio: Chiaro";
+      if (bTheme) {
+        const lbl = bTheme.querySelector("[data-theme-label]") || bTheme;
+        lbl.textContent = state.theme === "dark" ? "Foglio: scuro" : "Foglio: chiaro";
+      }
       const cadCanv = document.getElementById("cadCanvas");
       if (cadCanv) {
         cadCanv.classList.toggle("cad-grid-dark", state.theme !== "light");
@@ -193,7 +193,7 @@
 
       safeVal("inpWidth", state.width);
       safeVal("inpHeight", state.height);
-      safeVal("inpThk", String(state.thk));
+      safeVal("inpThk", (+state.thk || 1.5).toFixed(1)); // le option sono "1.5", "2.0", "2.5"
       safeVal("inpLength", state.lengthM);
       safeVal("inpTrayType", state.trayType);
       safeVal("inpPacking", state.packing);
@@ -651,7 +651,8 @@
         totalKgM, qMaxKgM, pointLoad, maxPoint, loadPct,
         deflectionMm, maxDeflectionMm,
         pullDaN, maxPullDaN, maxBendR, critCode, fitR,
-        jouleWm: +jouleWm.toFixed(1), maxDv: +maxDv.toFixed(2), bom
+        jouleWm: +jouleWm.toFixed(1), maxDv: +maxDv.toFixed(2), bom,
+        deratingFailCode
       };
       state.metrics = metrics;
       if (typeof window !== "undefined") window.metrics = metrics;

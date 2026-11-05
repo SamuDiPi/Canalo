@@ -13,6 +13,11 @@
       const bw = Math.round(cssW * dpr), bh = Math.round(cssW * dpr * LC_H / LC_W);
       if (lcCanvas.width !== bw || lcCanvas.height !== bh) { lcCanvas.width = bw; lcCanvas.height = bh; }
       lcCtx.setTransform(bw / LC_W, 0, 0, bh / LC_H, 0, 0);
+      // Il grafico funziona anche da slider: valore corrente per tastiera e screen reader
+      lcCanvas.setAttribute("aria-valuemin", "1");
+      lcCanvas.setAttribute("aria-valuemax", "3");
+      lcCanvas.setAttribute("aria-valuenow", String(state.spanM));
+      lcCanvas.setAttribute("aria-valuetext", `${String(state.spanM.toFixed(2)).replace(".", ",")} metri`);
       const w = LC_W, h = LC_H;
       lcCtx.clearRect(0, 0, w, h);
 
@@ -309,10 +314,12 @@
         return;
       }
       const num = (v, def) => (v != null && !isNaN(v)) ? v : def;
+      if (selectedCableIdx >= state.cables.length) selectedCableIdx = -1;
       body.innerHTML = state.cables.map((c, i) => {
         const isUni = isUnipolarCable(c);
         const n = i + 1;
-        return `<tr class="hover:bg-slate-800/50 whitespace-nowrap">
+        const sel = i === selectedCableIdx;
+        return `<tr class="hover:bg-slate-800/50 whitespace-nowrap${sel ? " row-sel" : ""}" data-idx="${i}" aria-selected="${sel}">
           <td class="py-1 px-2 text-amber-400 font-bold">#${n}</td>
           <td class="py-1 px-2"><input type="text" id="codeInp_${i}" data-row="${i}" data-field="code" aria-label="Sigla cavo ${n}" value="${escapeHtml(c.code)}" oninput="onCableCodeInput(${i}, this.value)" onchange="updateCableField(${i}, 'code', this.value)" class="cell-input w-36 font-semibold"></td>
           <td class="py-1 px-2"><input type="number" data-row="${i}" data-field="d" aria-label="Diametro cavo ${n} in mm" value="${c.d}" step="0.5" min="4" max="90" onchange="updateCableField(${i}, 'd', this.value)" class="cell-input w-16 text-center"></td>

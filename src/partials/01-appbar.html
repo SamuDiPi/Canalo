@@ -1,0 +1,105 @@
+  <!-- BARRA SUPERIORE (top app bar Material 3) -->
+  <header class="flex-none flex flex-wrap items-center gap-x-2 gap-y-1 min-h-[64px] px-3 py-2 border-b" style="border-color: var(--md-divider); background: var(--md-bg)">
+    <div class="flex items-center gap-2.5 pr-2">
+      <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1D2024"></rect><path d="M7 11v10h18V11" fill="none" stroke="#A8C7FA" stroke-width="2.4" stroke-linejoin="round"></path><circle cx="12.5" cy="17.5" r="2.6" fill="#FFB95C"></circle><circle cx="18.5" cy="17.5" r="2.6" fill="#80D5D0"></circle></svg>
+      <span class="font-bold text-[17px] tracking-tight">CanaloCAD</span>
+      <span class="mono text-xs hidden xl:inline" style="color: var(--md-outline)">v<span data-app-version></span></span>
+    </div>
+
+    <!-- Selettore della sezione attiva (elenco schede) -->
+    <div class="relative" id="tabsDropdownContainer">
+      <button type="button" id="btnTabsDropdown" onclick="toggleTabsDropdown()" class="chip" style="height: 40px; border-radius: 20px" aria-haspopup="true" title="Cambia sezione (Ctrl+PagSu / Ctrl+PagGiù)">
+        <span id="sectionPickerName" class="font-semibold truncate max-w-[180px] xl:max-w-[300px]">Sezione</span>
+        <span id="sectionPickerDims" class="mono text-xs" style="color: var(--md-on-surface-variant)"></span>
+        <span id="lblTabsCount" class="hidden lg:inline" style="color: var(--md-outline)">· 1 sezione</span>
+        <svg class="ico ico-s"><use href="#i-down"/></svg>
+      </button>
+      <div id="tabsDropdownMenu" class="hidden menu left-0 w-[22rem]" aria-label="Sezioni del progetto">
+        <div class="flex items-center justify-between px-4 pb-2 pt-1">
+          <span class="text-sm font-semibold">Sezioni del progetto</span>
+          <span id="tabsDropdownCountBadge" class="tag">1 sezione</span>
+        </div>
+        <div id="tabsDropdownList" class="max-h-80 overflow-y-auto"></div>
+        <div class="menu-sep"></div>
+        <div class="flex items-center gap-2 px-3">
+          <button type="button" class="btn btn-tonal btn-sm flex-1" onclick="addNewSectionTab(false); toggleTabsDropdown(false);"><svg class="ico ico-s"><use href="#i-plus"/></svg>Nuova</button>
+          <button type="button" class="btn btn-outlined btn-sm flex-1" onclick="addNewSectionTab(true); toggleTabsDropdown(false);"><svg class="ico ico-s"><use href="#i-copy"/></svg>Duplica</button>
+        </div>
+      </div>
+      <!-- striscia schede: mantenuta per compatibilità con il renderer, non visibile -->
+      <div id="multiSectionTabs" class="hidden"></div>
+    </div>
+
+    <div class="flex-1"></div>
+
+    <span id="saveState" class="text-[13px] hidden md:flex items-center gap-1.5 pr-1" style="color: var(--md-outline)" aria-live="polite">
+      <svg class="ico ico-s" style="color: var(--md-ok)"><use href="#i-tick"/></svg><span>Salvato</span>
+    </span>
+    <button type="button" class="icon-btn" data-undo disabled onclick="undoLastChange()" aria-label="Annulla" title="Annulla (Ctrl+Z)"><svg class="ico"><use href="#i-undo"/></svg></button>
+    <button type="button" class="icon-btn" data-redo disabled onclick="redoLastChange()" aria-label="Ripeti" title="Ripeti (Ctrl+Y)"><svg class="ico"><use href="#i-redo"/></svg></button>
+
+    <input id="dwgInput" type="file" accept=".dwg,.dxf" multiple class="hidden" onchange="importCADFile(this)">
+    <input id="pdfInput" type="file" accept=".pdf" multiple class="hidden" onchange="importPDFFile(this)">
+    <input id="jsonProjectInput" type="file" accept=".json" class="hidden" onchange="importProjectJSON(this)">
+
+    <div id="winMenuBar" class="flex items-center gap-2">
+      <!-- Importa -->
+      <div class="win-menu-item relative">
+        <button type="button" class="win-menu-btn btn btn-tonal" aria-haspopup="menu"><svg class="ico ico-s"><use href="#i-import"/></svg>Importa<svg class="ico ico-s"><use href="#i-down"/></svg></button>
+        <div class="win-dropdown hidden menu right-0" role="menu">
+          <button type="button" role="menuitem" class="menu-item" onclick="document.getElementById('dwgInput').click(); closeAllMenus();"><svg class="ico"><use href="#i-sezione"/></svg>Disegno DWG / DXF…<span class="kbd" id="badgeMenuDwg">Ctrl+O</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="document.getElementById('pdfInput').click(); closeAllMenus();"><svg class="ico"><use href="#i-file"/></svg>Schema unifilare PDF…<span class="kbd" id="badgeMenuPdf">Ctrl+U</span></button>
+          <div class="menu-sep"></div>
+          <button type="button" role="menuitem" class="menu-item" onclick="document.getElementById('jsonProjectInput').click(); closeAllMenus();"><svg class="ico"><use href="#i-progetto"/></svg>Apri progetto (.json)…</button>
+          <button type="button" role="menuitem" class="menu-item" onclick="toggleDwgInspector(); closeAllMenus();"><svg class="ico"><use href="#i-inspect"/></svg>Ispettore entità DWG</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-filled" onclick="openExportDialog()" title="Esporta (DXF: Ctrl+E)"><svg class="ico ico-s"><use href="#i-export"/></svg>Esporta</button>
+
+      <!-- Altro -->
+      <div class="win-menu-item relative">
+        <button type="button" class="win-menu-btn icon-btn" aria-haspopup="menu" aria-label="Altre azioni" title="Altre azioni"><svg class="ico"><use href="#i-more"/></svg></button>
+        <div class="win-dropdown hidden menu right-0 w-[19rem]" role="menu">
+          <div class="menu-label">Progetto</div>
+          <button type="button" role="menuitem" class="menu-item" onclick="newProject(); closeAllMenus();"><svg class="ico"><use href="#i-new"/></svg>Nuovo progetto</button>
+          <button type="button" role="menuitem" class="menu-item" onclick="exportProjectJSON(); closeAllMenus();"><svg class="ico"><use href="#i-save"/></svg>Salva progetto (.json)<span class="kbd">Ctrl+S</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="openCartiglioSettingsModal(); closeAllMenus();"><svg class="ico"><use href="#i-tag"/></svg>Dati cartiglio<span class="kbd" id="badgeMenuCartiglio">F2</span></button>
+          <div class="menu-sep"></div>
+          <div class="menu-label">Vista</div>
+          <button type="button" role="menuitem" class="menu-item" onclick="fitAll(); closeAllMenus();"><svg class="ico"><use href="#i-fit"/></svg>Adatta alla finestra<span class="kbd">Home</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="zoomSection(); closeAllMenus();"><svg class="ico"><use href="#i-sezione"/></svg>Zoom sulla sezione</button>
+          <button type="button" role="menuitem" class="menu-item" onclick="zoomTables(); closeAllMenus();"><svg class="ico"><use href="#i-layout"/></svg>Zoom sulle tabelle</button>
+          <button type="button" role="menuitem" class="menu-item" id="btnRuler" onclick="toggleRuler(); closeAllMenus();"><svg class="ico"><use href="#i-ruler"/></svg><span data-ruler-label>Righello: spento</span></button>
+          <button type="button" role="menuitem" class="menu-item" id="btnTheme" onclick="toggleTheme(); closeAllMenus();"><svg class="ico"><use href="#i-theme"/></svg><span data-theme-label>Foglio: scuro</span></button>
+          <div class="menu-sep"></div>
+          <div class="menu-label">Contenuto della tavola</div>
+          <label class="menu-item" for="menuChk3D">Vista assonometrica<input type="checkbox" id="menuChk3D" class="sw" role="switch" checked onchange="toggleSectionExport('iso3d', this.checked)"></label>
+          <label class="menu-item" for="menuChkChart">Curva di carico<input type="checkbox" id="menuChkChart" class="sw" role="switch" checked onchange="toggleSectionExport('chart', this.checked)"></label>
+          <label class="menu-item" for="menuChkBOM">Computo materiali<input type="checkbox" id="menuChkBOM" class="sw" role="switch" checked onchange="toggleSectionExport('bom', this.checked)"></label>
+          <label class="menu-item" for="menuChkCartiglio">Cartiglio<input type="checkbox" id="menuChkCartiglio" class="sw" role="switch" checked onchange="toggleSectionExport('cartiglio', this.checked)"></label>
+          <label class="menu-item" for="menuChkTableDesc">Descrizione utenze in tabella<input type="checkbox" id="menuChkTableDesc" class="sw" role="switch" checked onchange="toggleTableDesc(this.checked)"></label>
+          <label class="menu-item" for="menuChkCallouts">Bandierine dei cavi<input type="checkbox" id="menuChkCallouts" class="sw" role="switch" checked onchange="toggleCableCallouts(this.checked)"></label>
+          <label class="menu-item" for="menuChkLayoutMinimal">Tavola compatta (2D + tabella)<input type="checkbox" id="menuChkLayoutMinimal" class="sw" role="switch" onchange="setLayoutMode(this.checked ? 'minimal' : 'standard')"></label>
+          <div class="menu-sep"></div>
+          <div class="menu-label">Strumenti</div>
+          <button type="button" role="menuitem" class="menu-item" onclick="filterDbCategory('all'); toggleDatabaseModal(true); closeAllMenus();"><svg class="ico"><use href="#i-book"/></svg>Catalogo cavi e supporti<span class="kbd" id="badgeMenuDb">F3</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="swapDimensions(); closeAllMenus();"><svg class="ico"><use href="#i-swap"/></svg>Inverti larghezza e altezza<span class="kbd" id="badgeMenuSwap">Ctrl+I</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="recalculateAll(); closeAllMenus();"><svg class="ico"><use href="#i-refresh"/></svg>Ricalcola<span class="kbd">F5</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="openShortcutsModal(); closeAllMenus();"><svg class="ico"><use href="#i-keyboard"/></svg>Scorciatoie da tastiera<span class="kbd" id="badgeMenuShortcuts">F4</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="window.print(); closeAllMenus();"><svg class="ico"><use href="#i-print"/></svg>Stampa<span class="kbd">Ctrl+P</span></button>
+          <div class="menu-sep"></div>
+          <button type="button" role="menuitem" class="menu-item" onclick="showQuickHelpModal(); closeAllMenus();"><svg class="ico"><use href="#i-help"/></svg>Guida rapida<span class="kbd" id="badgeMenuHelp">F1</span></button>
+          <button type="button" role="menuitem" data-pwa-only class="hidden menu-item" onclick="showPwaOfflineInfo(); closeAllMenus();"><svg class="ico"><use href="#i-offline"/></svg>Uso offline</button>
+          <div class="menu-sep"></div>
+          <div class="flex flex-wrap gap-2 px-4 py-1">
+            <span id="wasmStatusBadge" class="text-xs mono px-2 py-0.5 rounded border font-semibold bg-slate-800 text-slate-300 border-slate-700">Motore DWG: al primo import</span>
+            <span id="pwaStatusBadge" class="hidden inline-flex text-xs mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 items-center gap-1.5 font-semibold"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messaggi di stato: il testo viene mostrato come notifica (vedi initStatusToasts) -->
+    <span id="statusBanner" class="hidden"></span>
+  </header>

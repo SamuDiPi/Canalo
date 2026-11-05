@@ -13,8 +13,10 @@
     function toggleRuler() {
       rulerActive = !rulerActive;
       rulerP1 = null; rulerP2 = null;
-      const bRuler = document.getElementById("btnRuler");
-      if (bRuler) bRuler.textContent = rulerActive ? "📏 Righello CAD: ATTIVO" : "📏 Righello CAD: OFF";
+      document.querySelectorAll("[data-ruler-label]").forEach(el => { el.textContent = rulerActive ? "Righello: attivo" : "Righello: spento"; });
+      const bTool = document.getElementById("btnRulerTool");
+      if (bTool) { bTool.setAttribute("aria-pressed", String(rulerActive)); bTool.style.background = rulerActive ? "var(--md-secondary-container)" : ""; }
+      canvas.style.cursor = rulerActive ? "crosshair" : "default";
       drawScene();
     }
 
@@ -44,7 +46,7 @@
       const p = { ...pendingRender };
       pendingRender.table = pendingRender.chart = pendingRender.scene = false;
       if (p.table) updateTableUI();
-      if (p.chart) drawInteractiveLoadCurveWidget();
+      if (p.chart) { drawInteractiveLoadCurveWidget(); renderChecks(); refreshSegmented(); }
       if (p.scene) drawSceneNow();
     }
     function drawScene() { requestRender({ scene: true }); }
@@ -55,7 +57,7 @@
         ? canvas.parentElement.getBoundingClientRect()
         : { width: 1200, height: 800 };
       const dpr = window.devicePixelRatio || 1;
-      const w = Math.max(300, rect.width || 1200), h = Math.max(520, (rect.height || 800) - 38);
+      const w = Math.max(200, Math.floor(rect.width || 1200)), h = Math.max(200, Math.floor(rect.height || 600));
       if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
         canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
         if (canvas.style) { canvas.style.width = `${w}px`; canvas.style.height = `${h}px`; }
@@ -175,6 +177,9 @@
         }
       });
 
+      // Evidenziazione del cavo selezionato nella distinta (solo a video, non entra in tavola né negli export)
+      drawSelectionOverlay(ctx);
+
       if (rulerActive && rulerP1 && rulerP2) {
         const dist = Math.hypot(rulerP2.x - rulerP1.x, rulerP2.y - rulerP1.y);
         ctx.strokeStyle = "#22d3ee"; ctx.lineWidth = 0.6;
@@ -221,7 +226,7 @@
 
     function fitAll() {
       const rect = getCanvasParentRect();
-      const w = Math.max(300, rect.width || 1200), h = Math.max(520, (rect.height || 800) - 38);
+      const w = Math.max(200, Math.floor(rect.width || 1200)), h = Math.max(200, Math.floor(rect.height || 600));
       const { bounds } = getCachedScene();
       const bw = bounds.maxX - bounds.minX, bh = bounds.maxY - bounds.minY;
       camScale = Math.min((w - 60) / bw, (h - 60) / bh);
@@ -234,13 +239,13 @@
       const rect = getCanvasParentRect();
       camScale = 3.2;
       camX = (rect.width || 1200) * 0.38 - (state.width * camScale) / 2;
-      camY = Math.max(520, (rect.height || 800) - 38) * 0.55;
+      camY = Math.max(200, rect.height || 600) * 0.55;
       drawScene();
     }
 
     function zoomTables() {
       const rect = getCanvasParentRect();
-      const w = Math.max(300, rect.width || 1200), h = Math.max(520, (rect.height || 800) - 38);
+      const w = Math.max(200, Math.floor(rect.width || 1200)), h = Math.max(200, Math.floor(rect.height || 600));
       const { rightBounds } = getCachedScene();
       const bw = rightBounds.maxX - rightBounds.minX, bh = rightBounds.maxY - rightBounds.minY;
       camScale = Math.min((w - 50) / bw, (h - 50) / bh);
@@ -252,7 +257,7 @@
     function zoomBy(factor, px = null, py = null) {
       const rect = getCanvasParentRect();
       const sx = px !== null ? px : rect.width / 2;
-      const sy = py !== null ? py : Math.max(520, rect.height - 38) / 2;
+      const sy = py !== null ? py : Math.max(200, rect.height || 600) / 2;
       const wPt = screenToWorld(sx, sy);
       camScale = Math.max(0.2, Math.min(25, camScale * factor));
       camX = sx - wPt.x * camScale;
@@ -369,6 +374,7 @@
         return;
       }
       if (hitCable) {
+        selectCable(state.cables.indexOf(hitCable), true);
         draggedCable = hitCable;
         canvas.style.cursor = "grabbing";
         return;

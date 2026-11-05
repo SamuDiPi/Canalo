@@ -89,8 +89,9 @@
       const ok = safeStorage.set(AUTOSAVE_KEY, JSON.stringify({ version: APP_VERSION, savedAt: new Date().toISOString(), currentSectionIdx, projectSections }));
       if (!ok && !autosaveWarned) {
         autosaveWarned = true;
-        toast("Salvataggio automatico non disponibile in questo browser: usa File → Salva progetto (.JSON).", "warn", null, 9000);
+        toast("Salvataggio automatico non disponibile in questo browser: salva il progetto come file (Progetto → Salva file).", "warn", null, 9000);
       }
+      setSaveState(ok);
     }
 
     // Ripristina il progetto dell'ultima sessione. Restituisce true se ha caricato qualcosa.
@@ -280,7 +281,7 @@
         if (dropList) {
           const item = document.createElement("div");
           item.className = "flex items-center justify-between px-3 py-2 hover:bg-slate-800 transition cursor-pointer " +
-            (active ? "bg-amber-500/15 border-l-4 border-l-amber-500 tab-dropdown-active" : "");
+            (active ? "bg-[#243045] border-l-4 border-l-[#A8C7FA] tab-dropdown-active" : "");
 
           const leftBtn = document.createElement("button");
           leftBtn.type = "button";
@@ -292,9 +293,9 @@
 
           leftBtn.innerHTML = `
             <div class="flex items-center gap-1.5 min-w-0">
-              <span class="text-[11px] font-mono font-bold ${active ? 'text-amber-400' : 'text-slate-400'}">#${idx + 1}</span>
-              <span class="text-xs font-semibold ${active ? 'text-amber-300' : 'text-slate-200'} truncate">${escapeHtml(displayName)}</span>
-              ${active ? '<span class="text-[11px] px-1 py-0.2 rounded bg-amber-500 text-slate-950 font-bold ml-auto flex-shrink-0">ATTIVA</span>' : ''}
+              <span class="text-[11px] font-mono font-bold ${active ? 'text-sky-200' : 'text-slate-400'}">#${idx + 1}</span>
+              <span class="text-xs font-semibold ${active ? 'text-sky-100' : 'text-slate-200'} truncate">${escapeHtml(displayName)}</span>
+              ${active ? '<span class="text-[11px] px-1 py-0.2 rounded bg-[#284777] text-[#D6E3FF] font-bold ml-auto flex-shrink-0">Aperta</span>' : ''}
             </div>
             <div class="text-[11px] text-slate-400 mono mt-0.5 truncate flex items-center gap-2">
               <span>📏 ${dims}</span>
@@ -334,6 +335,9 @@
       }
     }
     let lastTabScrollKey = "";
+    // Dopo il renderer delle schede: aggiorna selettore e pannello Progetto con le etichette nuove
+    const _renderTabsBase = renderMultiSectionTabs;
+    renderMultiSectionTabs = function () { _renderTabsBase(); renderProjectPanel(); };
 
     function switchSectionTab(idx) {
       if (idx < 0 || idx >= projectSections.length || idx === currentSectionIdx) return;

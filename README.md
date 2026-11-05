@@ -7,8 +7,8 @@ Progettazione e verifica di canaline portacavi nel browser: sezione 1:1, riempim
 | Percorso | Contenuto |
 |---|---|
 | `src/index.html` | Scheletro della pagina con i punti di inclusione |
-| `src/partials/` | Markup: barra menu e strumenti, area di lavoro, finestre modali |
-| `src/css/` | `app.css` (stili propri) e `tailwind.css` (componenti Tailwind) |
+| `src/partials/` | Markup: icone, barra superiore, area di lavoro (rail, pannelli, foglio, distinta), finestre modali |
+| `src/css/` | `md3.css` (tema scuro Material 3: colori e componenti), `app.css` (stili propri), `tailwind.css` |
 | `src/js/` | Logica, un file per area, caricati in ordine numerico |
 | `Canalo.html` | **File generato**: unico, autosufficiente, da distribuire |
 | `sw.js`, `manifest.webmanifest`, `icon.svg` | Modalità offline (attiva solo via http/https) |
@@ -29,6 +29,7 @@ Moduli JavaScript:
 | `09-database-ui.js` | Vista mobile e catalogo |
 | `10-sections.js` | Schede, salvataggio automatico, Annulla/Ripeti, progetto JSON |
 | `11-export.js` | Export DXF, AutoLISP, Word, CSV |
+| `12-ui-shell.js` | Interfaccia: pannelli della rail, controlli segmentati, verifiche a semaforo, dialogo Esporta |
 | `12-app.js` | Menu, scorciatoie, cartiglio, PWA, avvio |
 
 ## Sviluppo

@@ -139,7 +139,6 @@
         }
       } catch (err) {
         console.error("Errore lettura PDF:", err);
-        toast(`Errore lettura PDF "${file.name}": ${err.message || err}`, "error", null, 8000);
         if (banner) {
           banner.textContent = `Errore lettura PDF "${file.name}": ${err.message || err}`;
           banner.className = "mono text-xs px-2.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold";

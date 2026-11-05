@@ -306,6 +306,7 @@
 
         if (e.key === "Escape") {
           closeAllMenus();
+          closeExportDialog();
           toggleTabsDropdown(false);
           closeQuickHelpModal();
           closePwaOfflineModal();
@@ -458,6 +459,7 @@
     window.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll("[data-app-version]").forEach(el => { el.textContent = APP_VERSION; });
       initModalA11y();
+      initUiShell();
       loadCartiglioDefaults();
       loadUserShortcuts();
       initWindowsMenuBar();
