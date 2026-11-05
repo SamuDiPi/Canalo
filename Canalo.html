@@ -215,6 +215,10 @@
                 <span>📐 Cartiglio &amp; Committente</span>
                 <input type="checkbox" id="menuChkCartiglio" checked onchange="toggleSectionExport('cartiglio', this.checked)" class="rounded text-cyan-500">
               </label>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>🏷️ Descrizione Utenza in Tabella</span>
+                <input type="checkbox" id="menuChkTableDesc" checked onchange="toggleTableDesc(this.checked)" class="rounded text-cyan-500">
+              </label>
             </div>
           </div>
 
@@ -499,6 +503,10 @@
               <input id="chkExportCartiglio" type="checkbox" checked onchange="toggleSectionExport('cartiglio', this.checked)" class="accent-cyan-400">
               <span>Cartiglio con Committente</span>
             </label>
+            <label class="flex items-center gap-2 cursor-pointer col-span-2">
+              <input id="chkExportTableDesc" type="checkbox" checked onchange="toggleTableDesc(this.checked)" class="accent-amber-400">
+              <span>Descrizione Utenza in Tabella CAD</span>
+            </label>
           </div>
         </div>
 
@@ -682,7 +690,7 @@
             <span>Bordino Salvacavo</span>
           </label>
           <label class="flex items-center gap-1.5 cursor-pointer">
-            <input id="chkClamps" type="checkbox" checked onchange="syncFromUI()" class="accent-amber-400">
+            <input id="chkClamps" type="checkbox" onchange="syncFromUI()" class="accent-amber-400">
             <span>Fascette Ancoraggio</span>
           </label>
           <label class="flex items-center gap-1.5 cursor-pointer">
@@ -690,7 +698,7 @@
             <span>Vista Assonometrica 3D</span>
           </label>
           <label class="flex items-center gap-1.5 cursor-pointer">
-            <input id="chkPlanTag" type="checkbox" checked onchange="syncFromUI()" class="accent-emerald-400">
+            <input id="chkPlanTag" type="checkbox" onchange="syncFromUI()" class="accent-emerald-400">
             <span>Fumetto Planimetria</span>
           </label>
         </div>
@@ -1772,9 +1780,11 @@
       clearance: 150,
       reiCount: 0,
       edgeGuard: true,
-      clamps: true,
+      clamps: false,
       showIso3D: true,
-      showPlanTag: true,
+      showPlanTag: false,
+      showTableDesc: true,
+      hideTableDesc: false,
       support: "none",
       spanM: 1.5,
       scale: "1:1",
@@ -1984,7 +1994,11 @@
       state.showLoadChart = true;
       state.showBOM = true;
       state.showCartiglio = true;
+      state.showTableDesc = true;
+      state.hideTableDesc = false;
       state.support = "none";
+      state.clamps = false;
+      state.showPlanTag = false;
       pushStateToUI();
       recalculateAll();
       fitAll();
@@ -2038,6 +2052,8 @@
       safeChk("chkIso3D", state.showIso3D !== false);
       safeChk("chkExportCartiglio", state.showCartiglio !== false);
       safeChk("menuChkCartiglio", state.showCartiglio !== false);
+      safeChk("chkExportTableDesc", state.showTableDesc !== false && !state.hideTableDesc);
+      safeChk("menuChkTableDesc", state.showTableDesc !== false && !state.hideTableDesc);
 
       safeVal("inpWidth", state.width);
       safeVal("inpHeight", state.height);
@@ -2755,11 +2771,17 @@
         const trefoilGroupId = trefoil ? `TRF_${batchId}_${Math.floor(q / 3)}` : null;
         
         const uInfo = findInUnifilareDict(code) || findInUnifilareDict(baseCode);
-        let finalDesc = (uInfo && uInfo.desc) || item.desc;
+        let finalDesc = (uInfo && uInfo.desc) || "";
+        if (!finalDesc && item.desc) {
+          const cd = cleanUtenzaDescription(item.desc, baseCode);
+          finalDesc = cd || (code.startsWith("CAVO-") ? `Utenza ${code.replace("CAVO-", "")}` : `Alimentazione ${baseCode}`);
+        }
+        if (!finalDesc) finalDesc = `Alimentazione ${baseCode}`;
+        finalDesc = cleanUtenzaDescription(finalDesc, baseCode) || finalDesc;
         
         if (isUnipolarCable(item)) {
           const match = state.cables.find(c => c.code.startsWith(baseCode) || baseCode.startsWith(c.code));
-          if (match) finalDesc = match.desc;
+          if (match && match.desc) finalDesc = match.desc;
         }
 
         state.cables.push({
@@ -4060,9 +4082,20 @@
       s = s.replace(/\b(?:FG16[A-Z0-9]*|FTG18[A-Z0-9]*|FS17|FG17|H07[A-Z0-9-]*|H1Z2Z2-K|RG16[A-Z0-9]*)\b/gi, "");
       s = s.replace(/\b\d+\s*\([0-9xXGg,+]+\)|\b[1-5][xXGg]\d+(?:[.,]\d+)?\b/g, "");
 
+      // 7b. Rimuove termini di polarità spuria e tipologie costruttive cavo (es. "Quadripolare", "Multipolare", "Cavo Unipolare")
+      s = s.replace(/\b(?:cavo\s+|linea\s+)?(?:uni|bi|tri|quadri|penta|multi)polare\b/gi, "");
+      s = s.replace(/\b(?:unipolare|bipolare|tripolare|quadripolare|pentapolare|multipolare)\b/gi, "");
+      s = s.replace(/\b(?:cavo\s+)?(?:bt|mt|b\.t\.|m\.t\.)\b/gi, "");
+      s = s.replace(/\b(?:monofase|trifase(?:\s*\+\s*n(?:eutro)?)?)\b/gi, "");
+
       // 8. Pulizia punteggiatura e spazi residui
       s = s.replace(/^[-+\s|/,.:;–—]+|[-+\s|/,.:;–—]+$/g, "");
       s = s.replace(/\s{2,}/g, " ").trim();
+
+      // 9. Se molto lunga (> 65 caratteri), tronca con ellissi
+      if (s.length > 65) {
+        s = s.substring(0, 62).trim() + "..";
+      }
       return s;
     }
 
@@ -4252,8 +4285,18 @@
         state.showCartiglio = enabled;
         const c1 = document.getElementById("chkExportCartiglio"); if (c1) c1.checked = enabled;
         const c2 = document.getElementById("menuChkCartiglio"); if (c2) c2.checked = enabled;
+      } else if (sec === "tableDesc") {
+        state.showTableDesc = Boolean(enabled);
+        state.hideTableDesc = !enabled;
+        const c1 = document.getElementById("chkExportTableDesc"); if (c1) c1.checked = state.showTableDesc;
+        const c2 = document.getElementById("menuChkTableDesc"); if (c2) c2.checked = state.showTableDesc;
       }
       drawScene();
+    }
+
+    function toggleTableDesc(enabled) {
+      toggleSectionExport("tableDesc", enabled);
+      syncActiveSectionToMultiStore();
     }
 
     function build3DIsoScene(prims, leftBoxX, lowestY, leftBoxW, W, H, thk, mat, sup) {
@@ -4299,10 +4342,10 @@
           isLight ? "#475569" : "#94a3b8", "left", leftBoxW - 12);
       } else {
         text("VISTA_3D_ISO", leftBoxX + 6, isoY + isoH - 7, 2.3,
-          `ASSONOMETRIA 3D COSTRUTTIVA — ${trayTypeStr.toUpperCase()} (SENZA STAFFAGGIO)`,
+          `ASSONOMETRIA 3D COSTRUTTIVA — ${trayTypeStr.toUpperCase()}`,
           "#38bdf8", "left", leftBoxW - 12);
         text("VISTA_3D_ISO", leftBoxX + 6, isoY + isoH - 12, 1.85,
-          `Configurazione: Nessun Supporto (No Staffaggio) | Sezione: L=${W}mm H=${H}mm | Carico Cavi: ${metrics.totalKgM} kg/m`,
+          `Canale L=${W}mm H=${H}mm | Peso Cavi: ${metrics.totalKgM} kg/m | Riempimento: ${metrics.fillPct}%`,
           isLight ? "#475569" : "#94a3b8", "left", leftBoxW - 12);
       }
 
@@ -5045,13 +5088,30 @@
       // Colonna Destra: Tabella Cavi
       const rightX = Math.max(W + 35 + maxRW, leftBoxX + leftBoxW) + 24;
       const topY = Math.max(H + 38, calloutBaseY + Math.max(leftC.length, rightC.length) * stepY);
-      const colW = [14, 48, 76, 44, 40, 18, 24, 28];
+      
+      const showDesc = state.showTableDesc !== false && !state.hideTableDesc;
+      const maxFormLen = Math.max(10, ...(state.cables || []).map(c => String(c.form || "").length));
+      const formColW = Math.max(40, Math.ceil(maxFormLen * 2.35 * Math.max(0.9, txtMul) + 6));
+      const descColW = 76;
+
+      const colDefs = [
+        { key: "pos", header: "POS", w: 14, align: "left", col: "#cbd5e1" },
+        { key: "code", header: "SIGLA LINEA", w: 48, align: "left", col: "#38bdf8" },
+        ...(showDesc ? [{ key: "desc", header: "DESCRIZIONE UTENZA", w: descColW, align: "left", col: "#f8fafc" }] : []),
+        { key: "type", header: "TIPO CAVO", w: 44, align: "left", col: "#f8fafc" },
+        { key: "form", header: "FORMAZIONE", w: formColW, align: "left", col: "#f8fafc" },
+        { key: "diam", header: "Ø mm", w: 18, align: "left", col: "#f8fafc" },
+        { key: "rmin", header: "R_min", w: 24, align: "left", col: "#f8fafc" },
+        { key: "posa", header: "POSA", w: 28, align: "left", col: "#f8fafc" }
+      ];
+
+      const colW = colDefs.map(c => c.w);
+      const headers = colDefs.map(c => c.header);
       const tabW = colW.reduce((a, b) => a + b, 0), rowH = 8.0;
 
       rect("TABELLA", rightX, topY, tabW, 10, "#38bdf8", boxBg, true);
       text("TABELLA", rightX + 4, topY + 3, 2.7, `1. DISTINTA CAVI POSATI NELLA SEZIONE - ${state.title}`, "#38bdf8", "left", tabW - 8);
 
-      const headers = ["POS", "SIGLA LINEA", "DESCRIZIONE UTENZA", "TIPO CAVO", "FORMAZIONE", "Ø mm", "R_min", "POSA"];
       const headY = topY - rowH;
       rect("TABELLA", rightX, headY, tabW, rowH, "#64748b", boxAlt, true);
       let cx = rightX;
@@ -5066,25 +5126,35 @@
         rect("TABELLA", rightX, ry, tabW, rowH, "#475569", boxBg, true);
         text("TABELLA", rightX + 6, ry + 2.5, 2.0, "Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", "#94a3b8", "left", tabW - 12);
       } else {
+        const maxDescChars = Math.max(10, Math.floor((descColW - 3) / (1.95 * txtMul * 0.56)));
         state.cables.forEach((c, idx) => {
           const ry = headY - (idx + 1) * rowH;
           const isUni = isUnipolarCable(c);
           rect("TABELLA", rightX, ry, tabW, rowH, "#475569", idx % 2 === 0 ? boxBg : boxAlt, true);
           const displayType = getDisplayCableType(c, state.cables);
-          const vals = [
-            `#${idx + 1}`,
-            c.code,
-            c.desc,
-            displayType,
-            c.form,
-            String(c.d),
-            `${Math.round(c.d * (c.bendK || 10))}mm`,
-            isUni ? "1X UNI" : (c.sys === "SPECIAL_ELV" ? "ELV" : "MULTI")
-          ];
+
+          let dText = cleanUtenzaDescription(c.desc, c.code) || c.desc || "-";
+          if (dText.length > maxDescChars) {
+            dText = dText.substring(0, maxDescChars - 2).trim() + "..";
+          }
+
+          const rowData = {
+            pos: `#${idx + 1}`,
+            code: c.code,
+            desc: dText,
+            type: displayType,
+            form: c.form,
+            diam: String(c.d),
+            rmin: `${Math.round(c.d * (c.bendK || 10))}mm`,
+            posa: isUni ? "1X UNI" : (c.sys === "SPECIAL_ELV" ? "ELV" : "MULTI")
+          };
+
           let rx = rightX;
-          vals.forEach((v, i) => {
-            text("TABELLA", rx + 1.5, ry + 2.4, 1.95, v, i === 1 ? "#38bdf8" : (i === 7 && isUni ? "#fbbf24" : "#f8fafc"), "left", colW[i]);
-            rx += colW[i];
+          colDefs.forEach((colDef, i) => {
+            const val = rowData[colDef.key];
+            const color = colDef.key === "code" ? "#38bdf8" : (colDef.key === "posa" && isUni ? "#fbbf24" : colDef.col);
+            text("TABELLA", rx + 1.5, ry + 2.4, 1.95, val, color, colDef.align, colDef.w);
+            rx += colDef.w;
           });
         });
       }
@@ -6312,6 +6382,8 @@
         if (chkBOM) chkBOM.checked = state.showBOM !== false;
         if (chkIso) chkIso.checked = state.showIso3D !== false;
         if (chkCart) chkCart.checked = state.showCartiglio !== false;
+        const chkTableDesc = document.getElementById("chkExportTableDesc");
+        if (chkTableDesc) chkTableDesc.checked = state.showTableDesc !== false && !state.hideTableDesc;
       }
       modal.classList.toggle("hidden");
     }
@@ -6323,12 +6395,28 @@
       const chkLw = document.getElementById("chkDxfLw");
       const chkUni = document.getElementById("chkDxfUnicode");
       const selSc = document.getElementById("selDxfScale");
+      const optTxtSc = document.getElementById("optDxfTextScale");
+      const chkChart = document.getElementById("chkExportChart");
+      const chkBOM = document.getElementById("chkExportBOM");
+      const chkIso = document.getElementById("chkExportIso3D");
+      const chkCart = document.getElementById("chkExportCartiglio");
+      const chkTableDesc = document.getElementById("chkExportTableDesc");
+
       if (selFmt) exportDxfOptions.format = selFmt.value;
       if (selFnt) exportDxfOptions.fontFamily = selFnt.value;
       if (chkBg) exportDxfOptions.includeBackgrounds = chkBg.checked;
       if (chkLw) exportDxfOptions.includeLineweights = chkLw.checked;
       if (chkUni) exportDxfOptions.includeUnicode = chkUni.checked;
       if (selSc) onScaleChange(selSc.value);
+      if (optTxtSc) onTextScaleChange(optTxtSc.value);
+      if (chkChart) state.showLoadChart = chkChart.checked;
+      if (chkBOM) state.showBOM = chkBOM.checked;
+      if (chkIso) state.showIso3D = chkIso.checked;
+      if (chkCart) state.showCartiglio = chkCart.checked;
+      if (chkTableDesc) {
+        state.showTableDesc = chkTableDesc.checked;
+        state.hideTableDesc = !chkTableDesc.checked;
+      }
     }
 
     // Tabella palette standard ACI AutoCAD (1-255) per calcolo distanza euclidea RGB esatta
@@ -6723,6 +6811,18 @@
         exportAutoCADDXF();
         return;
       }
+      syncExportOptionsFromUI();
+      const exportOptsToApply = {
+        showLoadChart: state.showLoadChart !== false,
+        showBOM: state.showBOM !== false,
+        showIso3D: state.showIso3D !== false,
+        showCartiglio: state.showCartiglio !== false,
+        showTableDesc: state.showTableDesc !== false && !state.hideTableDesc,
+        hideTableDesc: Boolean(state.hideTableDesc),
+        textScale: typeof state.textScale === "number" && state.textScale > 0 ? state.textScale : 1.0,
+        scale: state.scale || "1:1"
+      };
+
       const originalIdx = currentSectionIdx;
       const originalState = cloneStateSnapshot(state);
       const count = projectSections.length;
@@ -6736,6 +6836,7 @@
       for (let i = 0; i < projectSections.length; i++) {
         currentSectionIdx = i;
         state = cloneStateSnapshot(projectSections[i]);
+        Object.assign(state, exportOptsToApply);
         recalculateAll();
         const fileBase = computeExportFileName(state) || `Canalina_${i + 1}`;
         const dxfContent = generateDXFStringForCurrentState(fileBase);
@@ -6892,6 +6993,18 @@
         exportAutoLISPDWG();
         return;
       }
+      syncExportOptionsFromUI();
+      const exportOptsToApply = {
+        showLoadChart: state.showLoadChart !== false,
+        showBOM: state.showBOM !== false,
+        showIso3D: state.showIso3D !== false,
+        showCartiglio: state.showCartiglio !== false,
+        showTableDesc: state.showTableDesc !== false && !state.hideTableDesc,
+        hideTableDesc: Boolean(state.hideTableDesc),
+        textScale: typeof state.textScale === "number" && state.textScale > 0 ? state.textScale : 1.0,
+        scale: state.scale || "1:1"
+      };
+
       const originalIdx = currentSectionIdx;
       const originalState = cloneStateSnapshot(state);
       const count = projectSections.length;
@@ -6905,6 +7018,7 @@
       for (let i = 0; i < projectSections.length; i++) {
         currentSectionIdx = i;
         state = cloneStateSnapshot(projectSections[i]);
+        Object.assign(state, exportOptsToApply);
         recalculateAll();
         const fileBase = computeExportFileName(state) || `Canalina_${i + 1}`;
         const scrContent = generateAutoLISPStringForCurrentState(fileBase);
