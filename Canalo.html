@@ -5295,9 +5295,13 @@
           }
         }
 
-        // Numero identificativo posizione cavo: standard 2.5mm (scalato proporzionalmente solo se il cavo è molto piccolo)
-        const numH = Math.max(1.8, Math.min(2.5, r * 0.45));
-        text("Testi", c.x, c.y - 0.7, numH, String(idx + 1), "#ffffff", "center");
+        // Numero identificativo posizione cavo: 2,5 mm (standard di tavola); ridotto solo se uscirebbe dal contorno del cavo.
+        // Ingombro testo ~ (n.cifre x 0.6h) x 0.72h: il rettangolo deve stare nel cerchio di raggio r (margine 5%).
+        const numStr = String(idx + 1);
+        // Altezza reale fissa 2,5 mm: non segue il moltiplicatore "Grandezza testi" (compensato dividendo per txtMul).
+        const fitH = (2 * r * 0.95) / Math.hypot(numStr.length * 0.6, 0.72);
+        const numH = Math.min(2.5, fitH);
+        text("Testi", c.x, c.y - numH * 0.28, numH / txtMul, numStr, "#ffffff", "center");
         if (c.x <= W / 2) leftC.push({ c, idx }); else rightC.push({ c, idx });
       });
 
