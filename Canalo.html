@@ -40,6 +40,8 @@
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     #cadCanvas { touch-action: none; -webkit-touch-callout: none; user-select: none; }
     #loadCurveCanvas { touch-action: none; user-select: none; }
     .touch-target { min-height: 42px; min-width: 42px; }
@@ -110,18 +112,26 @@
           <!-- 3. ESPORTA -->
           <div class="win-menu-item relative">
             <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Esporta</button>
-            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+            <div class="win-dropdown hidden absolute left-0 top-full mt-0.5 w-72 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
               <button type="button" onclick="exportAutoCADDXF(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-amber-500/20 hover:text-amber-200 font-semibold flex items-center justify-between">
-                <span>⚡ Scarica AutoCAD .DXF (1:1)...</span>
+                <span>⚡ Scarica AutoCAD .DXF (Scheda Attiva)...</span>
                 <span class="text-[10px] text-amber-400 mono" id="badgeMenuDxf">Ctrl+E</span>
               </button>
+              <button type="button" onclick="exportAllSectionsDXF(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-amber-500/20 hover:text-amber-300 font-bold flex items-center justify-between text-amber-400">
+                <span>📦 Esporta TUTTE le Canaline (.DXF separati)</span>
+                <span class="text-[10px] mono bg-amber-500/20 px-1.5 py-0.5 rounded">Batch DXF</span>
+              </button>
               <button type="button" onclick="toggleExportOptionsModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
-                <span>⚙️ Opzioni Esportazione DXF...</span>
+                <span>⚙️ Opzioni Esportazione DXF &amp; Scala Testi...</span>
               </button>
               <div class="border-t border-slate-800 my-1"></div>
               <button type="button" onclick="exportAutoLISPDWG(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-200 flex items-center justify-between">
                 <span>📜 Genera Script AutoLISP (.SCR)</span>
                 <span class="text-[10px] text-slate-400 mono">SCR</span>
+              </button>
+              <button type="button" onclick="exportAllSectionsAutoLISP(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-300 font-bold flex items-center justify-between text-emerald-400">
+                <span>📦 Esporta TUTTE le Canaline (.SCR separati)</span>
+                <span class="text-[10px] mono bg-emerald-500/20 px-1.5 py-0.5 rounded">Batch SCR</span>
               </button>
               <button type="button" onclick="exportWordReport(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-blue-500/20 hover:text-blue-200 flex items-center justify-between">
                 <span>📄 Esporta Relazione Tecnica (.DOC)</span>
@@ -315,36 +325,84 @@
     </div>
   </nav>
 
+  <!-- BARRA SCHEDE MULTI-CANALINA / MULTI-DOCUMENTO CAD -->
+  <div id="sectionTabBarContainer" class="bg-slate-950 border-b border-slate-800/80 px-2.5 py-1 flex items-center justify-between gap-1.5 text-xs select-none relative z-20">
+    <!-- PULSANTE SCROLL SINISTRA -->
+    <button type="button" onclick="scrollTabsLeft()" id="btnScrollTabsLeft" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 transition flex-shrink-0 flex items-center justify-center font-bold text-xs" title="Scorri schede a sinistra (o usa la rotellina del mouse)">
+      ◀
+    </button>
+
+    <!-- STRIP SCHEDE CENTRALE SCROLLABILE (CON AUTO-SCROLL, WHEEL HORIZONTAL, TRUNCATION) -->
+    <div id="multiSectionTabs" class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
+      <!-- Generato dinamicamente in renderMultiSectionTabs() -->
+    </div>
+
+    <!-- PULSANTE SCROLL DESTRA -->
+    <button type="button" onclick="scrollTabsRight()" id="btnScrollTabsRight" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 transition flex-shrink-0 flex items-center justify-center font-bold text-xs" title="Scorri schede a destra (o usa la rotellina del mouse)">
+      ▶
+    </button>
+
+    <div class="h-4 w-px bg-slate-800 mx-0.5 flex-shrink-0"></div>
+
+    <!-- PULSANTE AGGIUNGI NUOVA TRATTA / CANALINA -->
+    <button type="button" onclick="addNewSectionTab(false)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold text-xs transition flex-shrink-0" title="Aggiungi una nuova scheda canalina vuota al progetto (+)">
+      <span>➕ Nuova</span>
+    </button>
+
+    <!-- MENU A TENDINA ELENCO SCHEDE (SALTO RAPIDO A QUALSIASI CANALINA APERTA) -->
+    <div class="relative flex-shrink-0" id="tabsDropdownContainer">
+      <button type="button" onclick="toggleTabsDropdown()" id="btnTabsDropdown" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 font-semibold text-xs transition shadow-sm" title="Elenco completo di tutte le schede aperte con salto rapido in 1 click">
+        <span>📑</span>
+        <span id="lblTabsCount">Schede (1)</span>
+        <span class="text-[9px] text-amber-400">▼</span>
+      </button>
+
+      <div id="tabsDropdownMenu" class="hidden absolute right-0 top-full mt-1 w-80 max-h-96 overflow-y-auto bg-slate-900 border border-slate-700 rounded-lg shadow-2xl py-1 z-50">
+        <div class="px-3 py-1.5 text-[11px] font-bold text-slate-300 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+          <span class="flex items-center gap-1.5">
+            <span>📑</span>
+            <span>SCHEDE CANALINE APERTE</span>
+          </span>
+          <span id="tabsDropdownCountBadge" class="text-[10px] text-amber-400 mono">1 scheda</span>
+        </div>
+        <div id="tabsDropdownList" class="py-1 max-h-80 overflow-y-auto divide-y divide-slate-800/40">
+          <!-- Popolato dinamicamente da renderMultiSectionTabs() -->
+        </div>
+        <div class="p-2 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between">
+          <button type="button" onclick="addNewSectionTab(false); toggleTabsDropdown(false);" class="text-[11px] text-emerald-300 hover:text-emerald-200 font-semibold flex items-center gap-1">
+            <span>➕ Nuova Scheda</span>
+          </button>
+          <button type="button" onclick="exportAllSectionsDXF(); toggleTabsDropdown(false);" class="text-[11px] text-amber-300 hover:text-amber-200 font-semibold flex items-center gap-1" title="Esporta tutte le canaline aperte in singoli file DXF distinti">
+            <span>⚡ Esporta Tutte</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- BARRA DEGLI STRUMENTI RAPIDI (SLIM TOOLBAR ESSENZIALE & PULITA) -->
   <div class="bg-slate-900/90 border-b border-slate-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
     <div class="flex items-center gap-2 flex-wrap">
       <!-- TITOLO CANALINA IN TESTATA RAPIDA -->
       <div class="flex items-center bg-slate-950 border border-slate-700 rounded px-2 py-0.5">
         <span class="text-[10px] mono text-slate-400 mr-1.5 font-bold">Titolo:</span>
-        <input id="inpTitleQuick" type="text" value="NUOVA CANALINA" onchange="document.getElementById('inpTitle').value = this.value; state.title = this.value; drawScene();" class="bg-transparent text-xs text-amber-300 font-semibold w-48 sm:w-64 focus:outline-none" title="Titolo della canalina (ereditato da parentesi)">
+        <input id="inpTitleQuick" type="text" value="NUOVA CANALINA" onchange="document.getElementById('inpTitle').value = this.value; state.title = this.value; syncActiveSectionToMultiStore(); drawScene();" class="bg-transparent text-xs text-amber-300 font-semibold w-48 sm:w-64 focus:outline-none" title="Titolo della canalina (ereditato da parentesi)">
       </div>
       <!-- Elemento sicuro per compatibilità di lettura -->
       <span id="headerTitle" class="hidden"></span>
 
       <div class="h-4 w-px bg-slate-700 mx-1 hidden sm:block"></div>
 
-      <!-- TABS SEZIONI MULTI-TRATTO -->
-      <div class="flex items-center gap-1 overflow-x-auto py-0.5" id="multiSectionTabs"></div>
-      <button type="button" onclick="addNewSectionTab(false)" class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold transition" title="Aggiungi nuova tratta">
-        +
-      </button>
-
       <!-- PULSANTI RAPIDI APERTURA -->
-      <div class="h-4 w-px bg-slate-700 mx-1 hidden sm:block"></div>
       <button type="button" onclick="document.getElementById('dwgInput').click()" class="inline-flex items-center gap-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded font-semibold text-[11px] transition" title="Apri DWG / DXF (Ctrl+O)">
         <span>📂 DWG/DXF</span>
       </button>
-      <input id="dwgInput" type="file" accept=".dwg,.dxf" class="hidden" onchange="importCADFile(this)">
+      <input id="dwgInput" type="file" accept=".dwg,.dxf" multiple class="hidden" onchange="importCADFile(this)">
 
       <button type="button" onclick="document.getElementById('pdfInput').click()" class="inline-flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-semibold text-[11px] transition" title="Importa PDF Unifilare (Ctrl+U)">
         <span>📄 PDF</span>
       </button>
-      <input id="pdfInput" type="file" accept=".pdf" class="hidden" onchange="importPDFFile(this)">
+      <input id="pdfInput" type="file" accept=".pdf" multiple class="hidden" onchange="importPDFFile(this)">
       <input id="jsonProjectInput" type="file" accept=".json" class="hidden" onchange="importProjectJSON(this)">
 
       <button type="button" onclick="openCartiglioSettingsModal()" class="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-[11px] transition" title="Dati Cartiglio, Progettista &amp; Committente (F2)">
@@ -365,7 +423,7 @@
         <span>⚙️</span>
       </button>
       <button type="button" onclick="toggleTheme()" id="btnTheme" class="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 px-2 py-1 rounded font-semibold text-xs transition" title="Inverti Tema Scuro / Chiaro">
-        🌓
+        Tema: Scuro
       </button>
     </div>
   </div>
@@ -404,6 +462,22 @@
             <option value="1:100">1:100 — Layout Planimetrico Generale (1:100)</option>
           </select>
           <p class="text-[10px] text-slate-400 mt-1">La scala selezionata viene esplicitata nel cartiglio, nelle quote e nel titolo della tavola DWG/DXF.</p>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-amber-300 mb-1">Grandezza Testi nelle Tavole (Scala Tipografica Utente):</label>
+          <select id="optDxfTextScale" onchange="onTextScaleChange(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-amber-200">
+            <option value="0.7">70% — Molto Compatto</option>
+            <option value="0.8">80% — Compatto</option>
+            <option value="0.9">90% — Leggermente Ridotto</option>
+            <option value="1.0" selected>100% — Standard Nominale (1:1)</option>
+            <option value="1.1">110% — Leggermente Ingrandito</option>
+            <option value="1.2">120% — Ingrandito (+20%)</option>
+            <option value="1.3">130% — Alta Leggibilità (+30%)</option>
+            <option value="1.5">150% — Molto Grande (+50%)</option>
+            <option value="1.8">180% — Massimo Contrasto (+80%)</option>
+          </select>
+          <p class="text-[10px] text-slate-400 mt-1">Regola direttamente l'altezza dei testi a video e su stampa CAD: le proporzioni e le quote rimangono perfette a qualsiasi scala.</p>
         </div>
 
         <div class="pt-2 border-t border-slate-800 space-y-2">
@@ -473,11 +547,16 @@
         </div>
       </div>
 
-      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
-        <button type="button" onclick="toggleExportOptionsModal()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Chiudi</button>
-        <button type="button" onclick="exportAutoCADDXF(); toggleExportOptionsModal();" class="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow">
-          💾 Scarica DXF Ora
+      <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-800">
+        <button type="button" onclick="exportAllSectionsDXF(); toggleExportOptionsModal();" class="px-3.5 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow flex items-center gap-1.5" title="Esporta tutte le schede canalina aperte in file .DXF separati">
+          <span>📦 Esporta TUTTE le Schede (.DXF separati)</span>
         </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="toggleExportOptionsModal()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs">Chiudi</button>
+          <button type="button" onclick="exportAutoCADDXF(); toggleExportOptionsModal();" class="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow text-xs">
+            💾 Scarica DXF Scheda Attiva
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -879,6 +958,20 @@
           </div>
 
           <div class="flex items-center gap-1.5 bg-slate-900/90 backdrop-blur border border-slate-700/80 px-2.5 py-1 rounded-lg pointer-events-auto text-[11px]">
+            <div class="flex items-center gap-1 border-r border-slate-700 pr-2 mr-0.5">
+              <span class="text-[10px] text-amber-300 font-semibold" title="Grandezza testi nella tavola CAD">Testi:</span>
+              <select id="selTextScale" onchange="onTextScaleChange(this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-amber-200 focus:outline-none" title="Scala grandezza testi (es. 80%, 100%, 120%)">
+                <option value="0.7">70%</option>
+                <option value="0.8">80%</option>
+                <option value="0.9">90%</option>
+                <option value="1.0" selected>100%</option>
+                <option value="1.1">110%</option>
+                <option value="1.2">120%</option>
+                <option value="1.3">130%</option>
+                <option value="1.5">150%</option>
+                <option value="1.8">180%</option>
+              </select>
+            </div>
             <span id="lblZoom" class="text-[10px] mono text-slate-400 w-12 text-right mr-1">100%</span>
             <button type="button" onclick="zoomBy(1.25)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 mono font-bold">+</button>
             <button type="button" onclick="zoomBy(0.80)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 mono font-bold">-</button>
@@ -1240,12 +1333,16 @@
       const badge = document.getElementById("wasmStatusBadge");
       try {
         globalLibreDwgInstance = await loadLibreDwgWasmInstance();
-        badge.textContent = "Motore DWG C/WASM Pronto (AC1015..AC1032)";
-        badge.className = "text-[10px] mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold";
+        if (badge) {
+          badge.textContent = "Motore DWG C/WASM Pronto (AC1015..AC1032)";
+          badge.className = "text-[10px] mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold";
+        }
       } catch (e) {
         console.error("Errore inizializzazione WASM:", e);
-        badge.textContent = "Errore WASM: Apri Console (F12)";
-        badge.className = "text-[10px] mono uppercase px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-semibold";
+        if (badge) {
+          badge.textContent = "Errore WASM: Apri Console (F12)";
+          badge.className = "text-[10px] mono uppercase px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-semibold";
+        }
       }
     }
 
@@ -1367,39 +1464,66 @@
       { id: "FO_24_OS2",   cat: "data",     code: "FO-24OS2",         desc: "Fibra Ottica Monomodale 24 FO OS2 9/125",type: "FO Loose 24x", form: "24 FO 9/125", d: 8.5, w: 0.07, sec: 0.2, cores: 2, iz0: 1, bendK: 12, sys: "SPECIAL_ELV", std: "ITU-T G.652.D / EN 60794" }
     ];
 
-    // Registrazione dinamica automatica di nuovi cavi non presenti nel catalogo (Punto 4)
+    // Registrazione dinamica automatica di nuovi cavi non presenti nel catalogo (Punto 1)
     function registerCableInCatalog(c) {
-      if (!c || !c.type) return null;
+      if (!c) return null;
       const normType = String(c.type || "FG16M16").trim();
       const normForm = String(c.form || "1(3G2,5)").trim();
-      const existing = CABLE_CATALOG.find(it =>
-        it.type.toUpperCase() === normType.toUpperCase() &&
-        it.form.toUpperCase() === normForm.toUpperCase()
-      );
-      if (existing) return existing;
-
-      const d = c.d || 12.0;
-      const w = c.w || +(Math.pow(d / 10, 2) * 0.145).toFixed(2);
+      const d = +(c.d || 12.0).toFixed(1);
       const isUni = isUnipolarCable(c);
       const sec = c.sec || parseSectionFromForm(normForm, 2.5);
+
+      // Cerca se esiste già nel catalogo per tipo e formazione oppure per codice/id cavo
+      const candidateCode = String(c.siglaCavo || c.cableCode || "").trim();
+      const isUtenzaLike = (s) => /^(?:[A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+)?C-?\d+$/i.test(s) ||
+                                  /^(?:QGBT|QP|QE|QUADRO|UPS|IRAI|EVAC|TD)[A-Z0-9_.-]*/i.test(s) ||
+                                  /^#\d+/i.test(s) || /^Alimentazione/i.test(s);
+
+      let existing = null;
+      if (candidateCode && !isUtenzaLike(candidateCode)) {
+        const found = CABLE_CATALOG.find(it => it.code.toUpperCase() === candidateCode.toUpperCase() || it.id.toUpperCase() === candidateCode.toUpperCase());
+        if (found && Math.abs(found.d - d) < 0.2) {
+          existing = found;
+        }
+      }
+      if (!existing) {
+        existing = CABLE_CATALOG.find(it =>
+          it.type.toUpperCase() === normType.toUpperCase() &&
+          it.form.toUpperCase() === normForm.toUpperCase() &&
+          Math.abs(it.d - d) < 0.2
+        );
+      }
+      if (existing) return existing;
+
+      const w = c.w || +(Math.pow(d / 10, 2) * 0.145).toFixed(2);
       const cores = isUni ? 1 : (c.cores || (normForm.includes("5G") || normForm.includes("4G") ? 3 : 2));
       const sys = c.sys || (/IRAI|EVAC|KNX|BUS|FIBRA|CAT|UTP|FTP/i.test(normType) ? "SPECIAL_ELV" : "BT_POWER");
       const cat = sys === "SPECIAL_ELV" ? "signal" : isUni ? "bt_uni" : "bt_multi";
-      const cleanCode = `${normType}-${normForm.replace(/[^a-zA-Z0-9,.]+/g, "")}`.toUpperCase();
-      const newId = `CST_${cleanCode.replace(/[^a-zA-Z0-9]+/g, "_")}`;
+
+      // Generazione di una sigla cavo univoca tecnica (senza riferimenti alle sigle utenza come da specifica)
+      let baseCode = (candidateCode && !isUtenzaLike(candidateCode))
+        ? candidateCode.toUpperCase().replace(/[^a-zA-Z0-9_-]+/g, "_")
+        : `${normType}-${normForm.replace(/[^a-zA-Z0-9,.]+/g, "")}`.toUpperCase();
+      
+      let uniqueCode = baseCode;
+      let counter = 1;
+      while (CABLE_CATALOG.some(it => it.code.toUpperCase() === uniqueCode.toUpperCase() || it.id.toUpperCase() === `CST_${uniqueCode.replace(/[^a-zA-Z0-9]+/g, "_")}`.toUpperCase())) {
+        uniqueCode = `${baseCode}_${counter++}`;
+      }
+      const newId = `CST_${uniqueCode.replace(/[^a-zA-Z0-9]+/g, "_")}`;
 
       const newEntry = {
         id: newId,
         cat,
-        code: cleanCode,
-        desc: (c.desc && !c.desc.startsWith("Alimentazione linea")) ? c.desc : `Cavo ${normType} ${normForm}`,
+        code: uniqueCode,
+        desc: (c.desc && !isUtenzaLike(c.desc)) ? c.desc : `Cavo ${normType} ${normForm} (Ø=${d}mm, ${sec}mm²)`,
         type: normType,
         form: normForm,
         d,
         w,
         sec,
         cores,
-        iz0: c.iz0 || (sec >= 50 ? 200 : sec >= 16 ? 100 : 30),
+        iz0: c.iz0 || (sec >= 50 ? 200 : sec >= 16 ? 100 : sec >= 6 ? 54 : sec >= 2.5 ? 32 : 18),
         bendK: c.bendK || (isUni ? 10 : 8),
         sys,
         std: "Aggiunto automaticamente da file/input"
@@ -1407,9 +1531,12 @@
 
       CABLE_CATALOG.push(newEntry);
       if (typeof initCatalogDropdown === "function") initCatalogDropdown();
+      if (typeof renderCatalogTable === "function") renderCatalogTable();
+      const countEl = document.getElementById("dbItemsCount");
+      if (countEl) countEl.textContent = `${CABLE_CATALOG.length} modelli certificati disponibili`;
       const banner = document.getElementById("statusBanner");
       if (banner) {
-        banner.textContent = `✓ Nuova tipologia cavo aggiunta al DB: ${normType} ${normForm} (Ø=${d}mm)`;
+        banner.textContent = `✓ Nuova tipologia cavo registrata nel DB: ${uniqueCode} (Ø=${d}mm, ${sec}mm²)`;
         banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
       }
       return newEntry;
@@ -1572,6 +1699,7 @@
       support: "wall_med",
       spanM: 1.5,
       scale: "1:1",
+      textScale: parseFloat(localStorage.getItem("canaloCAD_textScale")) || 1.0,
       showLoadChart: true,
       showBOM: true,
       showCartiglio: true,
@@ -1703,6 +1831,63 @@
       });
     }
 
+    function syncFromUI() {
+      const getVal = (id, def) => {
+        const el = document.getElementById(id);
+        return el ? el.value : def;
+      };
+      const getNum = (id, def) => {
+        const v = parseFloat(getVal(id, def));
+        return isNaN(v) ? def : v;
+      };
+      const getChk = (id, def) => {
+        const el = document.getElementById(id);
+        return el ? el.checked : def;
+      };
+
+      const elTitle = document.getElementById("inpTitle");
+      if (elTitle) state.title = elTitle.value;
+      const elTitleQuick = document.getElementById("inpTitleQuick");
+      if (elTitleQuick && document.activeElement === elTitleQuick) {
+        state.title = elTitleQuick.value;
+        if (elTitle) elTitle.value = state.title;
+      }
+
+      state.width = getNum("inpWidth", state.width);
+      state.height = getNum("inpHeight", state.height);
+      state.thk = getNum("inpThk", state.thk);
+      state.lengthM = getNum("inpLength", state.lengthM);
+      state.trayType = getVal("inpTrayType", state.trayType);
+      state.packing = getVal("inpPacking", state.packing);
+      state.planTag = getVal("inpPlanTag", state.planTag);
+      state.edgeGuard = getChk("chkEdge", state.edgeGuard);
+      state.clamps = getChk("chkClamps", state.clamps);
+      state.showIso3D = getChk("chkIso3D", state.showIso3D);
+      state.showPlanTag = getChk("chkPlanTag", state.showPlanTag);
+      state.brand = getVal("inpBrand", state.brand);
+      state.seriesId = getVal("inpSeries", state.seriesId);
+      state.material = getVal("inpMaterial", state.material);
+      state.cover = getVal("inpCover", state.cover);
+      state.septums = parseInt(getVal("inpSeptums", state.septums || 0)) || 0;
+      state.earth = getVal("inpEarth", state.earth);
+      state.clearance = getNum("inpClearance", state.clearance);
+      state.reiCount = getNum("inpRei", state.reiCount);
+      state.support = getVal("inpSupport", state.support);
+      state.spanM = getNum("inpSpan", state.spanM);
+      state.seismic = getVal("inpSeismic", state.seismic);
+      state.bends90 = getNum("inpBends", state.bends90);
+      state.tees = getNum("inpTees", state.tees);
+      state.reducers = getNum("inpReducers", state.reducers);
+
+      const elSpanTxt = document.getElementById("lblSpan");
+      if (elSpanTxt) elSpanTxt.textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
+
+      updateSeptumUI();
+      recalculateAll();
+      drawScene();
+      syncActiveSectionToMultiStore();
+    }
+
     function resetProject() {
       state.width = 200;
       state.height = 75;
@@ -1734,120 +1919,85 @@
 
     function toggleTheme() {
       state.theme = state.theme === "dark" ? "light" : "dark";
-      document.getElementById("btnTheme").textContent = state.theme === "dark" ? "Tema: Scuro" : "Tema: Chiaro";
-      document.getElementById("cadCanvas").className = state.theme === "dark"
-        ? "w-full flex-1 cad-grid-dark cursor-grab active:cursor-grabbing"
-        : "w-full flex-1 cad-grid-light cursor-grab active:cursor-grabbing";
+      const bTheme = document.getElementById("btnTheme");
+      if (bTheme) bTheme.textContent = state.theme === "dark" ? "Tema: Scuro" : "Tema: Chiaro";
+      const cadCanv = document.getElementById("cadCanvas");
+      if (cadCanv) {
+        cadCanv.className = state.theme === "dark"
+          ? "w-full flex-1 cad-grid-dark cursor-grab active:cursor-grabbing"
+          : "w-full flex-1 cad-grid-light cursor-grab active:cursor-grabbing";
+      }
       drawScene();
     }
 
     function pushStateToUI() {
-      document.getElementById("inpTitle").value = state.title;
-      const qTitle = document.getElementById("inpTitleQuick");
-      if (qTitle) qTitle.value = state.title;
-      document.getElementById("exportName").value = state.title.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "") + "_Costruttivo";
-      const elScale = document.getElementById("inpScale");
-      if (elScale) elScale.value = state.scale || "1:1";
-      const elDxfScale = document.getElementById("selDxfScale");
-      if (elDxfScale) elDxfScale.value = state.scale || "1:1";
-      const elCfgScale = document.getElementById("cfgScale");
-      if (elCfgScale) elCfgScale.value = state.scale || "1:1";
+      const safeVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+      const safeChk = (id, chk) => { const el = document.getElementById(id); if (el) el.checked = chk; };
 
-      const chkChart = document.getElementById("chkExportChart"); if (chkChart) chkChart.checked = state.showLoadChart !== false;
-      const chkMChart = document.getElementById("menuChkChart"); if (chkMChart) chkMChart.checked = state.showLoadChart !== false;
-      const chkBOM = document.getElementById("chkExportBOM"); if (chkBOM) chkBOM.checked = state.showBOM !== false;
-      const chkMBOM = document.getElementById("menuChkBOM"); if (chkMBOM) chkMBOM.checked = state.showBOM !== false;
-      const chkIso = document.getElementById("chkExportIso3D"); if (chkIso) chkIso.checked = state.showIso3D !== false;
-      const chkMIso = document.getElementById("menuChk3D"); if (chkMIso) chkMIso.checked = state.showIso3D !== false;
-      const chkIso3 = document.getElementById("chkIso3D"); if (chkIso3) chkIso3.checked = state.showIso3D !== false;
-      const chkCart = document.getElementById("chkExportCartiglio"); if (chkCart) chkCart.checked = state.showCartiglio !== false;
-      const chkMCart = document.getElementById("menuChkCartiglio"); if (chkMCart) chkMCart.checked = state.showCartiglio !== false;
+      safeVal("inpTitle", state.title);
+      safeVal("inpTitleQuick", state.title);
+      safeVal("exportName", state.title.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, ""));
+      safeVal("inpScale", state.scale || "1:1");
+      safeVal("selDxfScale", state.scale || "1:1");
+      safeVal("cfgScale", state.scale || "1:1");
 
-      document.getElementById("inpWidth").value = state.width;
-      document.getElementById("inpHeight").value = state.height;
-      document.getElementById("inpThk").value = String(state.thk);
-      document.getElementById("inpLength").value = state.lengthM;
-      document.getElementById("inpTrayType").value = state.trayType;
-      document.getElementById("inpPacking").value = state.packing;
-      document.getElementById("inpPlanTag").value = state.planTag;
-      document.getElementById("chkEdge").checked = state.edgeGuard;
-      document.getElementById("chkClamps").checked = state.clamps;
-      document.getElementById("chkIso3D").checked = state.showIso3D !== false;
-      document.getElementById("chkPlanTag").checked = state.showPlanTag;
-      document.getElementById("inpBrand").value = state.brand;
-      document.getElementById("inpMaterial").value = state.material;
-      document.getElementById("inpCover").value = state.cover;
-      document.getElementById("inpSeptums").value = String(state.septums || 0);
+      const valTextScale = (state.textScale || 1.0).toString();
+      safeVal("selTextScale", valTextScale);
+      safeVal("optDxfTextScale", valTextScale);
+      safeVal("cfgTextScale", valTextScale);
+
+      safeChk("chkExportChart", state.showLoadChart !== false);
+      safeChk("menuChkChart", state.showLoadChart !== false);
+      safeChk("chkExportBOM", state.showBOM !== false);
+      safeChk("menuChkBOM", state.showBOM !== false);
+      safeChk("chkExportIso3D", state.showIso3D !== false);
+      safeChk("menuChk3D", state.showIso3D !== false);
+      safeChk("chkIso3D", state.showIso3D !== false);
+      safeChk("chkExportCartiglio", state.showCartiglio !== false);
+      safeChk("menuChkCartiglio", state.showCartiglio !== false);
+
+      safeVal("inpWidth", state.width);
+      safeVal("inpHeight", state.height);
+      safeVal("inpThk", String(state.thk));
+      safeVal("inpLength", state.lengthM);
+      safeVal("inpTrayType", state.trayType);
+      safeVal("inpPacking", state.packing);
+      safeVal("inpPlanTag", state.planTag);
+      safeChk("chkEdge", state.edgeGuard);
+      safeChk("chkClamps", state.clamps);
+      safeChk("chkPlanTag", state.showPlanTag);
+      safeVal("inpBrand", state.brand);
+      safeVal("inpMaterial", state.material);
+      safeVal("inpCover", state.cover);
+      safeVal("inpSeptums", String(state.septums || 0));
+
       updateSeptumUI();
-      document.getElementById("inpEarth").value = state.earth;
-      document.getElementById("inpClearance").value = String(state.clearance);
-      document.getElementById("inpRei").value = state.reiCount;
-      document.getElementById("inpSupport").value = state.support;
-      document.getElementById("inpSpan").value = state.spanM;
-      const elLblSpan = document.getElementById("lblSpan");
-      if (elLblSpan) elLblSpan.textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
-      document.getElementById("inpSeismic").value = state.seismic;
-      document.getElementById("inpBends").value = state.bends90;
-      document.getElementById("inpTees").value = state.tees;
-      document.getElementById("inpReducers").value = state.reducers;
-    }
-
-    function syncFromUI() {
-      state.title = document.getElementById("inpTitle").value || "CANALINA 01";
-      const qTitle = document.getElementById("inpTitleQuick");
-      if (qTitle) qTitle.value = state.title;
-      state.width = Math.max(50, parseFloat(document.getElementById("inpWidth").value) || 100);
-      state.height = Math.max(35, parseFloat(document.getElementById("inpHeight").value) || 75);
-      state.thk = parseFloat(document.getElementById("inpThk").value) || 1.5;
-      state.lengthM = Math.max(3, parseFloat(document.getElementById("inpLength").value) || 30);
-      state.trayType = document.getElementById("inpTrayType").value;
-      state.packing = document.getElementById("inpPacking").value;
-      state.planTag = document.getElementById("inpPlanTag").value || "SEZ. A-A | H=+3.20m";
-      state.edgeGuard = document.getElementById("chkEdge").checked;
-      state.clamps = document.getElementById("chkClamps").checked;
-      state.showIso3D = document.getElementById("chkIso3D").checked;
-      state.showPlanTag = document.getElementById("chkPlanTag").checked;
-      state.brand = document.getElementById("inpBrand").value;
-      state.seriesId = document.getElementById("inpSeries").value;
-      state.material = document.getElementById("inpMaterial").value;
-      state.cover = document.getElementById("inpCover").value;
-      const prevSeptums = state.septums || 0;
-      state.septums = parseInt(document.getElementById("inpSeptums").value, 10) || 0;
-      if (state.septums !== prevSeptums) {
-        state.septumPositions = [];
-        getSeptumXList();
-      }
-      updateSeptumUI();
-      state.earth = document.getElementById("inpEarth").value;
-      state.clearance = parseInt(document.getElementById("inpClearance").value, 10) || 0;
-      state.reiCount = Math.max(0, parseInt(document.getElementById("inpRei").value, 10) || 0);
-      state.support = document.getElementById("inpSupport").value;
-      state.spanM = parseFloat(document.getElementById("inpSpan").value) || 1.5;
-      state.seismic = document.getElementById("inpSeismic").value;
-      state.bends90 = Math.max(0, parseInt(document.getElementById("inpBends").value, 10) || 0);
-      state.tees = Math.max(0, parseInt(document.getElementById("inpTees").value, 10) || 0);
-      state.reducers = Math.max(0, parseInt(document.getElementById("inpReducers").value, 10) || 0);
+      safeVal("inpEarth", state.earth);
+      safeVal("inpClearance", String(state.clearance));
+      safeVal("inpRei", state.reiCount);
+      safeVal("inpSupport", state.support);
+      safeVal("inpSpan", state.spanM);
+      safeVal("inpSeismic", state.seismic);
+      safeVal("inpBends", state.bends90);
+      safeVal("inpTees", state.tees);
+      safeVal("inpReducers", state.reducers);
 
       const elClient = document.getElementById("inpClient"); if (elClient) state.tb.client = elClient.value;
       const elDoc = document.getElementById("inpDocCode"); if (elDoc) state.tb.docCode = elDoc.value;
       const elAuthor = document.getElementById("inpAuthor"); if (elAuthor) state.tb.author = elAuthor.value;
       const elScaleRev = document.getElementById("inpScaleRev"); if (elScaleRev) state.tb.scaleRev = elScaleRev.value;
-      const elScale = document.getElementById("inpScale");
-      if (elScale) state.scale = elScale.value || "1:1";
+      const elScale = document.getElementById("inpScale"); if (elScale) state.scale = elScale.value || "1:1";
 
       state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`).replace(/H=\s*\d+\s*mm/i, `H=${state.height}mm`);
-      document.getElementById("inpTitle").value = state.title;
+      safeVal("inpTitle", state.title);
       const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
       document.title = state.title + " — Constructive Cable Tray Studio v16.2";
       const elSpanTxt = document.getElementById("lblSpan"); if (elSpanTxt) elSpanTxt.textContent = `${state.spanM.toFixed(2)} m (${Math.round(state.spanM * 1000)} mm)`;
-      document.getElementById("exportName").value = state.title.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "") + "_Costruttivo";
+      safeVal("exportName", state.title.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, ""));
 
       recalculateAll();
     }
 
-    // ============================================================================
-    // 3. MOTORE DI COLLISIONE FISICA RIGIDA 1:1 E POSIZIONAMENTO CAVI & SETTI
-    // ============================================================================
     function getSeptumXList() {
       const n = state.septums || 0;
       if (n <= 0) {
@@ -2310,7 +2460,7 @@
       const segCard = document.getElementById("kpiSegCard");
       const segTitle = document.getElementById("kpiSegTitle");
       if (segCard && segTitle) {
-        const segSub = segCard.querySelector("div:last-child");
+        const segSub = (typeof segCard.querySelector === "function") ? segCard.querySelector("div:last-child") : null;
         if (segConform) {
           segCard.className = "bg-slate-900 border border-emerald-500/40 rounded-xl p-2.5";
           segTitle.textContent = "CONFORME";
@@ -2617,9 +2767,9 @@
           <td class="py-1 px-2 text-amber-400 font-bold">#${i + 1}</td>
           <td class="py-1 px-2"><input type="text" id="codeInp_${i}" value="${escapeHtml(c.code)}" oninput="onCableCodeInput(${i}, this.value)" onchange="updateCableField(${i}, 'code', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-cyan-300 font-semibold w-32 focus:border-cyan-400 focus:outline-none"></td>
           <td class="py-1 px-2"><input type="number" value="${c.d}" step="0.5" min="4" max="90" onchange="updateCableField(${i}, 'd', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-white w-14 text-center"></td>
-          <td class="py-1 px-2 text-slate-300">${c.w.toFixed(2)}</td>
-          <td class="py-1 px-2 text-purple-300">${Math.round(c.d * (c.bendK || 10))}mm</td>
-          <td class="py-1 px-2 text-slate-400">(${c.x.toFixed(1)}, ${c.y.toFixed(1)})</td>
+          <td class="py-1 px-2 text-slate-300">${((c.w != null && !isNaN(c.w)) ? c.w : (Math.pow((c.d || 10) / 10, 2) * 0.145)).toFixed(2)}</td>
+          <td class="py-1 px-2 text-purple-300">${Math.round((c.d || 10) * (c.bendK || 10))}mm</td>
+          <td class="py-1 px-2 text-slate-400">(${((c.x != null && !isNaN(c.x)) ? c.x : 0).toFixed(1)}, ${((c.y != null && !isNaN(c.y)) ? c.y : 0).toFixed(1)})</td>
           <td class="py-1 px-2"><input type="text" id="descInp_${i}" value="${escapeHtml(c.desc)}" oninput="onCableDescInput(${i}, this.value)" onchange="updateCableField(${i}, 'desc', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-white font-sans w-64 focus:border-amber-400 focus:outline-none" title="Descrizione Utenza"></td>
           <td class="py-1 px-2"><input type="text" value="${escapeHtml(getDisplayCableType(c, state.cables))}" onchange="updateCableField(${i}, 'type', this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-amber-300 w-32" title="Tipo cavo fase / PE"></td>
           <td class="py-1 px-2">
@@ -2688,66 +2838,37 @@
       const c = state.cables[idx];
       if (!c) return;
       if (field === "d") {
-        c.d = Math.max(4, parseFloat(val) || 14);
+        c.d = parseFloat(val) || 10;
         c.w = +(Math.pow(c.d / 10, 2) * 0.145).toFixed(2);
-        const inferred = inferCableSpecsByDiameter(c.d, c.code);
-        c.form = inferred.form;
-        c.type = inferred.type;
-        c.sec = inferred.sec;
-        c.cores = inferred.cores;
-      } else if (field === "code") {
-        c.code = val.trim();
-        const u = findInUnifilareDict(c.code) || findInUnifilareDict(getBaseCircuitCode(c.code));
-        if (u) {
-          c.desc = u.desc || c.desc;
-          c.type = u.cable || c.type;
-          c.form = u.form || c.form;
-          c.ib = u.ib || c.ib;
-          c.sec = parseSectionFromForm(c.form, c.sec);
-          c.cores = isUnipolarCable(c) ? 1 : c.cores;
-        }
-      } else if (field === "type") {
-        const v = String(val).trim();
-        c.type = v;
-        if (v.includes("/")) {
-          const parts = v.split("/").map(p => p.trim());
-          c.type = parts[0];
-          c.peType = parts[1];
-        }
-        if (isUnipolarCable(c)) {
-          const base = getBaseCircuitCode(c.code);
-          if (base) {
-            state.cables.forEach(other => {
-              if (other !== c && getBaseCircuitCode(other.code) === base) {
-                if (c.peType && (/PE|TERRA|G\/V|GV/i.test(other.code) || /G\/V|PE/i.test(other.form))) {
-                  other.type = c.peType;
-                  other.peType = c.peType;
-                } else {
-                  other.type = c.type;
-                  if (c.peType) other.peType = c.peType;
-                }
-              }
-            });
-          }
-        }
-      } else if (field === "form") {
-        c.form = val;
-        c.sec = parseSectionFromForm(val, c.sec);
-        c.cores = isUnipolarCable(c) ? 1 : (val.includes("5G") || val.includes("4G") ? 3 : 2);
       } else if (field === "desc") {
         c.desc = cleanUtenzaDescription(val, c.code);
+        const inpEl = document.getElementById(`descInp_${idx}`);
+        if (inpEl && inpEl.value !== c.desc) inpEl.value = c.desc;
         const base = getBaseCircuitCode(c.code);
         if (base && !base.startsWith("CAVO-")) {
-          state.cables.forEach(other => {
+          state.cables.forEach((other, oIdx) => {
             if (other !== c && getBaseCircuitCode(other.code) === base) {
               other.desc = c.desc;
+              const oEl = document.getElementById(`descInp_${oIdx}`);
+              if (oEl && oEl.value !== c.desc) oEl.value = c.desc;
             }
           });
+        }
+      } else if (field === "code") {
+        const parsed = parseCalloutLabelString(val);
+        c.code = parsed.cleanCode || val.trim();
+        const inpCode = document.getElementById(`codeInp_${idx}`);
+        if (inpCode && inpCode.value !== c.code) inpCode.value = c.code;
+        if (parsed.inlineDesc && (!c.desc || c.desc.startsWith("Alimentazione") || c.desc.startsWith("Utenza"))) {
+          c.desc = parsed.inlineDesc;
+          const inpDesc = document.getElementById(`descInp_${idx}`);
+          if (inpDesc && inpDesc.value !== c.desc) inpDesc.value = c.desc;
         }
       } else {
         c[field] = val;
       }
       recalculateAll();
+      updateTableUI();
     }
 
     function deleteCable(idx) { state.cables.splice(idx, 1); recalculateAll(); }
@@ -2776,78 +2897,153 @@
         .replace(/\s+/g, " ")
         .trim();
     }
+    // Estrae e separa codice circuito pulito, formazione inline e descrizione inline
+    function parseCalloutLabelString(rawLblStr) {
+      let s = String(rawLblStr || "").trim();
+      s = s.replace(/^#\d+\s+/, "").trim();
+      let inlineForm = null;
+      const mParen = s.match(/\(([^)]+)\)\s*$/);
+      if (mParen && /[xXGg]\d+|Ø/i.test(mParen[1])) {
+        const fm = mParen[1].match(/\d*\(\d+[xXGg]\d+(?:[.,]\d+)?\)|\b\d+[xXGg]\d+(?:[.,]d+)?\b/i);
+        if (fm) inlineForm = fm[0];
+        s = s.substring(0, mParen.index).trim();
+      }
+
+      let cleanCode = s;
+      let inlineDesc = null;
+
+      // Se la stringa contiene un codice circuito seguito da una descrizione
+      // es. "QPT-DX-N C-21 Alimentazione Centralina DALI 1 / 1,053"
+      const mCode = s.match(/^([A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+C-?\d+|C-?\d+|[A-Z0-9_-]+-C\d+)\b/i);
+      if (mCode) {
+        cleanCode = mCode[1].trim();
+        const rem = s.substring(mCode[0].length).trim();
+        if (rem.length > 0) {
+          inlineDesc = cleanUtenzaDescription(rem, cleanCode);
+        }
+      }
+
+      return { cleanCode, inlineForm, inlineDesc };
+    }
+
+
+    async function processSingleCADFile(file) {
+      const buf = await file.arrayBuffer();
+      const uint8 = new Uint8Array(buf);
+      const rawAscii = extractRawAscii(uint8);
+      const headerVer = rawAscii.substring(0, 6).trim();
+
+      if (file.name.toLowerCase().endsWith(".dxf") || (rawAscii.includes("SECTION") && rawAscii.includes("ENTITIES"))) {
+        const log = parseDXFTextContent(rawAscii, file.name);
+        return { success: true, log };
+      }
+
+      if (!globalLibreDwgInstance) {
+        globalLibreDwgInstance = await loadLibreDwgWasmInstance();
+      }
+
+      const fileType = (globalLibreDwgLib && globalLibreDwgLib.Dwg_File_Type) ? globalLibreDwgLib.Dwg_File_Type.DWG : 0;
+      let dwgDataPtr;
+      try {
+        dwgDataPtr = globalLibreDwgInstance.dwg_read_data(buf, fileType);
+      } catch (eRead) {
+        dwgDataPtr = globalLibreDwgInstance.dwg_read_data(uint8, fileType);
+      }
+
+      if (!dwgDataPtr) {
+        throw new Error(`Il file DWG (${headerVer}) non è stato decodificato dal parser (puntatore nullo).`);
+      }
+
+      const db = globalLibreDwgInstance.convert(dwgDataPtr);
+      let allEntities = (db && Array.isArray(db.entities)) ? [...db.entities] : [];
+      if (allEntities.length === 0 && db && db.tables && db.tables.BLOCK_RECORD && Array.isArray(db.tables.BLOCK_RECORD.entries)) {
+        db.tables.BLOCK_RECORD.entries.forEach(br => {
+          if (Array.isArray(br.entities)) allEntities.push(...br.entities);
+        });
+      }
+
+      if (allEntities.length > 0) {
+        const log = processRealWasmEntities(allEntities, file.name, headerVer);
+        return { success: true, log };
+      } else {
+        throw new Error(`Lettura completata, ma 0 entità visibili estratte dal DWG (${headerVer}).`);
+      }
+    }
 
     async function importCADFile(inputEl) {
-      const file = inputEl.files && inputEl.files[0];
-      if (!file) return;
+      const files = Array.from((inputEl && inputEl.files) || []);
+      if (!files || files.length === 0) return;
       const banner = document.getElementById("statusBanner");
       const inspBox = document.getElementById("dwgInspectorContent");
-      if (banner) banner.textContent = `Decompressione binaria di "${file.name}" in corso...`;
 
-      try {
-        const buf = await file.arrayBuffer();
-        const uint8 = new Uint8Array(buf);
-        const rawAscii = extractRawAscii(uint8);
-        const headerVer = rawAscii.substring(0, 6).trim();
+      if (banner) {
+        banner.textContent = `Caricamento di ${files.length} file CAD in corso...`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold";
+      }
 
-        if (file.name.toLowerCase().endsWith(".dxf") || (rawAscii.includes("SECTION") && rawAscii.includes("ENTITIES"))) {
-          const log = parseDXFTextContent(rawAscii, file.name);
-          if (inspBox) inspBox.textContent = log;
-          if (banner) {
-            banner.textContent = `✓ File DXF "${file.name}" letto: L=${state.width}xH=${state.height}mm (${state.cables.length} cavi geometrici reali)`;
-            banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
-          }
-          return;
+      if (projectSections.length === 0) {
+        projectSections.push(cloneStateSnapshot(state));
+        currentSectionIdx = 0;
+      } else {
+        projectSections[currentSectionIdx] = cloneStateSnapshot(state);
+      }
+
+      let loadedCount = 0;
+      const logs = [];
+      const errorMsgs = [];
+
+      for (let fIdx = 0; fIdx < files.length; fIdx++) {
+        const file = files[fIdx];
+        if (banner) banner.textContent = `Caricamento file ${fIdx + 1}/${files.length}: "${file.name}"...`;
+
+        const isCurrentEmpty = state.cables.length === 0 && state.title.startsWith("NUOVA CANALINA");
+        if (fIdx > 0 || !isCurrentEmpty) {
+          const newSec = cloneStateSnapshot(state);
+          newSec.cables = [];
+          newSec.title = file.name.replace(/\.(dwg|dxf)$/i, "");
+          const nextLetter = String.fromCharCode(65 + Math.min(25, projectSections.length));
+          newSec.planTag = `SEZ. ${nextLetter}-${nextLetter} | H=+3.20m`;
+          projectSections.push(newSec);
+          currentSectionIdx = projectSections.length - 1;
+          state = cloneStateSnapshot(newSec);
         }
 
-        if (!globalLibreDwgInstance) {
-          globalLibreDwgInstance = await loadLibreDwgWasmInstance();
-        }
-
-        const fileType = (globalLibreDwgLib && globalLibreDwgLib.Dwg_File_Type) ? globalLibreDwgLib.Dwg_File_Type.DWG : 0;
-
-        let dwgDataPtr;
         try {
-          dwgDataPtr = globalLibreDwgInstance.dwg_read_data(buf, fileType);
-        } catch (eRead) {
-          dwgDataPtr = globalLibreDwgInstance.dwg_read_data(uint8, fileType);
+          const res = await processSingleCADFile(file);
+          if (res && res.log) logs.push(res.log);
+          projectSections[currentSectionIdx] = cloneStateSnapshot(state);
+          loadedCount++;
+        } catch (err) {
+          console.error(`Errore caricamento ${file.name}:`, err);
+          const msg = (err && err.message) ? err.message : String(err);
+          logs.push(`ERRORE "${file.name}": ${msg}`);
+          errorMsgs.push(`${file.name}: ${msg}`);
         }
+      }
 
-        if (!dwgDataPtr) {
-          throw new Error(`Il file DWG (${headerVer}) non è stato decodificato dal parser (puntatore nullo).`);
-        }
+      renderMultiSectionTabs();
+      pushStateToUI();
+      recalculateAll();
+      updateTableUI();
+      fitAll();
 
-        const db = globalLibreDwgInstance.convert(dwgDataPtr);
+      if (inspBox && logs.length > 0) inspBox.textContent = logs.join("\n\n" + "=".repeat(60) + "\n\n");
+      const inspModal = document.getElementById("dwgInspectorModal");
+      if (inspModal && (loadedCount > 0 || errorMsgs.length > 0)) inspModal.classList.remove("hidden");
 
-        let allEntities = (db && Array.isArray(db.entities)) ? [...db.entities] : [];
-        if (allEntities.length === 0 && db && db.tables && db.tables.BLOCK_RECORD && Array.isArray(db.tables.BLOCK_RECORD.entries)) {
-          db.tables.BLOCK_RECORD.entries.forEach(br => {
-            if (Array.isArray(br.entities)) allEntities.push(...br.entities);
-          });
-        }
-
-        if (allEntities.length > 0) {
-          const log = processRealWasmEntities(allEntities, file.name, headerVer);
-          if (inspBox) inspBox.textContent = log;
-          const inspModal = document.getElementById("dwgInspectorModal");
-          if (inspModal) inspModal.classList.remove("hidden");
-          if (banner) {
-            banner.textContent = `✓ DWG "${file.name}" (${headerVer}) decompresso via LibreDWG: L=${state.width}xH=${state.height}mm — ${state.cables.length} cavi estratti!`;
-            banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
-          }
-          return;
+      if (banner) {
+        if (loadedCount > 0 && errorMsgs.length === 0) {
+          banner.textContent = `✓ Caricati con successo ${loadedCount} file CAD in ${projectSections.length} schede canalina distinte!`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+        } else if (loadedCount > 0 && errorMsgs.length > 0) {
+          banner.textContent = `⚠ Caricati ${loadedCount}/${files.length} file CAD (${errorMsgs.length} errori: ${errorMsgs[0]})`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
         } else {
-          throw new Error(`Lettura completata, ma 0 entità visibili estratte dal DWG (${headerVer}).`);
-        }
-      } catch (err) {
-        console.error("Errore decompressione DWG:", err);
-        if (banner) {
-          banner.textContent = `Errore lettura DWG: ${err.message || err}`;
+          banner.textContent = `Errore lettura DWG/DXF: ${errorMsgs[0] || 'Impossibile leggere il file'}`;
           banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold";
         }
-      } finally {
-        inputEl.value = "";
       }
+      if (inputEl) inputEl.value = "";
     }
 
     // Estrazione geometrica avanzata + ricostruzione catene Bandierine + lettura Tabelle DWG interne
@@ -3059,10 +3255,42 @@
 
         const formCandidate = textsInRow.find(s => /\d*\s*\(\s*\d+[xXGg]\d+(?:[.,]\d+)?\s*\)|\b\d+[xXGg]\d+(?:[.,]\d+)?\b/i.test(s) && s !== codeCandidate);
         const typeCandidate = textsInRow.find(s => /FG16|FTG18|FS17|FG17|H07|RG16|UTP|CAT\./i.test(s) && s !== codeCandidate && s !== formCandidate);
+        
+        // Cerca colonna sigla cavo dedicata
+        const siglaCavoCandidate = textsInRow.find(s =>
+          s !== codeCandidate && s !== formCandidate && s !== typeCandidate &&
+          /(?:^CV-?\d+|^CAV-?\d+|^(?:FG16|FTG18|FS17|FG17)[A-Z0-9_.-]*)/i.test(s)
+        );
+
+        // Estrazione diametro da colonna tabella (es. "18.5", "Ø 18.5", "18,5 mm")
+        let diamCandidate = null;
+        for (const t of textsInRow) {
+          if (t === codeCandidate || t === formCandidate || t === typeCandidate || t === siglaCavoCandidate) continue;
+          const mDiam = t.match(/^(?:[ØøD]|diam(?:\.|etro)?\s*:?)?\s*(\d+[.,]\d+)\s*(?:mm)?$/i);
+          if (mDiam) {
+            const v = parseFloat(mDiam[1].replace(",", "."));
+            if (v >= 3 && v <= 80) { diamCandidate = v; break; }
+          }
+        }
+
+        // Estrazione sezione da colonna tabella (es. "2.5 mm²", "16 mm2", "70")
+        let secCandidate = null;
+        for (const t of textsInRow) {
+          if (t === codeCandidate || t === formCandidate || t === typeCandidate || t === siglaCavoCandidate) continue;
+          const mSec = t.match(/^(?:sez(?:\.|ione)?\s*:?)?\s*(\d+(?:[.,]\d+)?)\s*(?:mm[²2]|mq)?$/i);
+          if (mSec) {
+            const v = parseFloat(mSec[1].replace(",", "."));
+            if ([1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400].includes(v)) {
+              secCandidate = v; break;
+            }
+          }
+        }
+
         const descCandidate = textsInRow.find(s =>
           s !== codeCandidate &&
           s !== formCandidate &&
           s !== typeCandidate &&
+          s !== siglaCavoCandidate &&
           !isCodeLike(s) &&
           !/^#?\d+$/.test(s) &&
           !/^\d+(?:[.,]\d+)?\s*(?:mm|kg|daN)?$/i.test(s) &&
@@ -3078,6 +3306,9 @@
           baseCode: baseCandidate,
           form: formCandidate || null,
           type: typeCandidate || null,
+          siglaCavo: siglaCavoCandidate || null,
+          d: diamCandidate || null,
+          sec: secCandidate || null,
           desc: descCandidate ? cleanUtenzaDescription(descCandidate) : null
         };
         dwgTableByCode[normKey] = rowData;
@@ -3147,7 +3378,22 @@
           if (fm) inlineForm = fm[0];
           s = s.substring(0, mParen.index).trim();
         }
-        return { cleanCode: s, inlineForm };
+
+        let cleanCode = s;
+        let inlineDesc = null;
+
+        // Se la stringa contiene un codice circuito seguito da una descrizione
+        // es. "QPT-DX-N C-21 Alimentazione Centralina DALI 1 / 1,053"
+        const mCode = s.match(/^([A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+C-?\d+|C-?\d+|[A-Z0-9_-]+-C\d+)\b/i);
+        if (mCode) {
+          cleanCode = mCode[1].trim();
+          const rem = s.substring(mCode[0].length).trim();
+          if (rem.length > 0) {
+            inlineDesc = cleanUtenzaDescription(rem, cleanCode);
+          }
+        }
+
+        return { cleanCode, inlineForm, inlineDesc };
       }
 
       const usedCalloutSet = new Set();
@@ -3181,16 +3427,18 @@
         const finalForm = (uInfo && uInfo.form) || (dwgRow && dwgRow.form) || parsedLbl.inlineForm || diamSpec.form;
         const finalType = (uInfo && uInfo.cable) || (dwgRow && dwgRow.type) || diamSpec.type;
         const fallbackDwgDesc = exactCode.startsWith("CAVO-") ? `Utenza ${exactCode.replace("CAVO-", "")}` : `Alimentazione ${baseCircuit}`;
-        const finalDesc = (uInfo && uInfo.desc) || (dwgRow && cleanUtenzaDescription(dwgRow.desc)) || fallbackDwgDesc;
-        const finalSec  = parseSectionFromForm(finalForm, diamSpec.sec);
+        const finalDesc = (uInfo && uInfo.desc) || (dwgRow && cleanUtenzaDescription(dwgRow.desc, exactCode)) || (parsedLbl && parsedLbl.inlineDesc) || fallbackDwgDesc;
+        const finalSec  = (dwgRow && dwgRow.sec) || parseSectionFromForm(finalForm, diamSpec.sec);
         const isUni     = /\b1X\d+|\(\s*1X\d+/i.test(finalForm) || /\bFG16M16\b|\bFS17\b|\bFG17\b/i.test(finalType);
         const finalCores = isUni ? 1 : (finalForm.includes("5G") || finalForm.includes("4G") ? 3 : 2);
+        const finalD    = (dwgRow && dwgRow.d) ? dwgRow.d : d;
 
         return {
           id: idx + 1,
           code: exactCode,
-          d,
-          w: +(Math.pow(d / 10, 2) * 0.145).toFixed(2),
+          siglaCavo: (dwgRow && dwgRow.siglaCavo) || null,
+          d: finalD,
+          w: +(Math.pow(finalD / 10, 2) * 0.145).toFixed(2),
           sec: finalSec,
           cores: finalCores,
           iz0: diamSpec.iz0,
@@ -3349,11 +3597,18 @@
 
     // Importazione PDF Unifilare con accoppiamento esatto (Punti 3 e 4)
     async function importPDFFile(inputEl) {
-      const file = inputEl.files && inputEl.files[0];
-      if (!file) return;
+      const files = Array.from((inputEl && inputEl.files) || []);
+      if (!files || files.length === 0) return;
+      const file = files[0];
       const badge = document.getElementById("wasmStatusBadge");
       const banner = document.getElementById("statusBanner");
-      badge.textContent = `Lettura PDF "${file.name}"...`;
+      if (badge) badge.textContent = `Lettura PDF "${file.name}"...`;
+      if (banner) {
+        banner.textContent = `Lettura PDF Unifilare "${file.name}" in corso...`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/40 font-bold";
+      }
+
+      const allPdfItems = [];
       try {
         const buf = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
@@ -3361,13 +3616,18 @@
           const page = await pdf.getPage(p);
           const tc = await page.getTextContent();
           const items = tc.items.map(it => ({ str: it.str.trim(), x: it.transform[4], y: it.transform[5] })).filter(it => it.str.length > 0);
+          allPdfItems.push(...items);
+
           // Riconosce qualsiasi intestazione colonna di schema unifilare (es. "QGBT-P C-22", "QP1-DX-N C-4", ecc.)
-          const headers = items.filter(it => /^[A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+C-\d+/i.test(it.str));
+          const headers = items.filter(it => /^[A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+C-\d+/i.test(it.str) || /\bC-\d+\b/i.test(it.str));
           const descLabels = items.filter(it => /^(?:Descrizione(?:\s*(?:utenza|circuito|linea))?|Designazione|Utenza|Oggetto)\s*:?$/i.test(it.str.trim()));
 
           headers.forEach(ch => {
-            const rawCode = ch.str.replace(/\s+/g, " ").trim();
+            const mHeaderCode = ch.str.match(/^([A-Z0-9]{2,12}(?:[-._/][A-Z0-9]{1,10})*\s+C-?\d+|C-?\d+|[A-Z0-9_-]+-C\d+)\b/i);
+            const rawCode = mHeaderCode ? mHeaderCode[1].trim() : ch.str.replace(/\s+/g, " ").trim();
+            const inlineDesc = (mHeaderCode && ch.str.length > mHeaderCode[0].length) ? cleanUtenzaDescription(ch.str.substring(mHeaderCode[0].length), rawCode) : null;
             const normCode = normalizeLineKey(rawCode);
+
             const colItems = items.filter(it => Math.abs(it.x - ch.x) < 48 && it.y < ch.y).sort((a, b) => b.y - a.y);
             const colTexts = colItems.map(c => c.str);
 
@@ -3442,22 +3702,30 @@
               }
             }
 
-            unifilareDict[normCode] = { rawCode, desc: descStr, cable: cableMatch, peCable: peCableMatch, form: formMatch, ib: parsedIb };
+            if (!descStr && inlineDesc) {
+              descStr = inlineDesc;
+            }
+
+            const entry = { rawCode, desc: descStr, cable: cableMatch, peCable: peCableMatch, form: formMatch, ib: parsedIb };
+            unifilareDict[normCode] = entry;
+            const baseCode = getBaseCircuitCode(rawCode);
+            unifilareDict[normalizeLineKey(baseCode)] = entry;
+
             // Registra anche indicizzazioni aggiuntive per numero circuito (es. "C-21", "C21")
             const mC = rawCode.match(/\b(C-?\d+)\b/i);
             if (mC) {
               const cTag = normalizeLineKey(mC[1]);
-              if (!unifilareDict[cTag]) unifilareDict[cTag] = unifilareDict[normCode];
+              if (!unifilareDict[cTag]) unifilareDict[cTag] = entry;
               const cNoHyphen = cTag.replace("-", "");
-              if (!unifilareDict[cNoHyphen]) unifilareDict[cNoHyphen] = unifilareDict[normCode];
+              if (!unifilareDict[cNoHyphen]) unifilareDict[cNoHyphen] = entry;
             }
-            if (normCode.startsWith("OGBT")) unifilareDict[normCode.replace(/^OGBT/, "QGBT")] = unifilareDict[normCode];
+            if (normCode.startsWith("OGBT")) unifilareDict[normCode.replace(/^OGBT/, "QGBT")] = entry;
           });
         }
         state.pdfLoaded = true;
-        document.getElementById("kpiElectricalCard").classList.remove("hidden");
-        document.getElementById("kpiBar").className = "grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2";
-        badge.textContent = `PDF Unifilare Attivo (${Object.keys(unifilareDict).length} linee)`;
+        const elElec = document.getElementById("kpiElectricalCard"); if (elElec) elElec.classList.remove("hidden");
+        const elBar = document.getElementById("kpiBar"); if (elBar) elBar.className = "grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2";
+        if (badge) badge.textContent = `PDF Unifilare Attivo (${Object.keys(unifilareDict).length} linee)`;
 
         let matchedCount = 0;
         state.cables.forEach(c => {
@@ -3492,46 +3760,45 @@
           }
         });
 
-        // Aggiorna titolo canalina e nome file se era rimasto default o se trovato nel documento
         // Registra automaticamente nel DB qualsiasi nuovo cavo identificato dallo schema
         state.cables.forEach(c => registerCableInCatalog(c));
 
         // Aggiorna titolo canalina e nome file se era rimasto default o se trovato nel documento
-        const pdfTrayName = extractTrayNameFromInput(items, file.name, state.width, state.height);
+        const pdfTrayName = extractTrayNameFromInput(allPdfItems, file.name, state.width, state.height);
         if (pdfTrayName && pdfTrayName.isExplicit) {
           state.title = pdfTrayName.title;
-          document.getElementById("inpTitle").value = state.title;
-          const qTitlePdf = document.getElementById("inpTitleQuick");
-          if (qTitlePdf) qTitlePdf.value = state.title;
+          const elInpTitle = document.getElementById("inpTitle"); if (elInpTitle) elInpTitle.value = state.title;
+          const qTitlePdf = document.getElementById("inpTitleQuick"); if (qTitlePdf) qTitlePdf.value = state.title;
           const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
-          document.getElementById("exportName").value = pdfTrayName.exportFile;
+          const elExpName = document.getElementById("exportName"); if (elExpName) elExpName.value = pdfTrayName.exportFile;
         } else if (state.title.startsWith("NUOVA CANALINA") && file.name) {
           const pdfBase = file.name.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_-]+/g, " ").trim();
           if (pdfBase && !/schema|unifilare/i.test(pdfBase)) {
             state.title = `${pdfBase} - L=${state.width}mm H=${state.height}mm`;
-            document.getElementById("inpTitle").value = state.title;
+            const elInpTitle = document.getElementById("inpTitle"); if (elInpTitle) elInpTitle.value = state.title;
             const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
-            const cleanTag = pdfBase.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
-            document.getElementById("exportName").value = `${cleanTag}_${state.width}x${state.height}_Costruttivo`;
+            const cleanTag = pdfBase.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+            const elExpName = document.getElementById("exportName"); if (elExpName) elExpName.value = cleanTag || "CANALINA_01";
           }
         }
         if (banner) {
           banner.textContent = `✓ PDF Unifilare sincronizzato: ${matchedCount}/${state.cables.length} cavi DWG abbinati per Sigla Utenza, Descrizione e Formazione!`;
           banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/40 font-bold";
         }
+        pushStateToUI();
         recalculateAll();
         updateTableUI();
+        drawScene();
       } catch (err) {
-        console.error(err);
+        console.error("Errore lettura PDF:", err);
+        if (banner) {
+          banner.textContent = `Errore lettura PDF "${file.name}": ${err.message || err}`;
+          banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold";
+        }
       } finally {
-        inputEl.value = "";
+        if (inputEl) inputEl.value = "";
       }
     }
-
-
-    // ============================================================================
-    // 5B. FUNZIONI AUSILIARIE DI SUPPORTO: DESCRIZIONI PULITE, SCALE, NOMI, CAVI PE
-    // ============================================================================
 
     function cleanUtenzaDescription(raw, codeToStrip = "") {
       if (!raw) return "";
@@ -3540,35 +3807,40 @@
       // 1. Rimuove prefissi di etichetta (es. "Descrizione:", "Descrizione utenza:", "Designazione:")
       s = s.replace(/^(?:Descrizione(?:\s*(?:utenza|circuito|linea))?|Designazione|Utenza|Oggetto)\s*[:=-]\s*/i, "");
 
-      // 2. Rimuove la sigla specifica del circuito passata come argomento se presente all'inizio o alla fine
+      // 2. Rimuove la sigla specifica del circuito passata come argomento se presente all'inizio o alla fine o tra parentesi
       if (codeToStrip) {
         const esc = String(codeToStrip).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         s = s.replace(new RegExp(`^${esc}\\s*[-:–—]?\\s*`, "i"), "");
         s = s.replace(new RegExp(`\\s*[-:–—]?\\s*${esc}$`, "i"), "");
+        s = s.replace(new RegExp(`\\(\\s*${esc}\\s*\\)`, "gi"), "");
       }
 
-      // 3. Rimuove qualsiasi sigla utenza / codice quadro-circuito all'inizio o alla fine (es. "QPT-DX-N C-21", "QGBT-P C-22", "C-21")
+      // 3. Rimuove codici circuito tra parentesi (es. "(QPT-DX-N C-21)", "(C-21)")
+      s = s.replace(/\([^)]*\bC-?\d+\b[^)]*\)/gi, "");
+      s = s.replace(/\([^)]*\b(?:QGBT|QP|QE|QUADRO|UPS|IRAI|EVAC|TD)[^)]*\)/gi, "");
+
+      // 4. Rimuove qualsiasi sigla utenza / codice quadro-circuito all'inizio o alla fine (es. "QPT-DX-N C-21", "QGBT-P C-22", "C-21")
       const panelPrefix = `(?:(?:[QO][A-Z0-9._-]*|[A-Z0-9]+-[A-Z0-9._-]+)\\s+)?`;
       s = s.replace(new RegExp(`^${panelPrefix}C-?\\d+\\b\\s*[-:–—]?\\s*`, "i"), "");
       s = s.replace(new RegExp(`\\s*[-:–—]?\\s*${panelPrefix}C-?\\d+\\b\\s*$`, "i"), "");
-      s = s.replace(/\([A-Z0-9_.-]*C-?\d+[A-Z0-9_.-]*\)/gi, "");
 
-      // 4. Rimuove rapporti di potenza / corrente (es. "1 / 1,053", "15 / 24,5", "10 / 0,4")
-      s = s.replace(/\b\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?\b/g, "");
+      // 5. Rimuove rapporti di potenza / corrente anche con unità (es. "1 / 1,053", "1 / 1.053 kW", "15 / 24,5")
+      s = s.replace(/\b\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?\s*(?:k?W|k?VA|k?VAR|Hz|V|A|kA|mA)?\b/gi, "");
 
-      // 5. Rimuove grandezze elettriche pure isolate (potenza, tensione, frequenza, corrente, cosphi)
+      // 6. Rimuove grandezze elettriche pure isolate (potenza, tensione, frequenza, corrente, cosphi)
       s = s.replace(/\b(?:P\s*=\s*)?\d+(?:[.,]\d+)?\s*(?:k?W|k?VA|k?VAR)\b/gi, "");
       s = s.replace(/\b(?:400|230|110|24)\s*V\b/gi, "");
       s = s.replace(/\b\d+(?:[.,]\d+)?\s*Hz\b/gi, "");
       s = s.replace(/\b(?:cos\s*phi|cos\s*φ)\s*=?\s*\d+(?:[.,]\d+)?\b/gi, "");
       s = s.replace(/\b(?:I[nbd]|Idn|Icu|Ics|Icn)\s*=?\s*\d+(?:[.,]\d+)?\s*(?:m?A|kA)?\b/gi, "");
+      s = s.replace(/\b(?:k?W|k?VA|k?VAR)\b/gi, "");
 
-      // 6. Rimuove formazioni cavi e tipi cavo residui
+      // 7. Rimuove formazioni cavi e tipi cavo residui
       s = s.replace(/\b(?:FG16[A-Z0-9]*|FTG18[A-Z0-9]*|FS17|FG17|H07[A-Z0-9-]*|H1Z2Z2-K|RG16[A-Z0-9]*)\b/gi, "");
       s = s.replace(/\b\d+\s*\([0-9xXGg,+]+\)|\b[1-5][xXGg]\d+(?:[.,]\d+)?\b/g, "");
 
-      // 7. Pulizia punteggiatura e spazi residui
-      s = s.replace(/^[-\s|/,.:;–—]+|[-\s|/,.:;–—]+$/g, "");
+      // 8. Pulizia punteggiatura e spazi residui
+      s = s.replace(/^[-+\s|/,.:;–—]+|[-+\s|/,.:;–—]+$/g, "");
       s = s.replace(/\s{2,}/g, " ").trim();
       return s;
     }
@@ -3593,10 +3865,49 @@
       return cable.type || "FG16M16";
     }
 
-        function extractTrayNameFromInput(rawTexts, fileName, width = 200, height = 75) {
+    function extractTrayNameFromInput(rawTexts, fileName, width = 200, height = 75) {
       let foundName = null;
       let isExplicit = false;
 
+      function scoreTrayCandidate(cand) {
+        if (!cand) return -100;
+        const s = String(cand).trim();
+        if (s.length < 2 || s.length > 80) return -100;
+        // Escludi se sono solo dimensioni es. "300x75", "75 x 300 mm"
+        if (/^\d+\s*[xX]\s*\d+/i.test(s)) return -100;
+        // Escludi unità singole o acronimi normativi standard
+        if (/^(mm|cm|m|kg|dan|n|kw|a|v|hz|cei|uni|iec|en|iso|rev\.?\s*\d*|scala|scale|foglio|tavola|pag\.?\s*\d*)$/i.test(s)) return -100;
+        if (/^cei\b/i.test(s)) return -100;
+        // Escludi formazioni cavo es. "C-21", "3G2.5", "1x16"
+        if (/^C-?\d+$/i.test(s) || /^[1-5][xXGg]\d+/i.test(s)) return -100;
+        if (!/[a-zA-Z]{2,}/.test(s)) return -100;
+
+        let score = 10;
+        if (/anello/i.test(s)) score += 60;
+        if (/lato\s+(?:dx|sx|nord|sud|est|ovest)/i.test(s)) score += 50;
+        if (/\b(?:bt|mt|at)\b/i.test(s)) score += 35;
+        if (/\b(?:pt|p1|p2|p3|p-1|piano|terra|interrato|copertura|quadro|qgbt|edp|dorsale|montante|distribuzione)\b/i.test(s)) score += 30;
+        if (/\b(?:sx|dx)\b/i.test(s)) score += 25;
+        if (/\b(?:canale|canalina|passerella|tratta|tronco)\b/i.test(s)) score += 30;
+        if (s.includes("-") || s.includes("/")) score += 15;
+        if (s.length >= 6 && s.length <= 45) score += 10;
+        return score;
+      }
+
+      const allCandidates = [];
+
+      // A. Controlla il nome del file di input se contiene parentesi (...)
+      if (fileName) {
+        const fileRegex = /\(([^)]+)\)/g;
+        let fm;
+        while ((fm = fileRegex.exec(fileName)) !== null) {
+          const c = fm[1].trim();
+          const sc = scoreTrayCandidate(c);
+          if (sc > 0) allCandidates.push({ name: c, score: sc + 30 });
+        }
+      }
+
+      // B. Controlla i testi estratti dal DWG / DXF / PDF
       if (Array.isArray(rawTexts) && rawTexts.length > 0) {
         const cleanedItems = rawTexts.map(t => ({
           str: cleanAcadMText(t.str || ""),
@@ -3604,90 +3915,59 @@
           y: t.y || 0
         })).filter(t => t.str.length > 0);
 
-        // REGOLA 1: Cerca nei singoli testi diciture con parentesi
-        // Es. "Dati caratteristici della canalina (Anello PT - Lato DX)" o "Dati (Anello PT - Lato DX)"
-        for (const t of cleanedItems) {
+        // 1. Cerca nei singoli testi diciture con parentesi
+        cleanedItems.forEach(t => {
           const s = t.str;
-          const mParen = s.match(/(?:Dati\s+caratteristici|Dati\s+tecnici|Dati|Canalina|Canale|Passerella|Condotto|Tratta|Tronco|Sezione|Particolare)[^(]*\(([^)]+)\)/i);
-          if (mParen && mParen[1]) {
-            const candidate = mParen[1].trim();
-            if (!/^\d+\s*[xX]\s*\d+/i.test(candidate) && !/^C-\d+$/i.test(candidate) && candidate.length >= 2) {
-              foundName = candidate;
-              isExplicit = true;
-              break;
+          const hasPrefix = /(?:Dati\s+caratteristici|Dati\s+tecnici|Dati|Canalina|Canale|Passerella|Condotto|Tratta|Tronco|Sezione|Particolare)/i.test(s);
+          const regexP = /\(([^)]+)\)/g;
+          let m;
+          while ((m = regexP.exec(s)) !== null) {
+            const cand = m[1].trim();
+            const sc = scoreTrayCandidate(cand);
+            if (sc > 0) {
+              allCandidates.push({ name: cand, score: sc + (hasPrefix ? 50 : 20) });
             }
+          }
+        });
+
+        // 2. Cerca nel testo unito se spezzato in entità adiacenti
+        const allJoined = cleanedItems.map(t => t.str).join(" ");
+        const regexAll = /\(([^)]+)\)/g;
+        let jm;
+        while ((jm = regexAll.exec(allJoined)) !== null) {
+          const cand = jm[1].trim();
+          const sc = scoreTrayCandidate(cand);
+          if (sc > 0) {
+            allCandidates.push({ name: cand, score: sc + 15 });
           }
         }
 
-        // REGOLA 2: Cerca nel testo unito se spezzato in più entità
-        if (!foundName) {
-          const allJoined = cleanedItems.map(t => t.str).join(" ");
-          const mJoined = allJoined.match(/(?:Dati\s+caratteristici|Dati\s+tecnici|Dati|Canalina|Canale|Passerella|Condotto|Tratta|Tronco|Sezione|Particolare)[^(]*\(([^)]+)\)/i);
-          if (mJoined && mJoined[1]) {
-            const candidate = mJoined[1].trim();
-            if (!/^\d+\s*[xX]\s*\d+/i.test(candidate) && !/^C-\d+$/i.test(candidate) && candidate.length >= 2) {
-              foundName = candidate;
-              isExplicit = true;
-            }
+        // 3. Cerca diciture con due punti o trattino: "Dati caratteristici canalina: [Nome]"
+        cleanedItems.forEach(t => {
+          const mColon = t.str.match(/(?:Dati\s+caratteristici(?:\s+della)?\s+(?:canalina|passerella|canale)|(?:canalina|passerella|canale))\s*[:=-]\s*([A-Za-z0-9_\-./\s]{3,50})/i);
+          if (mColon && mColon[1]) {
+            const cand = mColon[1].trim();
+            const sc = scoreTrayCandidate(cand);
+            if (sc > 0) allCandidates.push({ name: cand, score: sc + 10 });
           }
-        }
+        });
 
-        // REGOLA 3: Cerca qualsiasi entità testuale con testo tra parentesi (...) non numerico
-        // Es. l'utente ha inserito direttamente un'etichetta "(Anello PT - Lato DX)"
-        if (!foundName) {
-          for (const t of cleanedItems) {
-            const s = t.str;
-            if (/distinta|tabella|legenda|materiale|revisione/i.test(s)) continue;
-            const mAnyParen = s.match(/\(([^)]+)\)/);
-            if (mAnyParen && mAnyParen[1]) {
-              const candidate = mAnyParen[1].trim();
-              const isCableForm = /^\d+\s*[xX]\s*\d+/i.test(candidate) || /^[1-5][xXGg]\d+/i.test(candidate) || /^C-\d+$/i.test(candidate);
-              const hasLetters = /[A-Za-z]{2,}/.test(candidate);
-              if (!isCableForm && hasLetters && candidate.length >= 3) {
-                foundName = candidate;
-                isExplicit = true;
-                break;
-              }
-            }
+        // 4. Header convenzionali canalina/passerella
+        cleanedItems.forEach(t => {
+          const mHead = t.str.match(/^(?:CANALINA|CANALE|PASSERELLA|CONDOTTO|TRONCO)\s+([A-Za-z0-9_\-./\s]{2,40})/i);
+          if (mHead && mHead[1]) {
+            const cand = mHead[1].trim();
+            const sc = scoreTrayCandidate(cand);
+            if (sc > 0) allCandidates.push({ name: cand, score: sc + 5 });
           }
-        }
+        });
+      }
 
-        // REGOLA 4: Diciture con due punti o trattino
-        if (!foundName) {
-          for (const t of cleanedItems) {
-            const s = t.str;
-            const mColon = s.match(/(?:Dati\s+caratteristici(?:\s+della)?\s+(?:canalina|passerella|canale)|(?:canalina|passerella|canale))\s*[:=-]\s*([A-Za-z0-9_\-./\s]{3,50})/i);
-            if (mColon && mColon[1]) {
-              const candidate = mColon[1].trim();
-              if (!/^\d+\s*[xX]\s*\d+/i.test(candidate)) {
-                foundName = candidate;
-                isExplicit = true;
-                break;
-              }
-            }
-          }
-        }
-
-        // REGOLA 5: Header convenzionali canalina/passerella
-        if (!foundName) {
-          const p1 = cleanedItems.find(t => /^(?:CANALINA|CANALE|PASSERELLA|CONDOTTO|TRONCO)\s+([A-Za-z0-9_\-./\s]{2,40})/i.test(t.str));
-          if (p1) {
-            foundName = p1.str.trim();
-            isExplicit = true;
-          }
-        }
-
-        // REGOLA 6: Sezione o Oggetto cartiglio
-        if (!foundName) {
-          const p4 = cleanedItems.find(t => /^(?:OGGETTO|TITOLO|ELABORATO)\s*[:=-]\s*(.+)/i.test(t.str));
-          if (p4) {
-            const m = p4.str.match(/^(?:OGGETTO|TITOLO|ELABORATO)\s*[:=-]\s*(.+)/i);
-            if (m && m[1]) {
-              foundName = m[1].trim();
-              isExplicit = true;
-            }
-          }
-        }
+      // Scegli il candidato con il punteggio più alto
+      if (allCandidates.length > 0) {
+        allCandidates.sort((a, b) => b.score - a.score);
+        foundName = allCandidates[0].name;
+        isExplicit = true;
       }
 
       let cleanBase = foundName ? foundName : (fileName || "CANALINA").replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_-]+/g, " ").trim();
@@ -3701,7 +3981,7 @@
       if (!cleanBase) cleanBase = "CANALINA 01";
 
       const title = cleanBase;
-      const exportFile = cleanBase.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const exportFile = cleanBase.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
       return { title, exportFile, cleanBase, isExplicit };
     }
 
@@ -3716,6 +3996,20 @@
       if (elCfg) elCfg.value = state.scale;
       const elRev = document.getElementById("inpScaleRev");
       if (elRev) elRev.value = state.tb.scaleRev;
+      drawScene();
+    }
+
+    function onTextScaleChange(val) {
+      const num = parseFloat(val);
+      if (isNaN(num) || num <= 0.2 || num > 3.0) return;
+      state.textScale = num;
+      try {
+        localStorage.setItem("canaloCAD_textScale", num.toString());
+      } catch (e) {}
+      const valStr = num.toString();
+      const el1 = document.getElementById("selTextScale"); if (el1) el1.value = valStr;
+      const el2 = document.getElementById("optDxfTextScale"); if (el2) el2.value = valStr;
+      const el3 = document.getElementById("cfgTextScale"); if (el3) el3.value = valStr;
       drawScene();
     }
 
@@ -3751,13 +4045,15 @@
       const line = (layer, x1, y1, x2, y2, color, lw = 0.4, alpha = 1) => prims.push({ t: "line", layer, x1, y1, x2, y2, color, lw, alpha });
       const rect = (layer, x, y, w, h, color, fill, solid = false) => prims.push({ t: "rect", layer, x, y, w, h, color, fill, solid });
       const poly = (layer, pts, color, fill = null, lw = 0.4, alpha = 1) => prims.push({ t: "poly", layer, pts, color, fill, lw, alpha });
+      const txtMul = (typeof state.textScale === "number" && state.textScale > 0) ? state.textScale : 1.0;
       const text = (layer, x, y, h, str, color, align = "left", maxW = null) => {
         let s = String(str || "");
         if (maxW) {
-          const maxCh = Math.max(4, Math.floor((maxW - 2) / (h * 0.56)));
+          const maxCh = Math.max(4, Math.floor((maxW - 2) / (h * txtMul * 0.56)));
           if (s.length > maxCh) s = s.substring(0, maxCh - 2) + "..";
         }
-        prims.push({ t: "text", layer, x, y, h, str: s, color, align });
+        const effectiveH = +(h * txtMul).toFixed(3);
+        prims.push({ t: "text", layer, x, y, h: effectiveH, str: s, color, align });
       };
 
       // Riquadro contenitore
@@ -3851,9 +4147,28 @@
       const colWallPlateFill = isLight ? "#e2e8f0" : "#1e293b";
       const colArmTop = isLight ? "#f1f5f9" : "#475569";
       const colArmSide = isLight ? "#cbd5e1" : "#334155";
-      const colTrayRear = isLight ? "#e2e8f0" : "#1e293b";
-      const colTrayFloor = isLight ? "#f8fafc" : "#0f172a";
-      const colTrayFront = isLight ? "#f1f5f9" : "#1e293b";
+      const colTrayRear = isLight ? "#cbd5e1" : "#1e293b";
+      const colTrayFloor = isLight ? "#e2e8f0" : "#223147";
+      const colTrayFront = isLight ? "#f1f5f9" : "#2a3b52";
+
+      // Testate frontali dei cavi (sezione a z = 0 con guaina e anima in rame)
+      const iCableCap = (cx, cy, r, cSheathStroke, cSheathFill, cCoreFill = "#f59e0b") => {
+        const ptsOuter = [];
+        const nSteps = 14;
+        for (let i = 0; i < nSteps; i++) {
+          const ang = (i * 2 * Math.PI) / nSteps;
+          ptsOuter.push({ x: cx + r * Math.cos(ang), y: cy + r * Math.sin(ang), z: 0 });
+        }
+        iPoly(ptsOuter, cSheathStroke, cSheathFill, 0.6);
+
+        const ptsInner = [];
+        const rCore = r * 0.65;
+        for (let i = 0; i < nSteps; i++) {
+          const ang = (i * 2 * Math.PI) / nSteps;
+          ptsInner.push({ x: cx + rCore * Math.cos(ang), y: cy + rCore * Math.sin(ang), z: 0 });
+        }
+        iPoly(ptsInner, "#d97706", cCoreFill, 0.5);
+      };
 
       // 1. PARETE DI FONDO (Linea guida e retino)
       iLine(1.18, -0.42, 0.3, 1.18, -0.42, zMax - 0.1, isLight ? "#cbd5e1" : "#334155", 0.35);
@@ -4014,53 +4329,74 @@
         ], "#38bdf8", isLight ? "#e0f2fe" : "#0c4a6e", 0.65, 0.85);
       }
 
-      // 5. FASCI CAVI 3D REALI CON SEGREGAZIONE & COLORI NORMATIVI
-      // Cavo Potenza BT Principale (Blu elettrico / Azzurro)
-      iPoly([
-        { x: 0.14, y: 0.05, z: 0 },
-        { x: 0.28, y: 0.05, z: 0 },
-        { x: 0.28, y: 0.05, z: zMax },
-        { x: 0.14, y: 0.05, z: zMax }
-      ], "#0284c7", "#38bdf8", 0.65);
-      iLine(0.21, 0.08, 0, 0.21, 0.08, zMax, "#7dd3fc", 0.5);
+      // 5. FASCI CAVI 3D REALI CORRISPONDENTI ESATTAMENTE ALLA SEZIONE 1:1
+      if (state.cables && state.cables.length > 0) {
+        // Ordina i cavi per profondità isometrica decrescente (Painter's algorithm):
+        // Cavi con X maggiore (vicini alla parete posteriore x=1.0) e Y minore disegnati per primi,
+        // cavi in primo piano (X minore verso il bordo anteriore x=0) disegnati sopra.
+        const sortedCables = [...state.cables].sort((a, b) => {
+          const depthA = a.x * 10 - a.y * 3;
+          const depthB = b.x * 10 - b.y * 3;
+          return depthB - depthA;
+        });
 
-      // Cavo di Fase / Neutro secondario (Ambra / Oro)
-      iPoly([
-        { x: 0.40, y: 0.05, z: 0 },
-        { x: 0.54, y: 0.05, z: 0 },
-        { x: 0.54, y: 0.05, z: zMax },
-        { x: 0.40, y: 0.05, z: zMax }
-      ], "#d97706", "#fbbf24", 0.65);
-      iLine(0.47, 0.08, 0, 0.47, 0.08, zMax, "#fde68a", 0.5);
+        sortedCables.forEach((c) => {
+          const isUni = isUnipolarCable(c);
+          const isPE = /PE|TERRA/i.test(c.code) || c.sys === "PE" || /PE/i.test(c.form || "");
+          const isSignal = c.sys === "SPECIAL_ELV" || /IRAI|EVAC|KNX|BUS|FIBRA|CAT|UTP|FTP/i.test(c.type || "");
+          const isFire = c.sys === "BT_FIRE" || /FTG|REI|INCEND/i.test(c.type || "");
 
-      // Conduttore di Protezione PE (Giallo/Verde)
-      iPoly([
-        { x: 0.66, y: 0.05, z: 0 },
-        { x: 0.78, y: 0.05, z: 0 },
-        { x: 0.78, y: 0.05, z: zMax },
-        { x: 0.66, y: 0.05, z: zMax }
-      ], "#65a30d", "#84cc16", 0.65);
-      iLine(0.72, 0.08, 0, 0.72, 0.08, zMax, "#fef08a", 0.5);
+          let cSheathStroke, cSheathFill, cCrest, cCoreFill;
+          if (isPE) {
+            cSheathStroke = "#15803d"; cSheathFill = "#22c55e"; cCrest = "#86efac"; cCoreFill = "#f59e0b";
+          } else if (isSignal) {
+            cSheathStroke = "#0369a1"; cSheathFill = "#0284c7"; cCrest = "#7dd3fc"; cCoreFill = "#38bdf8";
+          } else if (isFire) {
+            cSheathStroke = "#991b1b"; cSheathFill = "#dc2626"; cCrest = "#fca5a5"; cCoreFill = "#fbbf24";
+          } else if (isUni) {
+            cSheathStroke = "#b45309"; cSheathFill = "#d97706"; cCrest = "#fde68a"; cCoreFill = "#ea580c";
+          } else {
+            cSheathStroke = isLight ? "#475569" : "#1e293b";
+            cSheathFill   = isLight ? "#64748b" : "#334155";
+            cCrest        = isLight ? "#94a3b8" : "#64748b";
+            cCoreFill     = "#f59e0b";
+          }
 
-      // Circuito Speciale / Segnale / Antincendio (se presente cavo speciale)
-      const hasSpecial = state.cables.some(c => c.sys === "SPECIAL_ELV" || c.sys === "BT_FIRE");
-      if (hasSpecial) {
-        iPoly([
-          { x: 0.86, y: 0.05, z: 0 },
-          { x: 0.96, y: 0.05, z: 0 },
-          { x: 0.96, y: 0.05, z: zMax },
-          { x: 0.86, y: 0.05, z: zMax }
-        ], "#dc2626", "#ef4444", 0.65);
+          const normCx = Math.max(0.04, Math.min(0.96, c.x / W));
+          const normCy = Math.max(0.02, Math.min(0.40, (c.y / H) * 0.38));
+          const normR  = Math.max(0.010, Math.min(0.065, ((c.d / 2) / W) * 0.92));
+
+          const xLeft  = Math.max(0.01, normCx - normR);
+          const xRight = Math.min(0.99, normCx + normR);
+          const yTop   = normCy + normR;
+
+          // Corpo cilindrico estruso lungo l'asse Z da z=0 a z=zMax
+          iPoly([
+            { x: xLeft,  y: normCy, z: 0 },
+            { x: xRight, y: normCy, z: 0 },
+            { x: xRight, y: normCy, z: zMax },
+            { x: xLeft,  y: normCy, z: zMax }
+          ], cSheathStroke, cSheathFill, 0.55);
+
+          // Linea di cresta longitudinale / riflesso luce
+          iLine(normCx, yTop, 0, normCx, yTop, zMax, cCrest, 0.45);
+
+          // Calotta frontale circolare della sezione a z = 0
+          iCableCap(normCx, normCy, normR, cSheathStroke, cSheathFill, cCoreFill);
+        });
       }
 
-      // 6. FASCETTE DI ANCORAGGIO CAVI IN 3D ALLE MENSOLE
-      if (state.clamps) {
+      // 6. FASCETTE DI ANCORAGGIO CAVI IN 3D ALLE MENSOLE (avvolgenti il fascio reale)
+      if (state.clamps && state.cables && state.cables.length > 0) {
+        const minX = Math.max(0.04, Math.min(...state.cables.map(c => Math.max(0.04, (c.x - c.d / 2) / W))));
+        const maxX = Math.min(0.96, Math.max(...state.cables.map(c => Math.min(0.96, (c.x + c.d / 2) / W))));
+        const maxY = Math.min(0.42, Math.max(...state.cables.map(c => ((c.y + c.d / 2) / H) * 0.38)) + 0.02);
         [z1, z2].forEach(zs => {
           iPoly([
-            { x: 0.08, y: 0.09, z: zs - 0.04 },
-            { x: 0.94, y: 0.09, z: zs - 0.04 },
-            { x: 0.94, y: 0.09, z: zs + 0.04 },
-            { x: 0.08, y: 0.09, z: zs + 0.04 }
+            { x: Math.max(0.02, minX - 0.02), y: maxY, z: zs - 0.04 },
+            { x: Math.min(0.98, maxX + 0.02), y: maxY, z: zs - 0.04 },
+            { x: Math.min(0.98, maxX + 0.02), y: maxY, z: zs + 0.04 },
+            { x: Math.max(0.02, minX - 0.02), y: maxY, z: zs + 0.04 }
           ], "#0891b2", "#06b6d4", 0.75);
         });
       }
@@ -4153,13 +4489,15 @@
       const line = (layer, x1, y1, x2, y2, color, lw = 0.4, alpha = 1) => prims.push({ t: "line", layer, x1, y1, x2, y2, color, lw, alpha });
       const rect = (layer, x, y, w, h, color, fill, solid = false) => prims.push({ t: "rect", layer, x, y, w, h, color, fill, solid });
       const circle = (layer, cx, cy, r, color, fill, solid = false) => prims.push({ t: "circle", layer, cx, cy, r, color, fill, solid });
+      const txtMul = (typeof state.textScale === "number" && state.textScale > 0) ? state.textScale : 1.0;
       const text = (layer, x, y, h, str, color, align = "left", maxW = null) => {
         let s = String(str || "");
         if (maxW) {
-          const maxCh = Math.max(4, Math.floor((maxW - 2) / (h * 0.56)));
+          const maxCh = Math.max(4, Math.floor((maxW - 2) / (h * txtMul * 0.56)));
           if (s.length > maxCh) s = s.substring(0, maxCh - 2) + "..";
         }
-        prims.push({ t: "text", layer, x, y, h, str: s, color: isLight && color === "#f8fafc" ? txtCol : color, align });
+        const effectiveH = +(h * txtMul).toFixed(3);
+        prims.push({ t: "text", layer, x, y, h: effectiveH, str: s, color: isLight && color === "#f8fafc" ? txtCol : color, align });
       };
 
       const ceilY = H + (state.clearance > 0 ? 42 : 18);
@@ -4333,7 +4671,8 @@
           line("Anime_Cavi", c.x, c.y - r * 0.68, c.x, c.y + r * 0.68, "#fde047", 0.22, 0.65);
         } else {
           // STILIZZAZIONE CAVO MULTIPOLARE (2x, 3G, 4G, 5G): Anime multiple distribuite a stella
-          const nCores = c.form.includes("5G") ? 5 : c.form.includes("4G") || c.form.includes("4x") ? 4 : c.form.includes("2x") ? 2 : 3;
+          const formStr = String(c.form || "");
+          const nCores = formStr.includes("5G") ? 5 : formStr.includes("4G") || formStr.includes("4x") ? 4 : formStr.includes("2x") ? 2 : 3;
           const ringR = nCores === 2 ? r * 0.36 : r * 0.42;
           const coreR = nCores === 5 ? r * 0.18 : r * 0.21;
           for (let k = 0; k < nCores; k++) {
@@ -4597,19 +4936,24 @@
     function toggleRuler() {
       rulerActive = !rulerActive;
       rulerP1 = null; rulerP2 = null;
-      document.getElementById("btnRuler").textContent = rulerActive ? "📏 Righello CAD: ATTIVO" : "📏 Righello CAD: OFF";
+      const bRuler = document.getElementById("btnRuler");
+      if (bRuler) bRuler.textContent = rulerActive ? "📏 Righello CAD: ATTIVO" : "📏 Righello CAD: OFF";
       drawScene();
     }
 
     function drawScene() {
-      const rect = canvas.parentElement.getBoundingClientRect();
+      if (!canvas || !ctx) return;
+      const rect = (canvas.parentElement && typeof canvas.parentElement.getBoundingClientRect === "function")
+        ? canvas.parentElement.getBoundingClientRect()
+        : { width: 1200, height: 800 };
       const dpr = window.devicePixelRatio || 1;
-      const w = Math.max(300, rect.width), h = Math.max(520, rect.height - 38);
+      const w = Math.max(300, rect.width || 1200), h = Math.max(520, (rect.height || 800) - 38);
       if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
         canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-        canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
+        if (canvas.style) { canvas.style.width = `${w}px`; canvas.style.height = `${h}px`; }
       }
-      document.getElementById("lblZoom").textContent = `${Math.round(camScale * 75)}%`;
+      const lblZ = document.getElementById("lblZoom");
+      if (lblZ) lblZ.textContent = `${Math.round(camScale * 75)}%`;
 
       const { prims } = buildCADScene();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -4619,7 +4963,9 @@
       ctx.translate(camX, camY);
       ctx.scale(camScale, camScale);
 
+      // Pass 1: Riempimenti per viste ortogonali 2D (escludendo VISTA_3D_ISO per algoritmo del pittore 3D)
       prims.forEach(p => {
+        if (p.layer === "VISTA_3D_ISO") return;
         if (p.t === "rect" && p.fill) {
           ctx.fillStyle = p.fill; ctx.fillRect(p.x, -(p.y + p.h), p.w, p.h);
         } else if (p.t === "circle" && p.fill) {
@@ -4640,7 +4986,9 @@
         }
       });
 
+      // Pass 2: Contorni vettoriali e testi per viste ortogonali 2D (escludendo VISTA_3D_ISO)
       prims.forEach(p => {
+        if (p.layer === "VISTA_3D_ISO") return;
         if (p.t === "line") {
           ctx.save();
           if (p.alpha) ctx.globalAlpha = p.alpha;
@@ -4664,6 +5012,53 @@
           });
           ctx.closePath();
           ctx.stroke();
+          ctx.restore();
+        } else if (p.t === "text") {
+          ctx.font = `500 ${(p.h || 2.2) * 0.88}px 'JetBrains Mono', monospace`;
+          ctx.fillStyle = p.color; ctx.textAlign = p.align || "left";
+          ctx.fillText(p.str, p.x, -p.y);
+        }
+      });
+
+      // Pass 3: VISTA_3D_ISO con profondità rigorosa (fill + contorno accoppiati in ordine di profondità)
+      prims.forEach(p => {
+        if (p.layer !== "VISTA_3D_ISO") return;
+        if (p.t === "rect") {
+          if (p.fill) {
+            ctx.fillStyle = p.fill;
+            ctx.fillRect(p.x, -(p.y + p.h), p.w, p.h);
+          }
+          if (p.color) {
+            ctx.strokeStyle = p.color; ctx.lineWidth = 0.4;
+            ctx.strokeRect(p.x, -(p.y + p.h), p.w, p.h);
+          }
+        } else if (p.t === "circle") {
+          ctx.beginPath(); ctx.arc(p.cx, -p.cy, p.r, 0, Math.PI * 2);
+          if (p.fill) { ctx.fillStyle = p.fill; ctx.fill(); }
+          if (p.color) { ctx.strokeStyle = p.color; ctx.lineWidth = 0.45; ctx.stroke(); }
+        } else if (p.t === "poly" && p.pts && p.pts.length >= 2) {
+          ctx.save();
+          if (p.alpha) ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          p.pts.forEach((pt, idx) => {
+            if (idx === 0) ctx.moveTo(pt.x, -pt.y);
+            else ctx.lineTo(pt.x, -pt.y);
+          });
+          ctx.closePath();
+          if (p.fill && p.pts.length >= 3) {
+            ctx.fillStyle = p.fill;
+            ctx.fill();
+          }
+          if (p.color) {
+            ctx.strokeStyle = p.color; ctx.lineWidth = p.lw || 0.4;
+            ctx.stroke();
+          }
+          ctx.restore();
+        } else if (p.t === "line") {
+          ctx.save();
+          if (p.alpha) ctx.globalAlpha = p.alpha;
+          ctx.strokeStyle = p.color; ctx.lineWidth = p.lw || 0.4;
+          ctx.beginPath(); ctx.moveTo(p.x1, -p.y1); ctx.lineTo(p.x2, -p.y2); ctx.stroke();
           ctx.restore();
         } else if (p.t === "text") {
           ctx.font = `500 ${(p.h || 2.2) * 0.88}px 'JetBrains Mono', monospace`;
@@ -4709,9 +5104,16 @@
       ctx.restore();
     }
 
+    function getCanvasParentRect() {
+      if (canvas && canvas.parentElement && typeof canvas.parentElement.getBoundingClientRect === "function") {
+        return canvas.parentElement.getBoundingClientRect();
+      }
+      return { width: 1200, height: 800 };
+    }
+
     function fitAll() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const w = Math.max(300, rect.width), h = Math.max(520, rect.height - 38);
+      const rect = getCanvasParentRect();
+      const w = Math.max(300, rect.width || 1200), h = Math.max(520, (rect.height || 800) - 38);
       const { bounds } = buildCADScene();
       const bw = bounds.maxX - bounds.minX, bh = bounds.maxY - bounds.minY;
       camScale = Math.min((w - 60) / bw, (h - 60) / bh);
@@ -4721,16 +5123,16 @@
     }
 
     function zoomSection() {
-      const rect = canvas.parentElement.getBoundingClientRect();
+      const rect = getCanvasParentRect();
       camScale = 3.2;
-      camX = rect.width * 0.38 - (state.width * camScale) / 2;
-      camY = Math.max(520, rect.height - 38) * 0.55;
+      camX = (rect.width || 1200) * 0.38 - (state.width * camScale) / 2;
+      camY = Math.max(520, (rect.height || 800) - 38) * 0.55;
       drawScene();
     }
 
     function zoomTables() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const w = Math.max(300, rect.width), h = Math.max(520, rect.height - 38);
+      const rect = getCanvasParentRect();
+      const w = Math.max(300, rect.width || 1200), h = Math.max(520, (rect.height || 800) - 38);
       const { rightBounds } = buildCADScene();
       const bw = rightBounds.maxX - rightBounds.minX, bh = rightBounds.maxY - rightBounds.minY;
       camScale = Math.min((w - 50) / bw, (h - 50) / bh);
@@ -4740,7 +5142,7 @@
     }
 
     function zoomBy(factor, px = null, py = null) {
-      const rect = canvas.parentElement.getBoundingClientRect();
+      const rect = getCanvasParentRect();
       const sx = px !== null ? px : rect.width / 2;
       const sy = py !== null ? py : Math.max(520, rect.height - 38) / 2;
       const wPt = screenToWorld(sx, sy);
@@ -5149,7 +5551,8 @@
         );
       }
 
-      document.getElementById("dbItemsCount").textContent = items.length;
+      const dbCnt = document.getElementById("dbItemsCount");
+      if (dbCnt) dbCnt.textContent = items.length;
 
       items.forEach(c => {
         const isUni = isUnipolarCable(c);
@@ -5342,22 +5745,191 @@
       } catch (e) {}
     }
 
+    function deleteSectionTabAt(idx, event) {
+      if (event) event.stopPropagation();
+      if (projectSections.length <= 1) {
+        resetProject();
+        return;
+      }
+      projectSections.splice(idx, 1);
+      if (currentSectionIdx >= projectSections.length) {
+        currentSectionIdx = projectSections.length - 1;
+      } else if (currentSectionIdx > idx) {
+        currentSectionIdx--;
+      }
+      state = cloneStateSnapshot(projectSections[currentSectionIdx]);
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+      renderMultiSectionTabs();
+    }
+
+    function scrollTabsLeft() {
+      const box = document.getElementById("multiSectionTabs");
+      if (box) box.scrollBy({ left: -240, behavior: "smooth" });
+    }
+
+    function scrollTabsRight() {
+      const box = document.getElementById("multiSectionTabs");
+      if (box) box.scrollBy({ left: 240, behavior: "smooth" });
+    }
+
+    function toggleTabsDropdown(forceState) {
+      const menu = document.getElementById("tabsDropdownMenu");
+      if (!menu) return;
+      const isHidden = menu.classList.contains("hidden");
+      const shouldOpen = (forceState !== undefined) ? forceState : isHidden;
+      if (shouldOpen) {
+        closeAllMenus();
+        menu.classList.remove("hidden");
+        const activeItem = menu.querySelector(".tab-dropdown-active");
+        if (activeItem) {
+          setTimeout(() => { if (activeItem && typeof activeItem.scrollIntoView === 'function') activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 30);
+        }
+      } else {
+        menu.classList.add("hidden");
+      }
+    }
+
+    function initMultiSectionTabs() {
+      const box = document.getElementById("multiSectionTabs");
+      if (box && !box._wheelBound) {
+        box._wheelBound = true;
+        box.addEventListener("wheel", (e) => {
+          if (e.deltaY !== 0) {
+            e.preventDefault();
+            box.scrollLeft += e.deltaY;
+          }
+        }, { passive: false });
+      }
+    }
+
     function renderMultiSectionTabs() {
       const box = document.getElementById("multiSectionTabs");
       if (!box) return;
       box.innerHTML = "";
+
+      const lblTabsCount = document.getElementById("lblTabsCount");
+      if (lblTabsCount) lblTabsCount.textContent = `Schede (${projectSections.length})`;
+
+      const tabsDropdownCountBadge = document.getElementById("tabsDropdownCountBadge");
+      if (tabsDropdownCountBadge) {
+        tabsDropdownCountBadge.textContent = `${projectSections.length} ${projectSections.length === 1 ? 'scheda' : 'schede'}`;
+      }
+
+      const dropList = document.getElementById("tabsDropdownList");
+      if (dropList) dropList.innerHTML = "";
+
+      let activeTabWrapper = null;
+
       projectSections.forEach((sec, idx) => {
         const active = idx === currentSectionIdx;
+
+        // Estrazione titolo pulito tra parentesi (es. Anello BT - Lato SX)
+        const mParen = String(sec.title || "").match(/\(([^)]+)\)/);
+        const displayName = mParen ? mParen[1].trim() : (sec.title || `Canalina ${idx + 1}`);
+        const cableCount = Array.isArray(sec.cables) ? sec.cables.length : 0;
+        const dims = `${sec.width}x${sec.height} mm`;
+        const tooltip = `Scheda #${idx + 1}: ${sec.title || displayName}\nDimensioni: ${dims}\nCavi posati: ${cableCount}\nSerie: ${sec.type || 'P2000'}`;
+
+        // 1. Creazione Tab nello Strip orizzontale
+        const tabWrapper = document.createElement("div");
+        tabWrapper.className = "group inline-flex items-center rounded-md text-xs mono transition shadow-sm flex-shrink-0 " +
+          (active
+            ? "bg-amber-500 text-slate-950 font-bold border border-amber-400 active-tab shadow-amber-500/20"
+            : "bg-slate-800 hover:bg-slate-700/90 text-slate-300 hover:text-white border border-slate-700/80");
+
         const btn = document.createElement("button");
         btn.type = "button";
         btn.onclick = () => switchSectionTab(idx);
-        btn.className = active
-          ? "px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-bold text-xs mono shadow transition whitespace-nowrap"
-          : "px-3 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs mono transition whitespace-nowrap";
-        const shortName = (sec.planTag || sec.title || `Sez.${idx + 1}`).split("|")[0].trim();
-        btn.textContent = `${idx + 1}. ${shortName} (${sec.width}x${sec.height} • ${sec.cables.length} cavi)`;
-        box.appendChild(btn);
+        btn.className = "px-2.5 py-1 flex items-center gap-1.5 focus:outline-none max-w-[210px] text-left";
+        btn.title = tooltip;
+
+        const idxBadge = document.createElement("span");
+        idxBadge.className = "text-[10px] " + (active ? "text-slate-900 font-extrabold" : "text-amber-400 font-semibold");
+        idxBadge.textContent = `#${idx + 1}`;
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "truncate max-w-[110px] font-medium";
+        nameSpan.textContent = displayName;
+
+        const dimsSpan = document.createElement("span");
+        dimsSpan.className = "text-[10px] " + (active ? "text-slate-900/80" : "text-slate-400") + " whitespace-nowrap hidden sm:inline";
+        dimsSpan.textContent = `(${sec.width}x${sec.height})`;
+
+        btn.appendChild(idxBadge);
+        btn.appendChild(nameSpan);
+        btn.appendChild(dimsSpan);
+        tabWrapper.appendChild(btn);
+
+        if (projectSections.length > 1) {
+          const btnClose = document.createElement("button");
+          btnClose.type = "button";
+          btnClose.innerHTML = "&times;";
+          btnClose.title = `Chiudi scheda #${idx + 1} "${displayName}"`;
+          btnClose.className = "px-1.5 py-1 text-xs " +
+            (active ? "text-slate-950/70 hover:text-slate-950 hover:bg-amber-600/30" : "text-slate-400 hover:text-white hover:bg-red-500") +
+            " rounded-r-md transition focus:outline-none";
+          btnClose.onclick = (e) => deleteSectionTabAt(idx, e);
+          tabWrapper.appendChild(btnClose);
+        }
+
+        box.appendChild(tabWrapper);
+        if (active) activeTabWrapper = tabWrapper;
+
+        // 2. Popolamento Dropdown Salto Rapido
+        if (dropList) {
+          const item = document.createElement("div");
+          item.className = "flex items-center justify-between px-3 py-2 hover:bg-slate-800 transition cursor-pointer " +
+            (active ? "bg-amber-500/15 border-l-4 border-l-amber-500 tab-dropdown-active" : "");
+
+          const leftBtn = document.createElement("button");
+          leftBtn.type = "button";
+          leftBtn.className = "flex-1 text-left min-w-0 pr-2 focus:outline-none";
+          leftBtn.onclick = () => {
+            switchSectionTab(idx);
+            toggleTabsDropdown(false);
+          };
+
+          leftBtn.innerHTML = `
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="text-[10px] font-mono font-bold ${active ? 'text-amber-400' : 'text-slate-400'}">#${idx + 1}</span>
+              <span class="text-xs font-semibold ${active ? 'text-amber-300' : 'text-slate-200'} truncate">${escapeHtml(displayName)}</span>
+              ${active ? '<span class="text-[9px] px-1 py-0.2 rounded bg-amber-500 text-slate-950 font-bold ml-auto flex-shrink-0">ATTIVA</span>' : ''}
+            </div>
+            <div class="text-[10px] text-slate-400 mono mt-0.5 truncate flex items-center gap-2">
+              <span>📏 ${dims}</span>
+              <span>&bull;</span>
+              <span>⚡ ${cableCount} cavi</span>
+              <span>&bull;</span>
+              <span>${escapeHtml(sec.type || 'P2000')}</span>
+            </div>
+          `;
+          item.appendChild(leftBtn);
+
+          if (projectSections.length > 1) {
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "px-1.5 py-1 text-xs text-slate-400 hover:text-white hover:bg-red-500/80 rounded transition";
+            delBtn.innerHTML = "&times;";
+            delBtn.title = `Elimina scheda #${idx + 1}`;
+            delBtn.onclick = (e) => {
+              deleteSectionTabAt(idx, e);
+              toggleTabsDropdown(false);
+            };
+            item.appendChild(delBtn);
+          }
+
+          dropList.appendChild(item);
+        }
       });
+
+      // Auto-scroll the active tab into view so it is never hidden off to the right!
+      if (activeTabWrapper) {
+        setTimeout(() => {
+          if (activeTabWrapper && typeof activeTabWrapper.scrollIntoView === 'function') activeTabWrapper.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }, 50);
+      }
     }
 
     function switchSectionTab(idx) {
@@ -5368,6 +5940,7 @@
       pushStateToUI();
       recalculateAll();
       fitAll();
+      renderMultiSectionTabs();
     }
 
     function addNewSectionTab(duplicateCurrent = false) {
@@ -5391,6 +5964,7 @@
       pushStateToUI();
       recalculateAll();
       fitAll();
+      renderMultiSectionTabs();
     }
 
     function deleteCurrentSectionTab() {
@@ -5404,6 +5978,7 @@
       pushStateToUI();
       recalculateAll();
       fitAll();
+      renderMultiSectionTabs();
     }
 
     function exportProjectJSON() {
@@ -5550,11 +6125,11 @@
         .replace(/≥/g, "\\U+2265")
         .replace(/≤/g, "\\U+2264")
         .replace(/Δ/g, "\\U+0394")
-        .replace(/\u2014/g, " - ")     // Em-dash → hyphen (AutoCAD LT AC1009 non supporta non-ASCII)
-        .replace(/\u2013/g, " - ")     // En-dash → hyphen
-        .replace(/\u2012/g, "-")       // Figure-dash → hyphen
-        .replace(/\u2010/g, "-")       // Hyphen → hyphen-minus
-        .replace(/\u2011/g, "-")       // Non-breaking hyphen → hyphen-minus
+        .replace(/\u2014/g, " - ")
+        .replace(/\u2013/g, " - ")
+        .replace(/\u2012/g, "-")
+        .replace(/\u2010/g, "-")
+        .replace(/\u2011/g, "-")
         .replace(/•/g, "-")
         .replace(/à/g, "\\U+00E0")
         .replace(/á/g, "\\U+00E1")
@@ -5567,13 +6142,17 @@
         .replace(/ù/g, "\\U+00F9")
         .replace(/ú/g, "\\U+00FA")
         .replace(/À/g, "\\U+00C0")
+        .replace(/Á/g, "\\U+00C1")
         .replace(/È/g, "\\U+00C8")
         .replace(/É/g, "\\U+00C9")
         .replace(/Ì/g, "\\U+00CC")
+        .replace(/Í/g, "\\U+00CD")
         .replace(/Ò/g, "\\U+00D2")
+        .replace(/Ó/g, "\\U+00D3")
         .replace(/Ù/g, "\\U+00D9")
-        // Catch-all: qualsiasi altro non-ASCII rimasto → rimosso (AutoCAD LT AC1009 vuole solo ASCII puro)
-        .replace(/[^\x00-\x7F]/g, "?");
+        .replace(/Ú/g, "\\U+00DA")
+        // Qualsiasi altro carattere esteso o simbolo viene preservato tramite sequenza AutoCAD standard \U+XXXX
+        .replace(/[^\x00-\x7F]/g, ch => "\\U+" + ch.charCodeAt(0).toString(16).toUpperCase().padStart(4, "0"));
     }
 
     function cleanCADStr(s) {
@@ -5627,23 +6206,34 @@
       return 1.0;
     }
 
-    function exportAutoCADDXF() {
-      const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg)$/i, "");
+    function computeExportFileName(st) {
+      if (!st) st = state;
+      const rawTitle = String(st.title || "").trim();
+      const mParen = rawTitle.match(/\(([^)]+)\)/);
+      let name = mParen ? mParen[1].trim() : rawTitle;
+      name = name.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+      return name || "Canalina";
+    }
+
+    function generateDXFStringForCurrentState(fileTitle) {
       const { prims, bounds } = buildCADScene();
       const s = getScaleFactor(state.scale);
 
       const dxf = [];
       const add = (c, v) => dxf.push(String(c), String(v));
 
-      // 1. SEZIONE HEADER (AutoCAD R12 / AC1009 - Massima compatibilità universale con AutoCAD LT 2021..2026)
       add(0, "SECTION");
       add(2, "HEADER");
       add(9, "$ACADVER");
       add(1, "AC1009");
+      add(9, "$DWGCODEPAGE");
+      add(3, "ANSI_1252");
+      add(9, "$PROJECTNAME");
+      add(1, formatCADText(fileTitle || state.title));
       add(9, "$INSUNITS");
-      add(70, 4); // 4 = Millimetri (Scala Reale secondo fattore di scala)
+      add(70, 4);
       add(9, "$MEASUREMENT");
-      add(70, 1); // 1 = Sistema Metrico Decimale
+      add(70, 1);
       add(9, "$EXTMIN");
       add(10, (bounds.minX * s).toFixed(3));
       add(20, (bounds.minY * s).toFixed(3));
@@ -5654,11 +6244,9 @@
       add(30, "0.0");
       add(0, "ENDSEC");
 
-      // 2. SEZIONE TABLES
       add(0, "SECTION");
       add(2, "TABLES");
 
-      // Tabella LTYPE (Tipi di linea standard)
       add(0, "TABLE");
       add(2, "LTYPE");
       add(70, 1);
@@ -5671,15 +6259,14 @@
       add(40, "0.0");
       add(0, "ENDTAB");
 
-      // Tabella STYLE (Stili tipografici conformi ISO con font isocp.shx standard AutoCAD)
       add(0, "TABLE");
       add(2, "STYLE");
-      add(70, 2);
+      add(70, 3);
       add(0, "STYLE");
       add(2, "STANDARD");
       add(70, 0);
       add(40, "0.0");
-      add(41, "1.0"); // Width factor 1.0 naturale
+      add(41, "1.0");
       add(50, "0.0");
       add(71, 0);
       add(42, "2.5");
@@ -5690,15 +6277,25 @@
       add(2, "MONO_CAD");
       add(70, 0);
       add(40, "0.0");
-      add(41, "1.0"); // Width factor 1.0 naturale
+      add(41, "1.0");
       add(50, "0.0");
       add(71, 0);
       add(42, "2.5");
       add(3, "isocp.shx");
       add(4, "");
+
+      add(0, "STYLE");
+      add(2, "TITLE_CAD");
+      add(70, 0);
+      add(40, "0.0");
+      add(41, "1.0");
+      add(50, "0.0");
+      add(71, 0);
+      add(42, "3.5");
+      add(3, "arial.ttf");
+      add(4, "");
       add(0, "ENDTAB");
 
-      // Tabella LAYER con colori ACI calibrati identici alla preview grafica
       const layerList = Object.entries(CAD_LAYERS_SPEC);
       add(0, "TABLE");
       add(2, "LAYER");
@@ -5712,14 +6309,12 @@
       });
       add(0, "ENDTAB");
 
-      add(0, "ENDSEC"); // Fine TABLES
+      add(0, "ENDSEC");
 
-      // 3. SEZIONE BLOCKS (Obbligatoria per conformità alle tabelle in AutoCAD R12)
       add(0, "SECTION");
       add(2, "BLOCKS");
       add(0, "ENDSEC");
 
-      // 4. SEZIONE ENTITIES
       add(0, "SECTION");
       add(2, "ENTITIES");
 
@@ -5766,26 +6361,33 @@
         add(40, (r * s).toFixed(3));
       };
 
-      // 4A. Primitive di riempimento / sfondi colorati dei cavi, anime e canalina
       prims.forEach(p => {
         if (!p.fill) return;
-        const isDarkBoxBg = (p.fill === "#0f172a" || p.fill === "#04070d" || p.fill === "#1e293b") &&
-                            (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
-        if (isDarkBoxBg) return;
+        const isContainerBoxBg = p.t === "rect" &&
+          (p.fill === "#0f172a" || p.fill === "#04070d" || p.fill === "#1e293b") &&
+          (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
+        if (isContainerBoxBg) return;
 
         const fillAci = hexToClosestACI(p.fill);
-        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina") ? p.layer : "SFONDI_RIEMPIMENTI";
+        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
 
         if (p.t === "rect") {
           addSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, fillAci);
         } else if (p.t === "circle") {
           addSolidDisk(fillLay, p.cx, p.cy, p.r, fillAci);
-        } else if (p.t === "poly" && p.pts && p.pts.length === 4) {
-          addSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.pts[3].x, p.pts[3].y, fillAci);
+        } else if (p.t === "poly" && p.pts && p.pts.length >= 3) {
+          if (p.pts.length === 3) {
+            addSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.pts[2].x, p.pts[2].y, fillAci);
+          } else if (p.pts.length === 4) {
+            addSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.pts[3].x, p.pts[3].y, fillAci);
+          } else {
+            for (let i = 1; i < p.pts.length - 1; i++) {
+              addSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[i].x, p.pts[i].y, p.pts[i + 1].x, p.pts[i + 1].y, p.pts[i + 1].x, p.pts[i + 1].y, fillAci);
+            }
+          }
         }
       });
 
-      // 4B. Primitive vettoriali wireframe e testi tecnici
       prims.forEach(p => {
         const lay = CAD_LAYERS_SPEC[p.layer] ? p.layer : "0";
         const aci = hexToClosestACI(p.color);
@@ -5807,19 +6409,25 @@
             addLine(lay, pt1.x, pt1.y, pt2.x, pt2.y, aci);
           }
         } else if (p.t === "text") {
-          const sText = cleanCADStr(p.str);
+          const sText = formatCADText(p.str);
           if (!sText) return;
-          const th = Math.max(0.05, +(p.h * s || 2.2 * s).toFixed(3));
+          const th = Math.max(0.0001, +(((p.h || 2.2) * s)).toFixed(5));
+          const isTitle = (p.layer === "CORNICE" && p.h >= 2.3) ||
+                          p.layer === "ETICHETTA_PIANTA" ||
+                          (p.layer === "TABELLA" && /^[0-9]\./.test(p.str)) ||
+                          (p.layer === "CURVA_CARICO" && /^[0-9]\./.test(p.str)) ||
+                          (p.layer === "VISTA_3D_ISO" && p.h >= 2.2);
+          const styleName = isTitle ? "TITLE_CAD" : "MONO_CAD";
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
 
           add(0, "TEXT");
           add(8, lay);
           add(62, aci);
           add(10, (p.x * s).toFixed(3)); add(20, (p.y * s).toFixed(3)); add(30, "0.0");
-          add(40, th.toFixed(3));
-          add(41, "1.0"); // Width factor 1.0 (naturale, non compresso)
+          add(40, th.toFixed(5));
+          add(41, "1.0");
           add(1, sText);
-          add(7, "MONO_CAD");
+          add(7, styleName);
           if (hAlign !== 0) {
             add(72, hAlign);
             add(11, (p.x * s).toFixed(3)); add(21, (p.y * s).toFixed(3)); add(31, "0.0");
@@ -5827,59 +6435,116 @@
         }
       });
 
-      add(0, "ENDSEC"); // Fine ENTITIES
+      add(0, "ENDSEC");
       add(0, "EOF");
 
-      // Genera contenuto DXF purificato in solo ASCII standard a 7 bit (CRLF)
-      let dxfContent = dxf.join("\r\n") + "\r\n";
-      dxfContent = dxfContent.replace(/[^\x00-\x7F]/g, "?");
+      return dxf.join("\r\n") + "\r\n";
+    }
 
+    function exportAutoCADDXF() {
+      const name = (document.getElementById("exportName").value || computeExportFileName(state) || "Canalina_1_1").trim().replace(/\.(dxf|dwg)$/i, "");
+      const dxfContent = generateDXFStringForCurrentState(name);
       const blob = new Blob([dxfContent], { type: "application/dxf" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `${name}.dxf`;
+      document.body.appendChild(a);
       a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 150);
     }
 
-    function exportAutoLISPDWG() {
-      const name = (document.getElementById("exportName").value || "Canalina_1_1").trim().replace(/\.(dxf|dwg|scr)$/i, "");
+    async function exportAllSectionsDXF() {
+      syncActiveSectionToMultiStore();
+      if (!projectSections || projectSections.length === 0) {
+        exportAutoCADDXF();
+        return;
+      }
+      const originalIdx = currentSectionIdx;
+      const originalState = cloneStateSnapshot(state);
+      const count = projectSections.length;
+      
+      const banner = document.getElementById("statusBanner");
+      if (banner) {
+        banner.textContent = `Esportazione batch di ${count} canaline (.DXF) in corso...`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
+      }
+
+      for (let i = 0; i < projectSections.length; i++) {
+        currentSectionIdx = i;
+        state = cloneStateSnapshot(projectSections[i]);
+        recalculateAll();
+        const fileBase = computeExportFileName(state) || `Canalina_${i + 1}`;
+        const dxfContent = generateDXFStringForCurrentState(fileBase);
+        
+        const blob = new Blob([dxfContent], { type: "application/dxf" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${fileBase}.dxf`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+        }, 150);
+
+        if (i < projectSections.length - 1) {
+          await new Promise(r => setTimeout(r, 350));
+        }
+      }
+
+      currentSectionIdx = originalIdx;
+      state = cloneStateSnapshot(originalState);
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+
+      if (banner) {
+        banner.textContent = `✓ Esportate con successo tutte le ${count} canaline in file .DXF separati!`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+      }
+    }
+
+    function generateAutoLISPStringForCurrentState(fileTitle) {
       const { prims } = buildCADScene();
       const s = getScaleFactor(state.scale);
-      const fontFam = exportDxfOptions.fontFamily || "consolas";
-      const monoFont = fontFam === "jetbrains" ? "JetBrains Mono,Consolas" : "Consolas";
-      const titleFont = fontFam === "jetbrains" ? "Inter,Arial" : "Arial";
 
-      let scr = `(defun c:CREACANALINA ()\n  (setvar "CMDECHO" 0)\n  (setvar "OSMODE" 0)\n`;
-      scr += `  (command "_-STYLE" "MONO_CAD" "${monoFont}" "0" "1.0" "0" "_N" "_N")\n`;
-      scr += `  (command "_-STYLE" "TITLE_CAD" "${titleFont}" "0" "1.0" "0" "_N" "_N")\n`;
+      let scr = `;; SCRIPT AUTOLISP AUTONOMO - SEZIONE CANALINA 1:1 CON COLORI TRUECOLOR ED ACCENTI CEI\n`;
+      scr += `;; Trascina questo file .SCR direttamente nella finestra di disegno di AutoCAD o lancia il comando: SCRIPT\n\n`;
+      scr += `(defun c:CREACANALINA ()\n`;
+      scr += `  (setvar "CMDECHO" 0)\n`;
+      scr += `  (setvar "OSMODE" 0)\n`;
 
-      const emitL = (lay, x1, y1, x2, y2, hex, lwMm) => {
-        const aci = hexToClosestACI(hex), tc = hexToTrueColorInt(hex);
-        const lwVal = Math.max(0, Math.min(211, Math.round((lwMm || 0.35) * 100)));
-        scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tc !== null ? ` '(420 . ${tc})` : ""} '(370 . ${lwVal}) '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0)))\n`;
-      };
+      scr += `  (command "_STYLE" "STANDARD" "isocp.shx" 0.0 1.0 0 "_N" "_N" "_N")\n`;
+      scr += `  (command "_STYLE" "MONO_CAD" "isocp.shx" 0.0 1.0 0 "_N" "_N" "_N")\n`;
+      scr += `  (command "_STYLE" "TITLE_CAD" "arial.ttf" 0.0 1.0 0 "_N" "_N" "_N")\n`;
+
+      Object.entries(CAD_LAYERS_SPEC).forEach(([lay, cfg]) => {
+        scr += `  (command "_LAYER" "_M" "${lay}" "_C" ${cfg.aci || 7} "${lay}" "")\n`;
+      });
 
       const emitSolidTri = (lay, x1, y1, x2, y2, x3, y3, hex) => {
-        const aci = hexToClosestACI(hex), tc = hexToTrueColorInt(hex);
-        const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
+        const aci = hexToClosestACI(hex);
+        const rgb = hexToRGB(hex);
+        const tcStr = rgb ? ` '(420 . ${(rgb.r << 16) + (rgb.g << 8) + rgb.b})` : "";
         scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(12 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0) '(13 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0)))\n`;
       };
 
       const emitSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, hex) => {
-        const aci = hexToClosestACI(hex), tc = hexToTrueColorInt(hex);
-        const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
+        const aci = hexToClosestACI(hex);
+        const rgb = hexToRGB(hex);
+        const tcStr = rgb ? ` '(420 . ${(rgb.r << 16) + (rgb.g << 8) + rgb.b})` : "";
         scr += `  (entmake (list '(0 . "SOLID") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(12 ${(x4 * s).toFixed(3)} ${(y4 * s).toFixed(3)} 0.0) '(13 ${(x3 * s).toFixed(3)} ${(y3 * s).toFixed(3)} 0.0)))\n`;
       };
 
       prims.forEach(p => {
         if (!p.fill) return;
-        const isDarkBoxBg = (p.fill === "#0f172a" || p.fill === "#04070d") && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
-        if (!exportDxfOptions.includeBackgrounds && isDarkBoxBg) return;
-        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina") ? p.layer : "SFONDI_RIEMPIMENTI";
+        const isContainerBoxBg = p.t === "rect" && (p.fill === "#0f172a" || p.fill === "#04070d" || p.fill === "#1e293b") && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
+        if (!exportDxfOptions.includeBackgrounds && isContainerBoxBg) return;
+        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
         if (p.t === "rect") {
           emitSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.fill);
         } else if (p.t === "circle") {
-          const steps = p.r > 15 ? 36 : p.r > 5 ? 24 : 16;
+          const steps = p.r > 10 ? 20 : p.r > 4 ? 14 : 10;
           for (let i = 0; i < steps; i++) {
             const a1 = (i * 2 * Math.PI) / steps;
             const a2 = ((i + 1) * 2 * Math.PI) / steps;
@@ -5891,49 +6556,121 @@
               p.fill
             );
           }
-        } else if (p.t === "poly" && p.fill && p.pts && p.pts.length === 4) {
-          emitSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.pts[3].x, p.pts[3].y, p.fill);
+        } else if (p.t === "poly" && p.fill && p.pts && p.pts.length >= 3) {
+          if (p.pts.length === 3) {
+            emitSolidTri(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.fill);
+          } else if (p.pts.length === 4) {
+            emitSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.pts[3].x, p.pts[3].y, p.fill);
+          } else {
+            for (let i = 1; i < p.pts.length - 1; i++) {
+              emitSolidTri(fillLay, p.pts[0].x, p.pts[0].y, p.pts[i].x, p.pts[i].y, p.pts[i + 1].x, p.pts[i + 1].y, p.fill);
+            }
+          }
         }
       });
 
       prims.forEach(p => {
         const lay = CAD_LAYERS_SPEC[p.layer] ? p.layer : "0";
-        const aci = hexToClosestACI(p.color), tc = hexToTrueColorInt(p.color);
-        const tcStr = tc !== null ? ` '(420 . ${tc})` : "";
-        const lwVal = Math.max(0, Math.min(211, Math.round((p.lw || 0.4) * 100)));
+        const aci = hexToClosestACI(p.color);
+        const rgb = hexToRGB(p.color);
+        const tcStr = rgb ? ` '(420 . ${(rgb.r << 16) + (rgb.g << 8) + rgb.b})` : "";
+
         if (p.t === "line") {
-          emitL(lay, p.x1, p.y1, p.x2, p.y2, p.color, p.lw);
+          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.x1 * s).toFixed(3)} ${(p.y1 * s).toFixed(3)} 0.0) '(11 ${(p.x2 * s).toFixed(3)} ${(p.y2 * s).toFixed(3)} 0.0)))\n`;
         } else if (p.t === "rect") {
-          emitL(lay, p.x, p.y, p.x + p.w, p.y, p.color, p.lw);
-          emitL(lay, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.color, p.lw);
-          emitL(lay, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.color, p.lw);
-          emitL(lay, p.x, p.y + p.h, p.x, p.y, p.color, p.lw);
+          const x1 = p.x, y1 = p.y, x2 = p.x + p.w, y2 = p.y + p.h;
+          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0)))\n`;
+          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x2 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0) '(11 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0)))\n`;
+          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x2 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(11 ${(x1 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0)))\n`;
+          scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(x1 * s).toFixed(3)} ${(y2 * s).toFixed(3)} 0.0) '(11 ${(x1 * s).toFixed(3)} ${(y1 * s).toFixed(3)} 0.0)))\n`;
         } else if (p.t === "circle") {
-          scr += `  (entmake (list '(0 . "CIRCLE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . ${lwVal}) '(10 ${(p.cx * s).toFixed(3)} ${(p.cy * s).toFixed(3)} 0.0) '(40 . ${(p.r * s).toFixed(3)})))\n`;
+          scr += `  (entmake (list '(0 . "CIRCLE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.cx * s).toFixed(3)} ${(p.cy * s).toFixed(3)} 0.0) '(40 . ${(p.r * s).toFixed(3)})))\n`;
         } else if (p.t === "poly" && p.pts && p.pts.length >= 2) {
           for (let i = 0; i < p.pts.length; i++) {
             const pt1 = p.pts[i];
             const pt2 = p.pts[(i + 1) % p.pts.length];
-            emitL(lay, pt1.x, pt1.y, pt2.x, pt2.y, p.color, p.lw);
+            scr += `  (entmake (list '(0 . "LINE") '(8 . "${lay}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(pt1.x * s).toFixed(3)} ${(pt1.y * s).toFixed(3)} 0.0) '(11 ${(pt2.x * s).toFixed(3)} ${(pt2.y * s).toFixed(3)} 0.0)))\n`;
           }
         } else if (p.t === "text") {
           const sText = formatCADText(p.str, exportDxfOptions.includeUnicode).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
           if (!sText) return;
-          const th = Math.max(0.05, +((p.h || 2.2) * 0.88 * s).toFixed(3));
+          const th = Math.max(0.0001, +(((p.h || 2.2) * 0.88 * s)).toFixed(5));
           const isTitle = (p.layer === "CORNICE" && p.h >= 2.3) ||
                           p.layer === "ETICHETTA_PIANTA" ||
                           (p.layer === "TABELLA" && /^[0-9]\./.test(p.str)) ||
-                          (p.layer === "CURVA_CARICO" && /^[0-9]\./.test(p.str));
+                          (p.layer === "CURVA_CARICO" && /^[0-9]\./.test(p.str)) ||
+                          (p.layer === "VISTA_3D_ISO" && p.h >= 2.2);
           const styleName = isTitle ? "TITLE_CAD" : "MONO_CAD";
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
           const alignStr = hAlign !== 0 ? ` '(72 . ${hAlign}) '(11 ${(p.x * s).toFixed(3)} ${(p.y * s).toFixed(3)} 0.0) '(73 . 0)` : "";
-          scr += `  (entmake (list '(0 . "TEXT") '(8 . "${lay}") '(7 . "${styleName}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.x * s).toFixed(3)} ${(p.y * s).toFixed(3)} 0.0) '(40 . ${th.toFixed(3)}) '(41 . 1.0) '(1 . "${sText}")${alignStr}))\n`;
+          scr += `  (entmake (list '(0 . "TEXT") '(8 . "${lay}") '(7 . "${styleName}") '(62 . ${aci})${tcStr} '(370 . 25) '(10 ${(p.x * s).toFixed(3)} ${(p.y * s).toFixed(3)} 0.0) '(40 . ${th.toFixed(5)}) '(41 . 1.0) '(1 . "${sText}")${alignStr}))\n`;
         }
       });
       scr += `  (command "_ZOOM" "_E")\n  (princ)\n)\n(c:CREACANALINA)\n`;
-      const blob = new Blob([scr], { type: "text/plain;charset=utf-8" });
+      return scr;
+    }
+
+    function exportAutoLISPDWG() {
+      const name = (document.getElementById("exportName").value || computeExportFileName(state) || "Canalina_1_1").trim().replace(/\.(dxf|dwg|scr)$/i, "");
+      const scr = generateAutoLISPStringForCurrentState(name);
+      const blob = new Blob([scr], { type: "text/plain" });
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = `${name}_TrascinaInAutoCAD.scr`; a.click();
+      a.href = URL.createObjectURL(blob);
+      a.download = `${name}_TrascinaInAutoCAD.scr`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 150);
+    }
+
+    async function exportAllSectionsAutoLISP() {
+      syncActiveSectionToMultiStore();
+      if (!projectSections || projectSections.length === 0) {
+        exportAutoLISPDWG();
+        return;
+      }
+      const originalIdx = currentSectionIdx;
+      const originalState = cloneStateSnapshot(state);
+      const count = projectSections.length;
+      
+      const banner = document.getElementById("statusBanner");
+      if (banner) {
+        banner.textContent = `Esportazione batch di ${count} canaline (.SCR) in corso...`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
+      }
+
+      for (let i = 0; i < projectSections.length; i++) {
+        currentSectionIdx = i;
+        state = cloneStateSnapshot(projectSections[i]);
+        recalculateAll();
+        const fileBase = computeExportFileName(state) || `Canalina_${i + 1}`;
+        const scrContent = generateAutoLISPStringForCurrentState(fileBase);
+        
+        const blob = new Blob([scrContent], { type: "text/plain" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${fileBase}_TrascinaInAutoCAD.scr`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+        }, 150);
+
+        if (i < projectSections.length - 1) {
+          await new Promise(r => setTimeout(r, 350));
+        }
+      }
+
+      currentSectionIdx = originalIdx;
+      state = cloneStateSnapshot(originalState);
+      pushStateToUI();
+      recalculateAll();
+      fitAll();
+
+      if (banner) {
+        banner.textContent = `✓ Esportate con successo tutte le ${count} canaline in file .SCR separati!`;
+        banner.className = "mono text-[11px] px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold";
+      }
     }
 
     function exportWordReport() {
@@ -5966,6 +6703,8 @@
     function closeAllMenus() {
       document.querySelectorAll(".win-dropdown").forEach(d => d.classList.add("hidden"));
       document.querySelectorAll(".win-menu-btn").forEach(b => b.classList.remove("bg-slate-800", "text-white"));
+      const tabsDrop = document.getElementById("tabsDropdownMenu");
+      if (tabsDrop) tabsDrop.classList.add("hidden");
     }
 
     // ============================================================================
@@ -6211,7 +6950,7 @@
       });
 
       document.addEventListener("click", (e) => {
-        if (!e.target.closest("#winMenuBar")) {
+        if (!e.target.closest("#winMenuBar") && !e.target.closest("#tabsDropdownContainer")) {
           closeAllMenus();
         }
       });
@@ -6249,8 +6988,22 @@
         const isInput = activeTag === "INPUT" || activeTag === "TEXTAREA" || activeTag === "SELECT";
         if (isInput && !e.key.startsWith("F") && e.key !== "Escape") return;
 
+        // Navigazione rapida tra le schede aperte (Ctrl+PageDown / Ctrl+PageUp / Alt+Frecce)
+        if ((e.ctrlKey && (e.key === "PageDown" || e.key === "PageUp")) || (e.altKey && (e.key === "ArrowRight" || e.key === "ArrowLeft"))) {
+          if (projectSections && projectSections.length > 1) {
+            e.preventDefault();
+            const isNext = e.key === "PageDown" || e.key === "ArrowRight";
+            const nextIdx = isNext
+              ? (currentSectionIdx + 1) % projectSections.length
+              : (currentSectionIdx - 1 + projectSections.length) % projectSections.length;
+            switchSectionTab(nextIdx);
+            return;
+          }
+        }
+
         if (e.key === "Escape") {
           closeAllMenus();
+          toggleTabsDropdown(false);
           closeQuickHelpModal();
           closePwaOfflineModal();
           closeCartiglioSettingsModal();
@@ -6352,6 +7105,7 @@
       populateBrandSeries();
       resetProject();
       syncActiveSectionToMultiStore();
+      initMultiSectionTabs();
       initLibreDwgEngine();
       window.addEventListener("resize", drawScene);
     });
