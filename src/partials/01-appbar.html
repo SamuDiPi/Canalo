@@ -38,7 +38,7 @@
     <button type="button" class="icon-btn" data-undo disabled onclick="undoLastChange()" aria-label="Annulla" title="Annulla (Ctrl+Z)"><svg class="ico"><use href="#i-undo"/></svg></button>
     <button type="button" class="icon-btn" data-redo disabled onclick="redoLastChange()" aria-label="Ripeti" title="Ripeti (Ctrl+Y)"><svg class="ico"><use href="#i-redo"/></svg></button>
 
-    <input id="dwgInput" type="file" accept=".dwg,.dxf" multiple class="hidden" onchange="importCADFile(this)">
+    <input id="dwgInput" type="file" accept=".dwg,.dxf,.ccad" multiple class="hidden" onchange="importCADFile(this)">
     <input id="pdfInput" type="file" accept=".pdf" multiple class="hidden" onchange="importPDFFile(this)">
     <input id="jsonProjectInput" type="file" accept=".ccad,.json" class="hidden" onchange="importProjectJSON(this)">
 

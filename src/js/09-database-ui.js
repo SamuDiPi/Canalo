@@ -265,14 +265,14 @@
     const dropArea = document.getElementById("cadDropArea");
     dropArea.addEventListener("dragover", e => { e.preventDefault(); dropArea.classList.add("border-cyan-400"); });
     dropArea.addEventListener("dragleave", () => dropArea.classList.remove("border-cyan-400"));
-    dropArea.addEventListener("drop", e => {
+    // I file si possono rilasciare in qualunque punto della pagina: senza questo il browser
+    // aprirebbe o scaricherebbe il file al posto dell'app.
+    const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
+    window.addEventListener("dragover", e => { if (hasFiles(e)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+    window.addEventListener("drop", e => {
+      if (!hasFiles(e)) return;
       e.preventDefault();
       dropArea.classList.remove("border-cyan-400");
-      const files = e.dataTransfer && e.dataTransfer.files;
-      if (!files || !files.length) return;
-      const nm = files[0].name.toLowerCase();
-      if (nm.endsWith(".ccad") || nm.endsWith(".json")) openProjectFile(files[0]);
-      else if (nm.endsWith(".pdf")) importPDFFile({ files, value: "" });
-      else importCADFile({ files, value: "" });
+      routeImportedFiles(e.dataTransfer.files);
     });
 

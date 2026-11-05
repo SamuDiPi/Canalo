@@ -95,8 +95,11 @@
     }
 
     async function importCADFile(inputEl) {
-      const files = Array.from((inputEl && inputEl.files) || []);
+      let files = Array.from((inputEl && inputEl.files) || []);
       if (!files || files.length === 0) return;
+      // Un progetto .ccad scelto da "Importa disegno" viene aperto come progetto
+      const proj = files.find(f => /\.(ccad|json)$/i.test(f.name));
+      if (proj) { if (inputEl) inputEl.value = ""; openProjectFile(proj); return; }
       const banner = document.getElementById("statusBanner");
       const inspBox = document.getElementById("dwgInspectorContent");
 

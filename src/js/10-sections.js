@@ -453,17 +453,25 @@
     }
 
     // Apri progetto: selettore del sistema se disponibile (mantiene il file per "Salva"), altrimenti <input>
-    async function openProjectDialog() {
-      if (window.showOpenFilePicker) {
-        try {
-          const [handle] = await window.showOpenFilePicker({ types: [{ description: "Progetto CanaloCAD", accept: { [CCAD_MIME]: [CCAD_EXT], "application/json": [".json"] } }] });
-          if (handle) await openProjectFile(await handle.getFile(), handle);
-          return;
-        } catch (e) {
-          if (e && e.name === "AbortError") return;
-        }
-      }
+    // Apri progetto: si usa sempre il selettore classico <input type="file">, sincrono rispetto al clic.
+    // (Il selettore moderno, se falliva, ripiegava sul classico dopo un await: il browser lo
+    // considerava non più un gesto dell'utente e lo bloccava senza alcun messaggio.)
+    function openProjectDialog() {
       document.getElementById("jsonProjectInput").click();
+    }
+
+    // Smista un insieme di file al lettore giusto in base all'estensione (import, trascinamento)
+    function routeImportedFiles(files) {
+      const list = Array.from(files || []);
+      if (!list.length) return;
+      const ext = f => (f.name.toLowerCase().match(/\.[a-z0-9]+$/) || [""])[0];
+      const project = list.find(f => ext(f) === ".ccad" || ext(f) === ".json");
+      if (project) { openProjectFile(project); return; }
+      const pdfs = list.filter(f => ext(f) === ".pdf");
+      const cads = list.filter(f => ext(f) === ".dwg" || ext(f) === ".dxf");
+      if (pdfs.length) importPDFFile({ files: pdfs, value: "" });
+      if (cads.length) importCADFile({ files: cads, value: "" });
+      if (!pdfs.length && !cads.length) toast(`Formato non riconosciuto: "${list[0].name}". Si possono aprire file .ccad, .dwg, .dxf e .pdf.`, "warn", null, 7000);
     }
 
     async function importProjectJSON(inputEl) {

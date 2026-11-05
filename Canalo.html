@@ -372,7 +372,7 @@
     <button type="button" class="icon-btn" data-undo disabled onclick="undoLastChange()" aria-label="Annulla" title="Annulla (Ctrl+Z)"><svg class="ico"><use href="#i-undo"/></svg></button>
     <button type="button" class="icon-btn" data-redo disabled onclick="redoLastChange()" aria-label="Ripeti" title="Ripeti (Ctrl+Y)"><svg class="ico"><use href="#i-redo"/></svg></button>
 
-    <input id="dwgInput" type="file" accept=".dwg,.dxf" multiple class="hidden" onchange="importCADFile(this)">
+    <input id="dwgInput" type="file" accept=".dwg,.dxf,.ccad" multiple class="hidden" onchange="importCADFile(this)">
     <input id="pdfInput" type="file" accept=".pdf" multiple class="hidden" onchange="importPDFFile(this)">
     <input id="jsonProjectInput" type="file" accept=".ccad,.json" class="hidden" onchange="importProjectJSON(this)">
 
@@ -1085,7 +1085,7 @@
 
           <section id="help-dwg" data-help>
             <h3>Importare un disegno DWG/DXF</h3>
-            <p>Usa <em>Importa → Disegno DWG / DXF</em> (<kbd>Ctrl</kbd>+<kbd>O</kbd>) oppure trascina il file sul foglio. Puoi selezionare più file insieme: ognuno diventa una sezione del progetto.</p>
+            <p>Usa <em>Importa → Disegno DWG / DXF</em> (<kbd>Ctrl</kbd>+<kbd>O</kbd>) oppure trascina il file in un punto qualsiasi della finestra. Puoi selezionare più file insieme: ognuno diventa una sezione del progetto.</p>
             <p>Dal disegno vengono letti:</p>
             <ul>
               <li>le <strong>dimensioni</strong> della canalina (larghezza e altezza), anche dal nome del file o dai testi;</li>
@@ -1154,7 +1154,7 @@
             <h3>Progetto, sezioni e salvataggio</h3>
             <p>Un progetto contiene una o più <strong>sezioni</strong> (le canaline). Le gestisci dal selettore nella barra superiore o dal pannello <em>Progetto</em>: <em>Nuova</em>, <em>Duplica</em> (copia la sezione aperta con i suoi cavi) ed <em>Elimina</em>. Con <kbd>Ctrl</kbd>+<kbd>PagGiù</kbd> / <kbd>PagSu</kbd> passi alla sezione successiva o precedente.</p>
             <p><strong>Salvataggio automatico</strong>: ogni modifica viene salvata nel browser e alla riapertura ritrovi il lavoro. Il salvataggio automatico vale solo su quel computer e quel browser.</p>
-            <p><strong>File di progetto .ccad</strong>: <em>Salva progetto</em> (<kbd>Ctrl</kbd>+<kbd>S</kbd>) crea un file <span class="mono">.ccad</span> con <strong>tutte le sezioni</strong>, i cavi, lo staffaggio, il cartiglio e le opzioni della tavola. Su Chrome ed Edge, dopo il primo salvataggio, <kbd>Ctrl</kbd>+<kbd>S</kbd> aggiorna lo stesso file; <em>Salva con nome</em> (<kbd>Ctrl</kbd>+<kbd>Maiusc</kbd>+<kbd>S</kbd>) ne crea uno nuovo. Per riaprirlo usa <em>Apri progetto</em> o trascina il file sul foglio. Si aprono anche i file <span class="mono">.json</span> delle versioni precedenti.</p>
+            <p><strong>File di progetto .ccad</strong>: <em>Salva progetto</em> (<kbd>Ctrl</kbd>+<kbd>S</kbd>) crea un file <span class="mono">.ccad</span> con <strong>tutte le sezioni</strong>, i cavi, lo staffaggio, il cartiglio e le opzioni della tavola. Su Chrome ed Edge, dopo il primo salvataggio, <kbd>Ctrl</kbd>+<kbd>S</kbd> aggiorna lo stesso file; <em>Salva con nome</em> (<kbd>Ctrl</kbd>+<kbd>Maiusc</kbd>+<kbd>S</kbd>) ne crea uno nuovo. Per riaprirlo usa <em>Importa → Apri progetto</em> oppure trascina il file in un punto qualsiasi della finestra. Si aprono anche i file <span class="mono">.json</span> delle versioni precedenti.</p>
             <p><strong>Cartiglio</strong> (<kbd>F2</kbd>): committente, progetto, progettista, codice elaborato, revisione e scala. Con «Memorizza questi dati come predefiniti» i dati dello studio vengono proposti nei nuovi progetti.</p>
             <p><strong>Annulla e Ripeti</strong> (<kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd>) valgono per tutte le operazioni, comprese eliminazione di sezioni e nuovo progetto.</p>
           </section>
@@ -3324,8 +3324,11 @@
     }
 
     async function importCADFile(inputEl) {
-      const files = Array.from((inputEl && inputEl.files) || []);
+      let files = Array.from((inputEl && inputEl.files) || []);
       if (!files || files.length === 0) return;
+      // Un progetto .ccad scelto da "Importa disegno" viene aperto come progetto
+      const proj = files.find(f => /\.(ccad|json)$/i.test(f.name));
+      if (proj) { if (inputEl) inputEl.value = ""; openProjectFile(proj); return; }
       const banner = document.getElementById("statusBanner");
       const inspBox = document.getElementById("dwgInspectorContent");
 
@@ -6378,15 +6381,15 @@
     const dropArea = document.getElementById("cadDropArea");
     dropArea.addEventListener("dragover", e => { e.preventDefault(); dropArea.classList.add("border-cyan-400"); });
     dropArea.addEventListener("dragleave", () => dropArea.classList.remove("border-cyan-400"));
-    dropArea.addEventListener("drop", e => {
+    // I file si possono rilasciare in qualunque punto della pagina: senza questo il browser
+    // aprirebbe o scaricherebbe il file al posto dell'app.
+    const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
+    window.addEventListener("dragover", e => { if (hasFiles(e)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+    window.addEventListener("drop", e => {
+      if (!hasFiles(e)) return;
       e.preventDefault();
       dropArea.classList.remove("border-cyan-400");
-      const files = e.dataTransfer && e.dataTransfer.files;
-      if (!files || !files.length) return;
-      const nm = files[0].name.toLowerCase();
-      if (nm.endsWith(".ccad") || nm.endsWith(".json")) openProjectFile(files[0]);
-      else if (nm.endsWith(".pdf")) importPDFFile({ files, value: "" });
-      else importCADFile({ files, value: "" });
+      routeImportedFiles(e.dataTransfer.files);
     });
 
     // ============================================================================
@@ -6844,17 +6847,25 @@
     }
 
     // Apri progetto: selettore del sistema se disponibile (mantiene il file per "Salva"), altrimenti <input>
-    async function openProjectDialog() {
-      if (window.showOpenFilePicker) {
-        try {
-          const [handle] = await window.showOpenFilePicker({ types: [{ description: "Progetto CanaloCAD", accept: { [CCAD_MIME]: [CCAD_EXT], "application/json": [".json"] } }] });
-          if (handle) await openProjectFile(await handle.getFile(), handle);
-          return;
-        } catch (e) {
-          if (e && e.name === "AbortError") return;
-        }
-      }
+    // Apri progetto: si usa sempre il selettore classico <input type="file">, sincrono rispetto al clic.
+    // (Il selettore moderno, se falliva, ripiegava sul classico dopo un await: il browser lo
+    // considerava non più un gesto dell'utente e lo bloccava senza alcun messaggio.)
+    function openProjectDialog() {
       document.getElementById("jsonProjectInput").click();
+    }
+
+    // Smista un insieme di file al lettore giusto in base all'estensione (import, trascinamento)
+    function routeImportedFiles(files) {
+      const list = Array.from(files || []);
+      if (!list.length) return;
+      const ext = f => (f.name.toLowerCase().match(/\.[a-z0-9]+$/) || [""])[0];
+      const project = list.find(f => ext(f) === ".ccad" || ext(f) === ".json");
+      if (project) { openProjectFile(project); return; }
+      const pdfs = list.filter(f => ext(f) === ".pdf");
+      const cads = list.filter(f => ext(f) === ".dwg" || ext(f) === ".dxf");
+      if (pdfs.length) importPDFFile({ files: pdfs, value: "" });
+      if (cads.length) importCADFile({ files: cads, value: "" });
+      if (!pdfs.length && !cads.length) toast(`Formato non riconosciuto: "${list[0].name}". Si possono aprire file .ccad, .dwg, .dxf e .pdf.`, "warn", null, 7000);
     }
 
     async function importProjectJSON(inputEl) {
