@@ -12,6 +12,7 @@ Progettazione e verifica di canaline portacavi nel browser: sezione 1:1, riempim
 | `src/js/` | Logica, un file per area, caricati in ordine numerico |
 | `Canalo.html` | **File generato**: unico, autosufficiente, da distribuire |
 | `sw.js`, `manifest.webmanifest`, `icon.svg` | Modalità offline (attiva solo via http/https) |
+| `tools/make_dxf_template.py` | Rigenera lo scheletro DXF R2000 (`src/js/11-dxf-template.js`) con ezdxf, solo se cambiano layer o stili |
 
 Moduli JavaScript:
 

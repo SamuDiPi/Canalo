@@ -2,7 +2,7 @@
     // 8. ESPORTATORI CERTIFICATI FEDELI 1:1 (.DXF TRUECOLOR, .SCR, .DOC, .CSV) + MULTI-SEZIONE
     // ============================================================================
     let exportDxfOptions = {
-      format: "AC1018", // Default: "AC1018" (AutoCAD & Revit Compatibile con Retini HATCH e TrueColor)
+      format: "AC1015", // "AC1015" = DXF R2000 completo (predefinito) · "AC1009" = R12 minimo
       fontFamily: "arial", // Default: "arial" (Arial standardizzato a 2.5mm)
       includeBackgrounds: true,
       includeLineweights: true,
@@ -54,7 +54,7 @@
       const chkCart = document.getElementById("chkExportCartiglio");
       const chkTableDesc = document.getElementById("chkExportTableDesc");
 
-      if (selFmt) exportDxfOptions.format = selFmt.value;
+      if (selFmt) exportDxfOptions.format = selFmt.value === "AC1009" ? "AC1009" : "AC1015";
       if (selFnt) exportDxfOptions.fontFamily = selFnt.value;
       if (chkBg) exportDxfOptions.includeBackgrounds = chkBg.checked;
       if (chkLw) exportDxfOptions.includeLineweights = chkLw.checked;
@@ -226,216 +226,192 @@
       return name || "Canalina";
     }
 
+    // ---------------------------------------------------------------------------
+    // WRITER DXF
+    // R2000 (AC1015, predefinito): scheletro generato da ezdxf (DXF_R2000_TEMPLATE) + entità con
+    //   handle, owner, marcatori di sottoclasse, TrueColor e retini HATCH SOLID (regioni piene in Revit).
+    // R12 (AC1009): formato minimo senza handle, riempimenti come SOLID. Massima compatibilità.
+    // Ogni entità con coordinate non numeriche viene scartata invece di corrompere il file.
+    // ---------------------------------------------------------------------------
+    function dxfText(str) {
+      // Il file è in Windows-1252 ($DWGCODEPAGE = ANSI_1252): i caratteri Latin-1 (à è ° ² ±...) restano
+      // tali, quelli fuori codepage (≥ ≤ Δ...) diventano \U+XXXX, come li scrive AutoCAD stesso.
+      return String(str == null ? "" : str)
+        .replace(/\\U\+00([A-F0-9]{2})/gi, (m, hx) => parseInt(hx, 16) >= 0xA0 ? String.fromCharCode(parseInt(hx, 16)) : m)
+        .replace(/[\r\n\t]+/g, " ")
+        .replace(/[\x00-\x1f\x7f-\x9f]/g, "")
+        .replace(/[^\x00-\xff]/g, ch => "\\U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0"))
+        .slice(0, 250);
+    }
+
+    function createDxfWriter(r2000, scale) {
+      const out = [];
+      const T = DXF_R2000_TEMPLATE;
+      let handle = T.firstHandle;
+      const owner = T.modelSpaceOwner;
+      const g = (code, val) => { out.push(String(code).padStart(3, " "), String(val)); };
+      const f = v => (+v).toFixed(3);
+      const ok = (...vals) => vals.every(v => Number.isFinite(+v));
+      const S = v => v * scale;
+
+      function head(type, lay, aci, tc) {
+        g(0, type);
+        if (r2000) { g(5, (handle++).toString(16).toUpperCase()); g(330, owner); g(100, "AcDbEntity"); }
+        g(8, lay);
+        g(62, aci);
+        if (r2000 && Number.isInteger(tc)) g(420, tc);
+      }
+
+      return {
+        line(lay, x1, y1, x2, y2, aci, tc) {
+          if (!ok(x1, y1, x2, y2)) return;
+          head("LINE", lay, aci, tc);
+          if (r2000) g(100, "AcDbLine");
+          g(10, f(S(x1))); g(20, f(S(y1))); g(30, "0.0");
+          g(11, f(S(x2))); g(21, f(S(y2))); g(31, "0.0");
+        },
+        circle(lay, cx, cy, r, aci, tc) {
+          if (!ok(cx, cy, r) || r <= 0) return;
+          head("CIRCLE", lay, aci, tc);
+          if (r2000) g(100, "AcDbCircle");
+          g(10, f(S(cx))); g(20, f(S(cy))); g(30, "0.0");
+          g(40, f(S(r)));
+        },
+        text(lay, x, y, h, str, style, hAlign, aci, tc) {
+          const txt = dxfText(str);
+          if (!txt.trim() || !ok(x, y, h)) return;
+          head("TEXT", lay, aci, tc);
+          if (r2000) g(100, "AcDbText");
+          g(10, f(S(x))); g(20, f(S(y))); g(30, "0.0");
+          g(40, Math.max(0.0001, S(h)).toFixed(5));
+          g(1, txt);
+          g(41, "1.0");
+          g(7, style);
+          if (hAlign) {
+            g(72, hAlign);
+            g(11, f(S(x))); g(21, f(S(y))); g(31, "0.0");
+          }
+          if (r2000) g(100, "AcDbText");
+        },
+        // Quadrilatero pieno (p1..p4 in ordine di contorno)
+        fillQuad(lay, x1, y1, x2, y2, x3, y3, x4, y4, aci, tc) {
+          if (!ok(x1, y1, x2, y2, x3, y3, x4, y4)) return;
+          if (r2000) {
+            this._hatch(lay, [[x1, y1], [x2, y2], [x3, y3], [x4, y4]], false, aci, tc);
+            return;
+          }
+          head("SOLID", lay, aci, tc);
+          // SOLID usa l'ordine "a zig-zag": 1, 2, 4, 3
+          g(10, f(S(x1))); g(20, f(S(y1))); g(30, "0.0");
+          g(11, f(S(x2))); g(21, f(S(y2))); g(31, "0.0");
+          g(12, f(S(x4))); g(22, f(S(y4))); g(32, "0.0");
+          g(13, f(S(x3))); g(23, f(S(y3))); g(33, "0.0");
+        },
+        fillDisk(lay, cx, cy, r, aci, tc) {
+          if (!ok(cx, cy, r) || r <= 0) return;
+          if (r2000) {
+            // Due semicerchi con bulge 1 (180°)
+            this._hatch(lay, [[cx - r, cy, 1], [cx + r, cy, 1]], true, aci, tc);
+            return;
+          }
+          const steps = r > 10 ? 24 : r > 4 ? 16 : 12;
+          for (let i = 0; i < steps; i += 2) {
+            const a = k => ((i + k) * 2 * Math.PI) / steps;
+            this.fillQuad(lay, cx, cy,
+              cx + Math.cos(a(0)) * r, cy + Math.sin(a(0)) * r,
+              cx + Math.cos(a(1)) * r, cy + Math.sin(a(1)) * r,
+              cx + Math.cos(a(2)) * r, cy + Math.sin(a(2)) * r, aci, tc);
+          }
+        },
+        _hatch(lay, verts, withBulge, aci, tc) {
+          head("HATCH", lay, aci, tc);
+          g(100, "AcDbHatch");
+          g(10, "0.0"); g(20, "0.0"); g(30, "0.0");
+          g(210, "0.0"); g(220, "0.0"); g(230, "1.0");
+          g(2, "SOLID");
+          g(70, 1);            // riempimento pieno
+          g(71, 0);            // non associativo
+          g(91, 1);            // un contorno
+          g(92, 3);            // contorno esterno + polilinea
+          g(72, withBulge ? 1 : 0);
+          g(73, 1);            // chiuso
+          g(93, verts.length);
+          verts.forEach(v => {
+            g(10, f(S(v[0]))); g(20, f(S(v[1])));
+            if (withBulge) g(42, (v[2] || 0).toFixed(6));
+          });
+          g(97, 0);            // nessun oggetto di contorno associato
+          g(75, 1);            // stile: solo esterno
+          g(76, 1);            // motivo predefinito
+          g(98, 0);            // nessun punto seme
+        },
+        finish(bounds, title) {
+          const body = out.join("\n") + "\n";
+          let doc;
+          if (r2000) {
+            doc = T.head
+              .replace("@@HANDSEED@@", (handle + 1).toString(16).toUpperCase())
+              .replace("@@EXTMINX@@", f(S(bounds.minX))).replace("@@EXTMINY@@", f(S(bounds.minY)))
+              .replace("@@EXTMAXX@@", f(S(bounds.maxX))).replace("@@EXTMAXY@@", f(S(bounds.maxY)))
+              + body + T.tail;
+          } else {
+            doc = r12Header(bounds, scale) + body + "  0\nENDSEC\n  0\nEOF\n";
+          }
+          return doc.replace(/\r?\n/g, "\r\n");
+        }
+      };
+    }
+
+    // Intestazione e tabelle R12 (AC1009): nessun handle, solo ciò che R12 prevede
+    function r12Header(bounds, scale) {
+      const L = [];
+      const g = (c, v) => L.push(String(c).padStart(3, " "), String(v));
+      g(0, "SECTION"); g(2, "HEADER");
+      g(9, "$ACADVER"); g(1, "AC1009");
+      g(9, "$DWGCODEPAGE"); g(3, "ANSI_1252");
+      g(9, "$INSBASE"); g(10, "0.0"); g(20, "0.0"); g(30, "0.0");
+      g(9, "$EXTMIN"); g(10, (bounds.minX * scale).toFixed(3)); g(20, (bounds.minY * scale).toFixed(3)); g(30, "0.0");
+      g(9, "$EXTMAX"); g(10, (bounds.maxX * scale).toFixed(3)); g(20, (bounds.maxY * scale).toFixed(3)); g(30, "0.0");
+      g(0, "ENDSEC");
+      g(0, "SECTION"); g(2, "TABLES");
+      g(0, "TABLE"); g(2, "LTYPE"); g(70, 1);
+      g(0, "LTYPE"); g(2, "CONTINUOUS"); g(70, 0); g(3, "Solid line"); g(72, 65); g(73, 0); g(40, "0.0");
+      g(0, "ENDTAB");
+      const layers = Object.entries(CAD_LAYERS_SPEC);
+      g(0, "TABLE"); g(2, "LAYER"); g(70, layers.length);
+      layers.forEach(([name, cfg]) => { g(0, "LAYER"); g(2, name); g(70, 0); g(62, cfg.aci || 7); g(6, "CONTINUOUS"); });
+      g(0, "ENDTAB");
+      const styles = [["STANDARD", "txt"], ["ARIAL", "arial.ttf"], ["MONO_CAD", "isocp.shx"], ["TITLE_CAD", "arial.ttf"]];
+      g(0, "TABLE"); g(2, "STYLE"); g(70, styles.length);
+      styles.forEach(([name, font]) => { g(0, "STYLE"); g(2, name); g(70, 0); g(40, "0.0"); g(41, "1.0"); g(50, "0.0"); g(71, 0); g(42, "2.5"); g(3, font); g(4, ""); });
+      g(0, "ENDTAB");
+      g(0, "ENDSEC");
+      g(0, "SECTION"); g(2, "BLOCKS"); g(0, "ENDSEC");
+      g(0, "SECTION"); g(2, "ENTITIES");
+      return L.join("\n") + "\n";
+    }
+
+    // Converte il testo DXF (solo caratteri <= U+00FF, garantito da dxfText) in byte Windows-1252 / Latin-1
+    function dxfToBlob(text) {
+      const bytes = new Uint8Array(text.length);
+      for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i);
+        bytes[i] = c <= 0xff ? c : 0x3f;
+      }
+      return new Blob([bytes], { type: "application/dxf" });
+    }
+
+    function hexToTrueColorOrNull(hex) {
+      return (hex && /^#[0-9a-f]{6}$/i.test(hex)) ? parseInt(hex.slice(1), 16) : null;
+    }
+
     function generateDXFStringForCurrentState(fileTitle) {
       const { prims, bounds } = buildCADScene();
       const s = getScaleFactor(state.scale);
+      const r2000 = exportDxfOptions.format !== "AC1009";
+      const W = createDxfWriter(r2000, s);
 
-      const dxf = [];
-      const add = (c, v) => dxf.push(String(c), String(v));
-
-      add(0, "SECTION");
-      add(2, "HEADER");
-      add(9, "$ACADVER");
-      add(1, exportDxfOptions.format === "AC1018" ? "AC1018" : "AC1009");
-      add(9, "$DWGCODEPAGE");
-      add(3, "ANSI_1252");
-      add(9, "$PROJECTNAME");
-      add(1, formatCADText(fileTitle || state.title));
-      add(9, "$INSUNITS");
-      add(70, 4);
-      add(9, "$MEASUREMENT");
-      add(70, 1);
-      add(9, "$EXTMIN");
-      add(10, (bounds.minX * s).toFixed(3));
-      add(20, (bounds.minY * s).toFixed(3));
-      add(30, "0.0");
-      add(9, "$EXTMAX");
-      add(10, (bounds.maxX * s).toFixed(3));
-      add(20, (bounds.maxY * s).toFixed(3));
-      add(30, "0.0");
-      add(0, "ENDSEC");
-
-      add(0, "SECTION");
-      add(2, "TABLES");
-
-      add(0, "TABLE");
-      add(2, "LTYPE");
-      add(70, 1);
-      add(0, "LTYPE");
-      add(2, "CONTINUOUS");
-      add(70, 64);
-      add(3, "Solid line");
-      add(72, 65);
-      add(73, 0);
-      add(40, "0.0");
-      add(0, "ENDTAB");
-
-      add(0, "TABLE");
-      add(2, "STYLE");
-      add(70, 4);
-      add(0, "STYLE");
-      add(2, "STANDARD");
-      add(70, 0);
-      add(40, "0.0");
-      add(41, "1.0");
-      add(50, "0.0");
-      add(71, 0);
-      add(42, "2.5");
-      add(3, "arial.ttf");
-      add(4, "");
-
-      add(0, "STYLE");
-      add(2, "ARIAL");
-      add(70, 0);
-      add(40, "0.0");
-      add(41, "1.0");
-      add(50, "0.0");
-      add(71, 0);
-      add(42, "2.5");
-      add(3, "arial.ttf");
-      add(4, "");
-
-      add(0, "STYLE");
-      add(2, "MONO_CAD");
-      add(70, 0);
-      add(40, "0.0");
-      add(41, "1.0");
-      add(50, "0.0");
-      add(71, 0);
-      add(42, "2.5");
-      add(3, "arial.ttf");
-      add(4, "");
-
-      add(0, "STYLE");
-      add(2, "TITLE_CAD");
-      add(70, 0);
-      add(40, "0.0");
-      add(41, "1.0");
-      add(50, "0.0");
-      add(71, 0);
-      add(42, "3.5");
-      add(3, "arial.ttf");
-      add(4, "");
-      add(0, "ENDTAB");
-
-      const layerList = Object.entries(CAD_LAYERS_SPEC);
-      add(0, "TABLE");
-      add(2, "LAYER");
-      add(70, layerList.length);
-      layerList.forEach(([layName, cfg]) => {
-        add(0, "LAYER");
-        add(2, layName);
-        add(70, 64);
-        add(62, cfg.aci || 7);
-        add(6, "CONTINUOUS");
-      });
-      add(0, "ENDTAB");
-
-      add(0, "ENDSEC");
-
-      add(0, "SECTION");
-      add(2, "BLOCKS");
-      add(0, "ENDSEC");
-
-      add(0, "SECTION");
-      add(2, "ENTITIES");
-
-      const addLine = (lay, x1, y1, x2, y2, aci = 7) => {
-        add(0, "LINE");
-        add(8, lay);
-        add(62, aci);
-        add(10, (x1 * s).toFixed(3)); add(20, (y1 * s).toFixed(3)); add(30, "0.0");
-        add(11, (x2 * s).toFixed(3)); add(21, (y2 * s).toFixed(3)); add(31, "0.0");
-      };
-
-      const isRevitHatch = exportDxfOptions.format !== "AC1009";
-
-      // Retino HATCH Standard DXF nativo compatibile con Autodesk Revit (crea Filled Regions 1:1)
-      const addHatchQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, aci = 7) => {
-        add(0, "HATCH");
-        add(8, lay);
-        add(62, aci);
-        add(10, "0.0"); add(20, "0.0"); add(30, "0.0");
-        add(210, "0.0"); add(220, "0.0"); add(230, "1.0");
-        add(2, "SOLID"); // Pattern SOLID standard Revit
-        add(70, 1);      // Solid fill
-        add(71, 0);      // Associativity = 0
-        add(91, 1);      // 1 boundary loop
-        add(92, 2);      // Polyline path
-        add(72, 0);      // No bulge
-        add(73, 1);      // Closed loop
-        add(93, 4);      // 4 vertices
-        add(10, (x1 * s).toFixed(3)); add(20, (y1 * s).toFixed(3));
-        add(10, (x2 * s).toFixed(3)); add(20, (y2 * s).toFixed(3));
-        add(10, (x3 * s).toFixed(3)); add(20, (y3 * s).toFixed(3));
-        add(10, (x4 * s).toFixed(3)); add(20, (y4 * s).toFixed(3));
-        add(97, 0);
-      };
-
-      const addHatchDisk = (lay, cx, cy, r, aci = 7) => {
-        add(0, "HATCH");
-        add(8, lay);
-        add(62, aci);
-        add(10, "0.0"); add(20, "0.0"); add(30, "0.0");
-        add(210, "0.0"); add(220, "0.0"); add(230, "1.0");
-        add(2, "SOLID");
-        add(70, 1);
-        add(71, 0);
-        add(91, 1);
-        add(92, 2);      // Polilinea con archi bulge (compatibile Revit senza errore "line too short")
-        add(72, 1);      // Presenza bulge
-        add(73, 1);      // Closed
-        add(93, 2);      // 2 vertici semicircolari
-        add(10, ((cx - r) * s).toFixed(3)); add(20, (cy * s).toFixed(3));
-        add(42, "1.0");  // Bulge 180°
-        add(10, ((cx + r) * s).toFixed(3)); add(20, (cy * s).toFixed(3));
-        add(42, "1.0");  // Bulge 180°
-        add(97, 0);
-      };
-
-      const addSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, aci = 7) => {
-        if (isRevitHatch) {
-          addHatchQuad(lay, x1, y1, x2, y2, x3, y3, x4, y4, aci);
-          return;
-        }
-        add(0, "SOLID");
-        add(8, lay);
-        add(62, aci);
-        add(10, (x1 * s).toFixed(3)); add(20, (y1 * s).toFixed(3)); add(30, "0.0");
-        add(11, (x2 * s).toFixed(3)); add(21, (y2 * s).toFixed(3)); add(31, "0.0");
-        add(12, (x4 * s).toFixed(3)); add(22, (y4 * s).toFixed(3)); add(32, "0.0");
-        add(13, (x3 * s).toFixed(3)); add(23, (y3 * s).toFixed(3)); add(33, "0.0");
-      };
-
-      const addSolidDisk = (lay, cx, cy, r, aci = 7) => {
-        if (isRevitHatch) {
-          addHatchDisk(lay, cx, cy, r, aci);
-          return;
-        }
-        const steps = r > 10 ? 24 : r > 4 ? 16 : 12;
-        for (let i = 0; i < steps; i += 2) {
-          const a1 = (i * 2 * Math.PI) / steps;
-          const a2 = ((i + 1) * 2 * Math.PI) / steps;
-          const a3 = ((i + 2) * 2 * Math.PI) / steps;
-          addSolidQuad(
-            lay,
-            cx, cy,
-            cx + Math.cos(a1) * r, cy + Math.sin(a1) * r,
-            cx + Math.cos(a2) * r, cy + Math.sin(a2) * r,
-            cx + Math.cos(a3) * r, cy + Math.sin(a3) * r,
-            aci
-          );
-        }
-      };
-
-      const addCircle = (lay, cx, cy, r, aci = 7) => {
-        add(0, "CIRCLE");
-        add(8, lay);
-        add(62, aci);
-        add(10, (cx * s).toFixed(3)); add(20, (cy * s).toFixed(3)); add(30, "0.0");
-        add(40, (r * s).toFixed(3));
-      };
-
+      // 1) Riempimenti (sotto i contorni)
       prims.forEach(p => {
         if (!p.fill) return;
         const isContainerBoxBg = p.t === "rect" &&
@@ -443,83 +419,68 @@
           (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
         if (isContainerBoxBg) return;
 
-        const fillAci = hexToClosestACI(p.fill);
-        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
+        const aci = hexToClosestACI(p.fill);
+        const tc = hexToTrueColorOrNull(p.fill);
+        const lay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
 
         if (p.t === "rect") {
-          addSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, fillAci);
+          W.fillQuad(lay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, aci, tc);
         } else if (p.t === "circle") {
-          addSolidDisk(fillLay, p.cx, p.cy, p.r, fillAci);
+          W.fillDisk(lay, p.cx, p.cy, p.r, aci, tc);
         } else if (p.t === "poly" && p.pts && p.pts.length >= 3) {
-          if (p.pts.length === 3) {
-            addSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.pts[2].x, p.pts[2].y, fillAci);
-          } else if (p.pts.length === 4) {
-            addSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[1].x, p.pts[1].y, p.pts[2].x, p.pts[2].y, p.pts[3].x, p.pts[3].y, fillAci);
+          const P = p.pts;
+          if (P.length === 3) {
+            W.fillQuad(lay, P[0].x, P[0].y, P[1].x, P[1].y, P[2].x, P[2].y, P[2].x, P[2].y, aci, tc);
+          } else if (P.length === 4) {
+            W.fillQuad(lay, P[0].x, P[0].y, P[1].x, P[1].y, P[2].x, P[2].y, P[3].x, P[3].y, aci, tc);
           } else {
-            for (let i = 1; i < p.pts.length - 1; i++) {
-              addSolidQuad(fillLay, p.pts[0].x, p.pts[0].y, p.pts[i].x, p.pts[i].y, p.pts[i + 1].x, p.pts[i + 1].y, p.pts[i + 1].x, p.pts[i + 1].y, fillAci);
+            for (let i = 1; i < P.length - 1; i++) {
+              W.fillQuad(lay, P[0].x, P[0].y, P[i].x, P[i].y, P[i + 1].x, P[i + 1].y, P[i + 1].x, P[i + 1].y, aci, tc);
             }
           }
         }
       });
 
+      // 2) Contorni e testi
       prims.forEach(p => {
         const lay = CAD_LAYERS_SPEC[p.layer] ? p.layer : "0";
         const aci = hexToClosestACI(p.color);
+        const tc = hexToTrueColorOrNull(p.color);
 
         if (p.t === "line") {
-          addLine(lay, p.x1, p.y1, p.x2, p.y2, aci);
+          W.line(lay, p.x1, p.y1, p.x2, p.y2, aci, tc);
         } else if (p.t === "rect") {
           const x1 = p.x, y1 = p.y, x2 = p.x + p.w, y2 = p.y + p.h;
-          addLine(lay, x1, y1, x2, y1, aci);
-          addLine(lay, x2, y1, x2, y2, aci);
-          addLine(lay, x2, y2, x1, y2, aci);
-          addLine(lay, x1, y2, x1, y1, aci);
+          W.line(lay, x1, y1, x2, y1, aci, tc);
+          W.line(lay, x2, y1, x2, y2, aci, tc);
+          W.line(lay, x2, y2, x1, y2, aci, tc);
+          W.line(lay, x1, y2, x1, y1, aci, tc);
         } else if (p.t === "circle") {
-          addCircle(lay, p.cx, p.cy, p.r, aci);
+          W.circle(lay, p.cx, p.cy, p.r, aci, tc);
         } else if (p.t === "poly" && p.pts && p.pts.length >= 2) {
           for (let i = 0; i < p.pts.length; i++) {
-            const pt1 = p.pts[i];
-            const pt2 = p.pts[(i + 1) % p.pts.length];
-            addLine(lay, pt1.x, pt1.y, pt2.x, pt2.y, aci);
+            const a = p.pts[i], b = p.pts[(i + 1) % p.pts.length];
+            W.line(lay, a.x, a.y, b.x, b.y, aci, tc);
           }
         } else if (p.t === "text") {
-          const sText = formatCADText(p.str);
-          if (!sText) return;
-          const th = Math.max(0.0001, +(((p.h || 2.2) * s)).toFixed(5));
+          const str = formatCADText(p.str);
           const isTitle = (p.layer === "CORNICE" && p.h >= 2.3) ||
                           p.layer === "ETICHETTA_PIANTA" ||
                           (p.layer === "TABELLA" && /^[0-9]\./.test(p.str)) ||
                           (p.layer === "CURVA_CARICO" && /^[0-9]\./.test(p.str)) ||
                           (p.layer === "VISTA_3D_ISO" && p.h >= 2.2);
-          const styleName = isTitle ? "TITLE_CAD" : "ARIAL";
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
-
-          add(0, "TEXT");
-          add(8, lay);
-          add(62, aci);
-          add(10, (p.x * s).toFixed(3)); add(20, (p.y * s).toFixed(3)); add(30, "0.0");
-          add(40, th.toFixed(5));
-          add(41, "1.0");
-          add(1, sText);
-          add(7, styleName);
-          if (hAlign !== 0) {
-            add(72, hAlign);
-            add(11, (p.x * s).toFixed(3)); add(21, (p.y * s).toFixed(3)); add(31, "0.0");
-          }
+          W.text(lay, p.x, p.y, p.h || 2.2, str, isTitle ? "TITLE_CAD" : "ARIAL", hAlign, aci, tc);
         }
       });
 
-      add(0, "ENDSEC");
-      add(0, "EOF");
-
-      return dxf.join("\r\n") + "\r\n";
+      return W.finish(bounds, fileTitle || state.title);
     }
 
     function exportAutoCADDXF() {
       const name = (document.getElementById("exportName").value || computeExportFileName(state) || "Canalina_1_1").trim().replace(/\.(dxf|dwg)$/i, "");
       const dxfContent = generateDXFStringForCurrentState(name);
-      const blob = new Blob([dxfContent], { type: "application/dxf" });
+      const blob = dxfToBlob(dxfContent);
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `${name}.dxf`;
@@ -566,7 +527,7 @@
         const fileBase = computeExportFileName(state) || `Canalina_${i + 1}`;
         const dxfContent = generateDXFStringForCurrentState(fileBase);
         
-        const blob = new Blob([dxfContent], { type: "application/dxf" });
+        const blob = dxfToBlob(dxfContent);
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = `${fileBase}.dxf`;
