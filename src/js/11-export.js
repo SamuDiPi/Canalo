@@ -564,7 +564,7 @@
       // - nessun comando interattivo (STYLE/LAYER fanno domande che variano per font e versione
       //   e lasciavano AutoCAD in attesa): stili e layer sono creati con entmake;
       // - ogni riga è un'espressione AutoLISP completa, così un errore non blocca le righe seguenti.
-      let scr = `;; CanaloCAD v${APP_VERSION} - sezione canalina 1:1. Trascina il file nel disegno o usa il comando SCRIPT.\n`;
+      let scr = `;; CanaloCAD ${APP_VERSION_LABEL} - sezione canalina 1:1. Trascina il file nel disegno o usa il comando SCRIPT.\n`;
       scr += `(setq ccad:oldecho (getvar "CMDECHO") ccad:oldos (getvar "OSMODE"))\n`;
       scr += `(setvar "CMDECHO" 0)\n`;
       scr += `(setvar "OSMODE" 0)\n`;
@@ -762,7 +762,7 @@
           <tr><th>Pos</th><th>Sigla</th><th>Descrizione</th><th>Tipo</th><th>Formazione</th><th>Ø (mm)</th></tr>
           ${state.cables.map((c, i) => `<tr><td>#${i + 1}</td><td>${e(c.code)}</td><td>${e(c.desc)}</td><td>${e(c.type)}</td><td>${e(c.form)}</td><td>${e(c.d)}</td></tr>`).join("")}
         </table>
-        <p style="font-size:9pt;color:#555">Generato con ${APP_NAME} v${APP_VERSION}. Portate, frecce e coefficienti sono stime di calcolo: verificarle con i dati del costruttore.</p>
+        <p style="font-size:9pt;color:#555">Generato con ${APP_NAME} ${APP_VERSION_LABEL}. Portate, frecce e coefficienti sono stime di calcolo: verificarle con i dati del costruttore.</p>
         </body></html>`;
       downloadBlob(new Blob(["\ufeff", html], { type: "application/msword" }), `${name}.doc`);
     }

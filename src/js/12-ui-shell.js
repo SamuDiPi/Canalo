@@ -455,7 +455,7 @@
       clone.querySelector("#helpNoResults")?.remove();
       const w = window.open("", "_blank");
       if (!w) { toast("Il browser ha bloccato la finestra di stampa: consenti i popup per questa pagina.", "warn"); return; }
-      w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Guida di CanaloCAD v${APP_VERSION}</title>
+      w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Guida di CanaloCAD ${APP_VERSION_LABEL}</title>
         <style>
           body{font:11pt/1.55 Arial,Helvetica,sans-serif;color:#111;margin:18mm 16mm;max-width:180mm}
           h1{font-size:20pt;margin:0 0 4mm} h3{font-size:14pt;margin:8mm 0 2mm;page-break-after:avoid}
@@ -465,7 +465,7 @@
           .note{border-left:3px solid #999;padding:1mm 3mm;color:#333;background:#f4f4f4}
           dt{font-weight:bold;margin-top:3mm} dd{margin:0 0 0 0}
           .st-ok{color:#1b7a36}.st-warn{color:#9a5b00}.st-err{color:#b3261e}.st-info{color:#2a5aa8}
-        </style></head><body><h1>Guida di CanaloCAD <small style="font-weight:normal;font-size:11pt">v${APP_VERSION}</small></h1>${clone.innerHTML}</body></html>`);
+        </style></head><body><h1>Guida di CanaloCAD <small style="font-weight:normal;font-size:11pt">${APP_VERSION_LABEL}</small></h1>${clone.innerHTML}</body></html>`);
       w.document.close();
       w.focus();
       setTimeout(() => w.print(), 300);

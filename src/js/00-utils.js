@@ -2,7 +2,8 @@
     // 0. UTILITÀ CONDIVISE (VERSIONE, NOTIFICHE, DOWNLOAD, STORAGE SICURO)
     // ============================================================================
     // Unica fonte della versione mostrata in titolo, menu, guida e file di progetto.
-    const APP_VERSION = "16.6";
+    const APP_VERSION = "1.0";
+    const APP_VERSION_LABEL = `V${APP_VERSION}`; // come compare nell'interfaccia e nei documenti
     const APP_NAME = "CanaloCAD";
 
     function debounce(fn, ms) {

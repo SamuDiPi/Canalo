@@ -461,7 +461,7 @@
     }
 
     window.addEventListener("DOMContentLoaded", () => {
-      document.querySelectorAll("[data-app-version]").forEach(el => { el.textContent = APP_VERSION; });
+      document.querySelectorAll("[data-app-version]").forEach(el => { el.textContent = APP_VERSION_LABEL; });
       initModalA11y();
       initUiShell();
       initProjectFileLaunch();
