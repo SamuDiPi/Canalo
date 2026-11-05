@@ -1,0 +1,14 @@
+{
+  "name": "canalocad",
+  "version": "16.5.0",
+  "private": true,
+  "description": "CanaloCAD — progettazione canaline portacavi (sorgenti in src/, build in Canalo.html)",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

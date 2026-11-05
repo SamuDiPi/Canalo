@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Componenti condivisi: un solo stile per campi e pulsanti, il colore resta riservato agli stati */
+@layer components {
+  /* Campi dei pannelli parametri */
+  .field {
+    @apply transition-colors;
+  }
+  .field:focus {
+    @apply border-amber-400 outline-none ring-1 ring-amber-400/40;
+  }
+  /* Celle modificabili della distinta cavi */
+  .cell-input {
+    @apply bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-100 transition-colors;
+  }
+  .cell-input:focus {
+    @apply border-amber-400 outline-none ring-1 ring-amber-400/40;
+  }
+  /* Pulsanti icona della barra strumenti */
+  .tool-btn {
+    @apply inline-flex items-center justify-center min-w-[28px] h-[26px] px-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-sm leading-none transition;
+  }
+}
+
+@layer base {
+  /* Focus da tastiera sempre visibile */
+  :focus-visible {
+    outline: 2px solid #f59e0b;
+    outline-offset: 2px;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: none;
+  }
+}

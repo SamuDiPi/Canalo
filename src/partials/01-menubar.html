@@ -1,0 +1,574 @@
+
+    <!-- BARRA DEI MENU STILE WINDOWS / CAD DESKTOP -->
+  <nav class="bg-slate-900 border-b border-slate-700/80 text-xs select-none sticky top-0 z-50">
+    <div class="max-w-[1920px] mx-auto px-3 flex flex-wrap items-center justify-between">
+      <div class="flex flex-wrap items-center">
+        <!-- ICONA E TITOLO SOFTWARE -->
+        <div class="flex items-center gap-1.5 px-2 py-1.5 mr-2 border-r border-slate-800">
+          <span class="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[11px] flex items-center justify-center border border-emerald-500/40">C</span>
+          <span class="font-bold text-slate-200 tracking-tight">CanaloCAD</span>
+          <span class="text-xs mono text-slate-400">v<span data-app-version></span></span>
+        </div>
+
+        <!-- VOCI DI MENU A TENDINA (STILE WINDOWS CAD DESKTOP) -->
+        <div class="flex flex-wrap items-center relative" id="winMenuBar">
+          <!-- 1. FILE -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">File</button>
+            <div class="win-dropdown hidden absolute left-0 top-full max-w-[calc(100vw-1rem)] mt-0.5 w-60 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="newProject(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between">
+                <span>📄 Nuovo Progetto</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="exportProjectJSON(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>💾 Salva Progetto (.JSON)...</span>
+                <span class="text-[11px] text-slate-400 mono">Ctrl+S</span>
+              </button>
+              <button type="button" onclick="document.getElementById('jsonProjectInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>📂 Apri Progetto (.JSON)...</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" data-pwa-only onclick="showPwaOfflineInfo(); closeAllMenus();" class="hidden w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between">
+                <span>⚡ Uso offline (PWA)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. IMPORTA -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Importa</button>
+            <div class="win-dropdown hidden absolute left-0 top-full max-w-[calc(100vw-1rem)] mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="document.getElementById('dwgInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between font-medium">
+                <span>📐 Importa DWG / DXF...</span>
+                <span class="text-xs text-slate-400 mono" id="badgeMenuDwg">Ctrl+O</span>
+              </button>
+              <button type="button" onclick="document.getElementById('pdfInput').click(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-purple-500/20 hover:text-purple-200 flex items-center justify-between font-medium">
+                <span>📄 Importa Schema Unifilare PDF...</span>
+                <span class="text-[11px] text-purple-300 mono" id="badgeMenuPdf">Ctrl+U</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="toggleDwgInspector(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-emerald-300 flex items-center justify-between">
+                <span>🔍 Ispettore Entità DWG / WASM</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. ESPORTA -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Esporta</button>
+            <div class="win-dropdown hidden absolute left-0 top-full max-w-[calc(100vw-1rem)] mt-0.5 w-72 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="exportAutoCADDXF(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-amber-500/20 hover:text-amber-200 font-semibold flex items-center justify-between">
+                <span>⚡ Scarica AutoCAD .DXF (Scheda Attiva)...</span>
+                <span class="text-[11px] text-amber-400 mono" id="badgeMenuDxf">Ctrl+E</span>
+              </button>
+              <button type="button" onclick="exportAllSectionsDXF(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-amber-500/20 hover:text-amber-300 font-bold flex items-center justify-between text-amber-400">
+                <span>📦 Esporta TUTTE le Canaline (.DXF separati)</span>
+                <span class="text-[11px] mono bg-amber-500/20 px-1.5 py-0.5 rounded">Batch DXF</span>
+              </button>
+              <button type="button" onclick="toggleExportOptionsModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>⚙️ Opzioni Esportazione DXF &amp; Scala Testi...</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="exportAutoLISPDWG(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-200 flex items-center justify-between">
+                <span>📜 Genera Script AutoLISP (.SCR)</span>
+                <span class="text-[11px] text-slate-400 mono">SCR</span>
+              </button>
+              <button type="button" onclick="exportAllSectionsAutoLISP(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-300 font-bold flex items-center justify-between text-emerald-400">
+                <span>📦 Esporta TUTTE le Canaline (.SCR separati)</span>
+                <span class="text-[11px] mono bg-emerald-500/20 px-1.5 py-0.5 rounded">Batch SCR</span>
+              </button>
+              <button type="button" onclick="exportWordReport(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-blue-500/20 hover:text-blue-200 flex items-center justify-between">
+                <span>📄 Esporta Relazione Tecnica (.DOC)</span>
+                <span class="text-[11px] text-slate-400 mono">DOC</span>
+              </button>
+              <button type="button" onclick="exportCSV(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>📊 Esporta Computo Metrico (.CSV)</span>
+                <span class="text-[11px] text-slate-400 mono">CSV</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="window.print(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>🖨️ Stampa / Salva PDF Vettoriale</span>
+                <span class="text-[11px] text-slate-400 mono">Ctrl+P</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. MODIFICA -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Modifica</button>
+            <div class="win-dropdown hidden absolute left-0 top-full max-w-[calc(100vw-1rem)] mt-0.5 w-60 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" data-undo onclick="undoLastChange(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between disabled:opacity-40 disabled:pointer-events-none">
+                <span>↶ Annulla</span>
+                <span class="text-xs text-slate-400 mono">Ctrl+Z</span>
+              </button>
+              <button type="button" data-redo onclick="redoLastChange(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between disabled:opacity-40 disabled:pointer-events-none">
+                <span>↷ Ripeti</span>
+                <span class="text-xs text-slate-400 mono">Ctrl+Y</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="swapDimensions(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-amber-300 flex items-center justify-between">
+                <span>🔄 Inverti Base L e Altezza H</span>
+                <span class="text-[11px] text-slate-400 mono" id="badgeMenuSwap">Ctrl+I</span>
+              </button>
+              <button type="button" onclick="clearCables(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-red-500/20 text-red-300 flex items-center justify-between">
+                <span>🗑️ Svuota cavi della sezione</span>
+                <span class="text-xs text-slate-400 mono">Canc</span>
+              </button>
+              <button type="button" onclick="resetProject(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>↺ Reimposta sezione ai valori iniziali</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <div class="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase">Modalità Posa Cavi:</div>
+              <button type="button" onclick="document.getElementById('inpPacking').value='gravity'; syncFromUI(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">
+                <span>⬇️ Gravità &amp; Scomparti (CEI 64-8)</span>
+              </button>
+              <button type="button" onclick="document.getElementById('inpPacking').value='input'; syncFromUI(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">
+                <span>📐 Coordinate DWG Originali</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="recalculateAll(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300 flex items-center justify-between">
+                <span>⚡ Ricalcola Derating &amp; Portate</span>
+                <span class="text-[11px] text-slate-400 mono">F5</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 5. VISUALIZZA -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Visualizza</button>
+            <div class="win-dropdown hidden absolute left-0 top-full max-w-[calc(100vw-1rem)] mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="toggleTheme(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-cyan-300 flex items-center justify-between">
+                <span>🌓 Inverti Tema (Scuro / Chiaro)</span>
+              </button>
+              <button type="button" onclick="fitAll(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between">
+                <span>🔍 Zoom Tutto (Centra Sezione)</span>
+                <span class="text-[11px] text-slate-400 mono">Home</span>
+              </button>
+              <button type="button" onclick="zoomSection(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>📐 Zoom Solo Sezione</span>
+              </button>
+              <button type="button" onclick="zoomTables(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>📊 Zoom Solo Tabelle</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <div class="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase">Sezioni Disegno Costruttivo:</div>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>📦 Proiezione 3D Assonometrica</span>
+                <input type="checkbox" id="menuChk3D" checked onchange="toggleSectionExport('iso3d', this.checked)" class="rounded text-cyan-500">
+              </label>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>📈 Curva di Carico &amp; Freccia</span>
+                <input type="checkbox" id="menuChkChart" checked onchange="toggleSectionExport('chart', this.checked)" class="rounded text-cyan-500">
+              </label>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>📋 Distinta Cavi Posati (BOM)</span>
+                <input type="checkbox" id="menuChkBOM" checked onchange="toggleSectionExport('bom', this.checked)" class="rounded text-cyan-500">
+              </label>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>📐 Cartiglio &amp; Committente</span>
+                <input type="checkbox" id="menuChkCartiglio" checked onchange="toggleSectionExport('cartiglio', this.checked)" class="rounded text-cyan-500">
+              </label>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>🏷️ Descrizione Utenza in Tabella</span>
+                <input type="checkbox" id="menuChkTableDesc" checked onchange="toggleTableDesc(this.checked)" class="rounded text-cyan-500">
+              </label>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>📐 Stampa Minimal (2D + Tabella)</span>
+                <input type="checkbox" id="menuChkLayoutMinimal" onchange="setLayoutMode(this.checked ? 'minimal' : 'standard')" class="rounded text-cyan-500">
+              </label>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>🏷️ Bandierine / Testi Cavi in 2D</span>
+                <input type="checkbox" id="menuChkCallouts" checked onchange="toggleCableCallouts(this.checked)" class="rounded text-cyan-500">
+              </label>
+            </div>
+          </div>
+
+          <!-- 6. DATABASE -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Database</button>
+            <div class="win-dropdown hidden absolute left-0 top-full max-w-[calc(100vw-1rem)] mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="filterDbCategory('all'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-200 font-bold text-cyan-400 flex items-center justify-between">
+                <span>📖 Catalogo Tecnico Cavi &amp; Canaline</span>
+                <span class="text-[11px] text-cyan-400 mono" id="badgeMenuDb">F3</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="filterDbCategory('bt_uni'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>⚡ Cavi BT Unipolari (FG16M16 / FS17)</span>
+              </button>
+              <button type="button" onclick="filterDbCategory('bt_multi'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>🔌 Cavi BT Multipolari (FG16OM16 / H07RN)</span>
+              </button>
+              <button type="button" onclick="filterDbCategory('signal'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>📡 Segnali &amp; Dati (LiYCY / KNX / Cat6)</span>
+              </button>
+              <button type="button" onclick="filterDbCategory('fire'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>🔥 Resistenti al Fuoco PH120 (FTG18)</span>
+              </button>
+              <button type="button" onclick="filterDbCategory('data'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>🌐 Reti Dati LAN &amp; Fibra Ottica</span>
+              </button>
+              <button type="button" onclick="filterDbCategory('trays_supports'); toggleDatabaseModal(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-amber-300">
+                <span>🏗️ Canaline &amp; Mensole Normate</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 7. PROGETTO -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Progetto</button>
+            <div class="win-dropdown hidden absolute left-0 top-full max-w-[calc(100vw-1rem)] mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="openCartiglioSettingsModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-amber-500/20 text-amber-300 flex items-center justify-between font-bold">
+                <span>📐 Dati Cartiglio, Progettista &amp; Committente...</span>
+                <span class="text-[11px] text-amber-300 mono" id="badgeMenuCartiglio">F2</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="addNewSectionTab(false); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 text-emerald-300 flex items-center justify-between">
+                <span>➕ Nuova Sezione Canalina</span>
+              </button>
+              <button type="button" onclick="addNewSectionTab(true); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 text-cyan-300 flex items-center justify-between">
+                <span>📑 Duplica Sezione Corrente</span>
+              </button>
+              <button type="button" onclick="deleteCurrentSectionTab(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-red-500/20 text-red-300 flex items-center justify-between">
+                <span>🗑️ Elimina Sezione Corrente</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 8. STRUMENTI -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Strumenti</button>
+            <div class="win-dropdown hidden absolute left-0 top-full max-w-[calc(100vw-1rem)] mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="openShortcutsModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 text-cyan-300 flex items-center justify-between font-bold">
+                <span>⌨️ Personalizza Scorciatoie da Tastiera...</span>
+                <span class="text-[11px] text-cyan-300 mono" id="badgeMenuShortcuts">F4</span>
+              </button>
+              <button type="button" onclick="openCartiglioSettingsModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>🏷️ Etichetta Planimetria &amp; Sigla</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <button type="button" onclick="toggleRuler(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-300">
+                <span>📏 Righello CAD Misura Distanze</span>
+              </button>
+              <button type="button" onclick="autoSizeTray(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-amber-300">
+                <span>⚡ Dimensionamento Automatico (Auto-Size)</span>
+              </button>
+              <button type="button" onclick="toggleDwgInspector(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-emerald-300">
+                <span>🔍 Ispettore Entità DWG / WASM</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 9. AIUTO -->
+          <div class="win-menu-item relative">
+            <button type="button" class="win-menu-btn px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white rounded transition">Aiuto</button>
+            <div class="win-dropdown hidden absolute left-0 top-full max-w-[calc(100vw-1rem)] mt-0.5 w-64 bg-slate-900 border border-slate-700 rounded-md shadow-2xl py-1 z-50">
+              <button type="button" onclick="showQuickHelpModal(); closeAllMenus();" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between">
+                <span>📖 Guida Rapida &amp; Comandi</span>
+                <span class="text-[11px] text-slate-400 mono" id="badgeMenuHelp">F1</span>
+              </button>
+              <button type="button" data-pwa-only onclick="showPwaOfflineInfo(); closeAllMenus();" class="hidden w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between">
+                <span>⚡ Uso offline (PWA)</span>
+              </button>
+              <div class="border-t border-slate-800 my-1"></div>
+              <div class="px-3 py-1.5 text-[11px] text-slate-400 leading-tight">
+                CanaloCAD v<span data-app-version></span><br>Elaborazione 100% nel browser &bull; LibreDWG WASM
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BADGES DI STATO DESTRI -->
+      <div class="hidden md:flex items-center gap-2">
+        <span id="pwaStatusBadge" class="hidden inline-flex text-xs mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 items-center gap-1.5 font-semibold"></span>
+        <span id="wasmStatusBadge" class="text-xs mono px-2 py-0.5 rounded border font-semibold bg-slate-800 text-slate-300 border-slate-700">Motore DWG: al primo import</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BARRA SCHEDE MULTI-CANALINA / MULTI-DOCUMENTO CAD -->
+  <div id="sectionTabBarContainer" class="bg-slate-950 border-b border-slate-800/80 px-2.5 py-1 flex items-center justify-between gap-1.5 text-xs select-none relative z-20">
+    <!-- PULSANTE SCROLL SINISTRA -->
+    <button type="button" onclick="scrollTabsLeft()" id="btnScrollTabsLeft" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 transition flex-shrink-0 flex items-center justify-center font-bold text-xs" title="Scorri schede a sinistra (o usa la rotellina del mouse)">
+      ◀
+    </button>
+
+    <!-- STRIP SCHEDE CENTRALE SCROLLABILE (CON AUTO-SCROLL, WHEEL HORIZONTAL, TRUNCATION) -->
+    <div id="multiSectionTabs" class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
+      <!-- Generato dinamicamente in renderMultiSectionTabs() -->
+    </div>
+
+    <!-- PULSANTE SCROLL DESTRA -->
+    <button type="button" onclick="scrollTabsRight()" id="btnScrollTabsRight" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 transition flex-shrink-0 flex items-center justify-center font-bold text-xs" title="Scorri schede a destra (o usa la rotellina del mouse)">
+      ▶
+    </button>
+
+    <div class="h-4 w-px bg-slate-800 mx-0.5 flex-shrink-0"></div>
+
+    <!-- PULSANTE AGGIUNGI NUOVA TRATTA / CANALINA -->
+    <button type="button" onclick="addNewSectionTab(false)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold text-xs transition flex-shrink-0" title="Aggiungi una nuova scheda canalina vuota al progetto (+)">
+      <span>➕ Nuova</span>
+    </button>
+
+    <!-- MENU A TENDINA ELENCO SCHEDE (SALTO RAPIDO A QUALSIASI CANALINA APERTA) -->
+    <div class="relative flex-shrink-0" id="tabsDropdownContainer">
+      <button type="button" onclick="toggleTabsDropdown()" id="btnTabsDropdown" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 font-semibold text-xs transition shadow-sm" title="Elenco completo di tutte le schede aperte con salto rapido in 1 click">
+        <span>📑</span>
+        <span id="lblTabsCount">Schede (1)</span>
+        <span class="text-[11px] text-amber-400">▼</span>
+      </button>
+
+      <div id="tabsDropdownMenu" class="hidden absolute right-0 top-full mt-1 w-80 max-h-96 overflow-y-auto bg-slate-900 border border-slate-700 rounded-lg shadow-2xl py-1 z-50">
+        <div class="px-3 py-1.5 text-xs font-bold text-slate-300 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+          <span class="flex items-center gap-1.5">
+            <span>📑</span>
+            <span>SCHEDE CANALINE APERTE</span>
+          </span>
+          <span id="tabsDropdownCountBadge" class="text-[11px] text-amber-400 mono">1 scheda</span>
+        </div>
+        <div id="tabsDropdownList" class="py-1 max-h-80 overflow-y-auto divide-y divide-slate-800/40">
+          <!-- Popolato dinamicamente da renderMultiSectionTabs() -->
+        </div>
+        <div class="p-2 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between">
+          <button type="button" onclick="addNewSectionTab(false); toggleTabsDropdown(false);" class="text-xs text-emerald-300 hover:text-emerald-200 font-semibold flex items-center gap-1">
+            <span>➕ Nuova Scheda</span>
+          </button>
+          <button type="button" onclick="exportAllSectionsDXF(); toggleTabsDropdown(false);" class="text-xs text-amber-300 hover:text-amber-200 font-semibold flex items-center gap-1" title="Esporta tutte le canaline aperte in singoli file DXF distinti">
+            <span>⚡ Esporta Tutte</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA DEGLI STRUMENTI RAPIDI (SLIM TOOLBAR ESSENZIALE & PULITA) -->
+  <div class="bg-slate-900/90 border-b border-slate-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+    <div class="flex items-center gap-2 flex-wrap">
+      <!-- TITOLO CANALINA IN TESTATA RAPIDA -->
+      <div class="flex items-center bg-slate-950 border border-slate-700 rounded px-2 py-0.5">
+        <span class="text-[11px] mono text-slate-400 mr-1.5 font-bold">Titolo:</span>
+        <input id="inpTitleQuick" type="text" value="NUOVA CANALINA" onchange="document.getElementById('inpTitle').value = this.value; state.title = this.value; recalculateAll();" aria-label="Titolo della canalina" class="bg-transparent text-xs text-amber-300 font-semibold w-48 sm:w-64 focus:outline-none" title="Titolo della canalina (ereditato da parentesi)">
+      </div>
+      <!-- Elemento sicuro per compatibilità di lettura -->
+      <span id="headerTitle" class="hidden"></span>
+
+      <div class="flex items-center gap-1" role="group" aria-label="Cronologia modifiche">
+        <button type="button" data-undo onclick="undoLastChange()" disabled class="tool-btn disabled:opacity-40 disabled:cursor-not-allowed" title="Annulla (Ctrl+Z)" aria-label="Annulla">↶</button>
+        <button type="button" data-redo onclick="redoLastChange()" disabled class="tool-btn disabled:opacity-40 disabled:cursor-not-allowed" title="Ripeti (Ctrl+Y)" aria-label="Ripeti">↷</button>
+      </div>
+
+      <div class="h-4 w-px bg-slate-700 mx-1 hidden sm:block"></div>
+
+      <!-- PULSANTI RAPIDI APERTURA -->
+      <button type="button" onclick="document.getElementById('dwgInput').click()" class="inline-flex items-center gap-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded font-semibold text-xs transition" title="Apri DWG / DXF (Ctrl+O)">
+        <span>📂 DWG/DXF</span>
+      </button>
+      <input id="dwgInput" type="file" accept=".dwg,.dxf" multiple class="hidden" onchange="importCADFile(this)">
+
+      <button type="button" onclick="document.getElementById('pdfInput').click()" class="inline-flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-semibold text-xs transition" title="Importa PDF Unifilare (Ctrl+U)">
+        <span>📄 PDF</span>
+      </button>
+      <input id="pdfInput" type="file" accept=".pdf" multiple class="hidden" onchange="importPDFFile(this)">
+      <input id="jsonProjectInput" type="file" accept=".json" class="hidden" onchange="importProjectJSON(this)">
+
+      <button type="button" onclick="openCartiglioSettingsModal()" class="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-xs transition" title="Dati Cartiglio, Progettista &amp; Committente (F2)">
+        <span>📐 Cartiglio</span>
+      </button>
+
+      <button type="button" onclick="toggleLayoutMode()" id="btnToggleLayout" class="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-xs transition" title="Alterna tra Layout Standard (Affiancato) e Stampa Minimal (Tabella sopra 2D centrate)">
+        <span>📑 Layout: Standard</span>
+      </button>
+
+      <button type="button" onclick="toggleCableCallouts()" id="btnToggleCallouts" class="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-xs transition" title="Mostra/Nascondi le etichette con bandierine esterne dei cavi (in 2D resta solo il numero nel cavo)">
+        <span>🏷️ Testi Cavi 2D: Estesi</span>
+      </button>
+    </div>
+
+    <!-- AREA EXPORT RAPIDO A DESTRA -->
+    <div class="flex items-center gap-1.5">
+      <div class="hidden lg:flex items-center bg-slate-950 border border-slate-700 rounded px-2 py-0.5">
+        <span class="text-[11px] mono text-slate-400 mr-1">File:</span>
+        <input id="exportName" type="text" value="NUOVA_CANALINA" class="bg-transparent text-xs mono text-amber-300 font-semibold w-36 focus:outline-none">
+      </div>
+      <button type="button" onclick="exportAutoCADDXF()" class="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded shadow text-xs transition" title="Scarica il disegno CAD in formato .DXF 1:1 identico alla preview">
+        <span>⚡ Scarica DXF</span>
+      </button>
+      <button type="button" onclick="toggleExportOptionsModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-2 py-1 rounded font-semibold transition" title="Opzioni di Stile, Font e Formato DXF">
+        <span>⚙️</span>
+      </button>
+      <button type="button" onclick="toggleTheme()" id="btnTheme" class="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 px-2 py-1 rounded font-semibold text-xs transition" title="Sfondo del foglio CAD: scuro o chiaro (l'interfaccia resta scura)">
+        Foglio: Scuro
+      </button>
+    </div>
+  </div>
+
+  <!-- PANNELLO ISPETTORE ENTITÀ DWG -->
+  <div id="dwgInspectorModal" class="hidden bg-slate-900/95 border-b border-cyan-500/40 px-4 py-3 text-xs mono">
+    <div class="max-w-[1920px] mx-auto flex flex-col gap-1.5">
+      <div class="flex items-center justify-between">
+        <span class="text-cyan-300 font-bold uppercase">🔍 Dump Entità Geometriche Reali Estratte dal Database Interno del File .DWG / .DXF:</span>
+        <button type="button" onclick="toggleDwgInspector()" class="text-slate-400 hover:text-white font-bold px-2">Chiudi &times;</button>
+      </div>
+      <div id="dwgInspectorContent" class="bg-slate-950 border border-slate-800 rounded p-2.5 text-xs text-slate-300 max-h-44 overflow-y-auto whitespace-pre-wrap">In attesa di importazione file .DWG / .DXF...</div>
+    </div>
+  </div>
+
+  <!-- MODALE OPZIONI ESPORTAZIONE DXF -->
+  <div id="exportOptionsModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-xl p-5 max-w-lg w-full shadow-2xl space-y-4 text-xs">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-sm font-bold text-amber-300 uppercase tracking-wide flex items-center gap-2">
+          <span>⚙️ Opzioni Esportazione DXF (Stile 1:1 Fedele)</span>
+        </h3>
+        <button type="button" onclick="toggleExportOptionsModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+
+      <div class="space-y-3.5 text-slate-300">
+        <div>
+          <label for="selDxfScale" class="block text-xs font-semibold text-slate-400 mb-1">Scala Rappresentazione CAD:</label>
+          <select id="selDxfScale" onchange="onScaleChange(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 field">
+            <option value="1:1" selected>1:1 — Dettaglio Costruttivo Esecutivo (Scala Reale 1:1)</option>
+            <option value="1:2">1:2 — Dettaglio Ingrandito</option>
+            <option value="1:5">1:5 — Dettaglio di Montaggio</option>
+            <option value="1:10">1:10 — Sezione Canalina &amp; Staffaggi</option>
+            <option value="1:20">1:20 — Sezione Cavedio Tecnico</option>
+            <option value="1:50">1:50 — Planimetria Cavedio / Percorsi</option>
+            <option value="1:100">1:100 — Layout Planimetrico Generale (1:100)</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">La scala selezionata viene esplicitata nel cartiglio, nelle quote e nel titolo della tavola DWG/DXF.</p>
+        </div>
+
+        <div>
+          <label for="optDxfTextScale" class="block text-xs font-semibold text-slate-400 mb-1">Grandezza Testi nelle Tavole (Scala Tipografica Utente):</label>
+          <select id="optDxfTextScale" onchange="onTextScaleChange(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 field">
+            <option value="0.7">70% — Molto Compatto</option>
+            <option value="0.8">80% — Compatto</option>
+            <option value="0.9">90% — Leggermente Ridotto</option>
+            <option value="1.0" selected>100% — Standard Nominale (1:1)</option>
+            <option value="1.1">110% — Leggermente Ingrandito</option>
+            <option value="1.2">120% — Ingrandito (+20%)</option>
+            <option value="1.3">130% — Alta Leggibilità (+30%)</option>
+            <option value="1.5">150% — Molto Grande (+50%)</option>
+            <option value="1.8">180% — Massimo Contrasto (+80%)</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">Regola direttamente l'altezza dei testi a video e su stampa CAD: le proporzioni e le quote rimangono perfette a qualsiasi scala.</p>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 space-y-2">
+          <span class="block text-xs font-bold text-amber-400 uppercase tracking-wide">Sezioni da Includere nella Tavola &amp; Layout:</span>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center gap-2 cursor-pointer col-span-2 bg-slate-950 p-2 rounded border border-cyan-500/40">
+              <input id="chkExportMinimalLayout" type="checkbox" onchange="setLayoutMode(this.checked ? 'minimal' : 'standard')" class="accent-cyan-400">
+              <span class="font-bold text-cyan-300">📐 Stampa Minimal: Solo Sezione 2D + Tabella Centrate</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportCallouts" type="checkbox" checked onchange="toggleCableCallouts(this.checked)" class="accent-emerald-400">
+              <span>Bandierine Esterne Cavi in 2D</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportTableDesc" type="checkbox" checked onchange="toggleTableDesc(this.checked)" class="accent-amber-400">
+              <span>Descrizione Utenza in Tabella</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportChart" type="checkbox" checked onchange="toggleSectionExport('chart', this.checked)" class="accent-emerald-400">
+              <span>Diagramma Carico EN 61537</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportBOM" type="checkbox" checked onchange="toggleSectionExport('bom', this.checked)" class="accent-emerald-400">
+              <span>Computo Metrico BOM</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportIso3D" type="checkbox" checked onchange="toggleSectionExport('iso3d', this.checked)" class="accent-cyan-400">
+              <span>Vista Assonometrica 3D</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportCartiglio" type="checkbox" checked onchange="toggleSectionExport('cartiglio', this.checked)" class="accent-cyan-400">
+              <span>Cartiglio con Committente</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800">
+          <label for="selDxfFormat" class="block text-xs font-semibold text-slate-400 mb-1">Formato Standard AutoCAD:</label>
+          <select id="selDxfFormat" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 field">
+            <option value="AC1018" selected>AutoCAD &amp; Revit Compatibile (AC1018 con Retini HATCH &amp; TrueColor) — Consigliato</option>
+            <option value="AC1009">AutoCAD Legacy R12 / LT (AC1009 con SOLID 2D)</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">Il formato AC1009 si apre all'istante in AutoCAD LT 2021 senza errori o richieste di premere Invio, preservando colori layer, font TTF e geometria 1:1.</p>
+        </div>
+
+        <div>
+          <label for="selDxfFont" class="block text-xs font-semibold text-slate-400 mb-1">Carattere / Stile Tipografico:</label>
+          <select id="selDxfFont" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 field">
+            <option value="arial" selected>Arial (Standard 2,5mm — Compatibile Revit &amp; AutoCAD)</option>
+            <option value="consolas">Consolas + Arial (Font di sistema Windows standard)</option>
+            <option value="jetbrains">JetBrains Mono + Inter (Font web moderni)</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">Larghezza caratteri naturale (Width Factor = 1.0, non schiacciata) e altezze calibrate per combaciare perfettamente con le celle delle tabelle.</p>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 space-y-2.5">
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input id="chkDxfBg" type="checkbox" checked class="accent-amber-400 mt-0.5">
+            <div>
+              <span class="font-semibold text-white block">Includi sfondi pannelli e tabelle (Layer SFONDI_RIEMPIMENTI)</span>
+              <span class="text-[11px] text-slate-400 block">Gli sfondi scuri delle tabelle vengono inseriti in un layer dedicato: puoi disattivarli qui o congelare il layer in AutoCAD per stampare su carta bianca.</span>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input id="chkDxfLw" type="checkbox" checked class="accent-cyan-400 mt-0.5">
+            <div>
+              <span class="font-semibold text-white block">Esporta Spessori Linea reali (Lineweights 370 da 0.20mm a 0.85mm)</span>
+              <span class="text-[11px] text-slate-400 block">Garantisce la stessa gerarchia visiva tra canalina (0.50mm), quote (0.45mm), curve (0.85mm) e bandierine (0.20mm).</span>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input id="chkDxfUnicode" type="checkbox" checked class="accent-emerald-400 mt-0.5">
+            <div>
+              <span class="font-semibold text-white block">Codifica Simboli Ingegneristici ed Accenti (\U+XXXX)</span>
+              <span class="text-[11px] text-slate-400 block">Visualizza correttamente mm², Ø, Continuità, ΔV%, ≥ in qualsiasi lingua o versione di AutoCAD senza caratteri illeggibili.</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-800">
+        <button type="button" onclick="exportAllSectionsDXF(); toggleExportOptionsModal();" class="px-3.5 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow flex items-center gap-1.5" title="Esporta tutte le schede canalina aperte in file .DXF separati">
+          <span>📦 Esporta TUTTE le Schede (.DXF separati)</span>
+        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="toggleExportOptionsModal()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs">Chiudi</button>
+          <button type="button" onclick="exportAutoCADDXF(); toggleExportOptionsModal();" class="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow text-xs">
+            💾 Scarica DXF Scheda Attiva
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA DI STATO IMPORTAZIONE E STRUMENTI -->
+  <div class="bg-slate-950 border-b border-slate-800 px-4 py-1.5">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 rounded px-1">
+          <button type="button" onclick="autoSizeTray()" class="px-2 py-0.5 hover:bg-amber-500/25 text-amber-300 font-semibold transition text-xs">
+            ⚡ Auto-Dimensiona
+          </button>
+          <input id="inpSpareReserve" type="number" value="30" min="0" max="80" class="w-12 bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px] mono text-amber-300 text-center" title="% Riserva Desiderata">
+          <span class="text-[11px] text-amber-300 pr-1">%</span>
+        </div>
+        <button type="button" onclick="toggleRuler()" id="btnRuler" class="px-2.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 font-medium transition text-xs">
+          📏 Righello CAD: OFF
+        </button>
+        <span id="statusBanner" class="mono text-xs px-2.5 py-0.5 rounded bg-slate-900 text-cyan-300 border border-slate-800">
+          Pronto. Carica qualsiasi file .DWG o .DXF per decomprimere le entità geometriche reali.
+        </span>
+      </div>
+      <div class="text-xs mono text-slate-400">
+        Curva di Carico: <span class="text-emerald-400 font-semibold">Doppio Asse (Portata kg/m + Freccia mm)</span> &bull; Cavi Unipolari <code class="text-amber-300">1x</code> con Anima Singola Cordata
+      </div>
+    </div>
+  </div>
+

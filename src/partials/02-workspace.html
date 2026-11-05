@@ -1,0 +1,422 @@
+  <!-- BARRA SWITCHER MOBILE / TOUCH (SOLO SCHERMI < 1024px) -->
+  <div class="lg:hidden px-4 pt-2.5 pb-0 max-w-[1920px] mx-auto w-full">
+    <div class="flex items-center justify-between p-1 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold gap-1 shadow">
+      <button type="button" id="mobTabBtn_controls" onclick="setMobileView('controls')" class="flex-1 py-2 text-center rounded-lg bg-amber-500/20 text-amber-300 font-bold transition">
+        ⚙️ Parametri
+      </button>
+      <button type="button" id="mobTabBtn_cad" onclick="setMobileView('cad')" class="flex-1 py-2 text-center rounded-lg text-slate-400 hover:text-white transition">
+        📐 Vista CAD 1:1
+      </button>
+      <button type="button" id="mobTabBtn_results" onclick="setMobileView('results')" class="flex-1 py-2 text-center rounded-lg text-slate-400 hover:text-white transition">
+        📊 KPI &amp; Distinta
+      </button>
+      <button type="button" onclick="toggleDatabaseModal()" class="px-3 py-2 text-center rounded-lg bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 font-bold transition" title="Apri Database Cavi">
+        📚 DB
+      </button>
+    </div>
+  </div>
+
+  <!-- WORKSPACE PRINCIPALE -->
+  <main class="flex-1 max-w-[1920px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 p-4">
+
+    <!-- COLONNA SINISTRA: CONTROLLI + DIAGRAMMA INTERATTIVO CURVA DI CARICO -->
+    <section id="leftColSection" class="lg:col-span-4 xl:col-span-3 flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-145px)] pr-1.5">
+
+      <!-- SELETTORE SCHEDE -->
+      <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-center text-xs font-semibold">
+        <button type="button" onclick="showTab('geom')" id="tabBtn_geom" class="py-1.5 rounded-lg bg-amber-500/20 text-amber-300 transition">1. Geom</button>
+        <button type="button" onclick="showTab('prod')" id="tabBtn_prod" class="py-1.5 rounded-lg text-slate-400 hover:text-white transition">2. Produttore</button>
+        <button type="button" onclick="showTab('staff')" id="tabBtn_staff" class="py-1.5 rounded-lg text-slate-400 hover:text-white transition">3. Staffaggio</button>
+        <button type="button" onclick="showTab('cavi')" id="tabBtn_cavi" class="py-1.5 rounded-lg text-slate-400 hover:text-white transition">4. Cavi</button>
+      </div>
+
+      <!-- SCHEDA 1: GEOMETRIA E POSA -->
+      <div id="tabPanel_geom" class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400">1. Geometria Sezione &amp; Tratto</h2>
+          <span class="text-[11px] mono text-slate-400">Scala 1:1 (mm)</span>
+        </div>
+
+        <div>
+          <label for="inpTitle" class="block text-[11px] text-slate-400 uppercase mono mb-0.5">Titolo / Sigla Canalina</label>
+          <input id="inpTitle" type="text" value="NUOVA CANALINA 01 - L=200mm H=75mm" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs mono text-slate-100 font-semibold field">
+        </div>
+
+        <div class="grid grid-cols-4 gap-1.5">
+          <div>
+            <label for="inpWidth" class="block text-[11px] text-slate-400 font-semibold mb-0.5">Base L (mm)</label>
+            <input id="inpWidth" type="number" value="200" min="50" max="1000" step="25" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs mono text-slate-100 font-bold field">
+          </div>
+          <div>
+            <label for="inpHeight" class="block text-[11px] text-slate-400 font-semibold mb-0.5">Alt. H (mm)</label>
+            <input id="inpHeight" type="number" value="75" min="35" max="300" step="5" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs mono text-slate-100 font-bold field">
+          </div>
+          <div>
+            <label for="inpThk" class="block text-[11px] text-slate-400 mb-0.5">Spess. (mm)</label>
+            <select id="inpThk" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-1 text-xs mono text-slate-100 field">
+              <option value="1.5" selected>1.5</option>
+              <option value="2.0">2.0</option>
+              <option value="2.5">2.5</option>
+            </select>
+          </div>
+          <div>
+            <label for="inpLength" class="block text-[11px] text-slate-400 mb-0.5">Tratto (m)</label>
+            <input id="inpLength" type="number" value="30" min="3" max="1000" step="3" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs mono text-slate-100 font-bold field">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="inpTrayType" class="block text-[11px] text-slate-400 mb-0.5">Tipologia Profilo</label>
+            <select id="inpTrayType" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 field">
+              <option value="perforated" selected>Passerella Asolata</option>
+              <option value="solid">Canale Chiuso Cieco</option>
+              <option value="mesh">Passerella a Filo Rete</option>
+              <option value="ladder">Passerella a Pioli</option>
+            </select>
+          </div>
+          <div>
+            <label for="inpPacking" class="block text-[11px] text-slate-400 mb-0.5">Modalità Posa Cavi</label>
+            <select id="inpPacking" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 font-semibold field">
+              <option value="input">Coordinate Reali DWG</option>
+              <option value="gravity" selected>Gravità &amp; Scomparti</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="inpPlanTag" class="block text-[11px] text-slate-400 mb-0.5">Etichetta Planimetria (Taglio Sezione &amp; Quota)</label>
+          <input id="inpPlanTag" type="text" value="SEZ. A-A | H=+3.20m" oninput="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs mono text-slate-100 font-semibold field">
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-800 text-xs text-slate-300">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="chkEdge" type="checkbox" checked onchange="syncFromUI()" class="accent-amber-400">
+            <span>Bordino Salvacavo</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="chkClamps" type="checkbox" onchange="syncFromUI()" class="accent-amber-400">
+            <span>Fascette Ancoraggio</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="chkIso3D" type="checkbox" checked onchange="syncFromUI()" class="accent-cyan-400">
+            <span>Vista Assonometrica 3D</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="chkPlanTag" type="checkbox" onchange="syncFromUI()" class="accent-emerald-400">
+            <span>Fumetto Planimetria</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- SCHEDA 2: PRODUTTORE, SERIE E MATERIALE -->
+      <div id="tabPanel_prod" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-3 shadow space-y-2">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400">2. Produttore, Serie &amp; Dotazioni</h2>
+
+        <div>
+          <label for="inpBrand" class="block text-[11px] text-slate-400 font-semibold mb-0.5">Costruttore di Riferimento</label>
+          <select id="inpBrand" onchange="populateBrandSeries()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 font-semibold field">
+            <option value="LEGRAND" selected>Legrand / Pial / Cablofil</option>
+            <option value="OBO">OBO Bettermann</option>
+            <option value="BTICINO">Bticino / Metallurgica</option>
+            <option value="NIEDAX">Niedax / Gouda</option>
+            <option value="CUSTOM">Canalina Libera (Custom)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="inpSeries" class="block text-[11px] text-slate-400 font-semibold mb-0.5">Serie Commerciale</label>
+          <select id="inpSeries" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 mono field"></select>
+        </div>
+
+        <div>
+          <label for="inpMaterial" class="block text-[11px] text-slate-400 mb-0.5">Materiale e Finitura</label>
+          <select id="inpMaterial" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 field">
+            <option value="sendzimir" selected>Acciaio Zincato Sendzimir (EN 10346)</option>
+            <option value="hdg">Zincato a Caldo HDG (EN 1461)</option>
+            <option value="inox304">Acciaio Inox AISI 304 Satinato</option>
+            <option value="inox316">Acciaio Inox AISI 316L Marino</option>
+            <option value="ral7035">Verniciato Polveri RAL 7035</option>
+            <option value="ral3000">Verniciato RAL 3000 Antincendio</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="inpCover" class="block text-[11px] text-slate-400 mb-0.5">Coperchio Superiore</label>
+            <select id="inpCover" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 field">
+              <option value="none">Nessuno (A giorno)</option>
+              <option value="snap" selected>Cieco a Scatto</option>
+              <option value="ventilated">Aerato (+15mm)</option>
+              <option value="clamped">Con Clip Antisfilamento</option>
+            </select>
+          </div>
+          <div>
+            <label for="inpSeptums" class="block text-[11px] text-slate-400 mb-0.5">Setti Separatori</label>
+            <select id="inpSeptums" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 field">
+              <option value="0" selected>0 - Nessun Setto</option>
+              <option value="1">1 Setto (2 Scomparti)</option>
+              <option value="2">2 Setti (3 Scomparti)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- CONTROLLO POSIZIONE SETTI DINAMICO (TRASCINABILI E REGOLABILI) -->
+        <div id="septumPosControls" class="hidden p-2 bg-slate-950/80 border border-cyan-500/40 rounded-md text-xs space-y-1.5 shadow-inner"></div>
+
+        <div>
+          <label for="inpEarth" class="block text-[11px] text-slate-400 font-semibold mb-0.5">Conduttore Equipotenziale di Terra (PE)</label>
+          <select id="inpEarth" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 field">
+            <option value="gv16" selected>Cavo Bicolore Giallo/Verde FS17 16 mm²</option>
+            <option value="gv25">Cavo Bicolore Giallo/Verde FS17 25 mm²</option>
+            <option value="cu25">Treccia Piatta Rame Nudo Stagnato 25 mm²</option>
+            <option value="cu35">Treccia Piatta Rame Nudo Stagnato 35 mm²</option>
+            <option value="none">Nessun Collegamento PE</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="inpClearance" class="block text-[11px] text-slate-400 mb-0.5">Rispetto Solaio</label>
+            <select id="inpClearance" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 field">
+              <option value="0">Non Quotare</option>
+              <option value="150" selected>Min. 150 mm</option>
+              <option value="200">Min. 200 mm</option>
+            </select>
+          </div>
+          <div>
+            <label for="inpRei" class="block text-[11px] text-slate-400 mb-0.5">Varchi Tagliafuoco EI120</label>
+            <input id="inpRei" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs mono text-slate-100 font-bold text-center field">
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEDA 3: STAFFAGGIO & CURVA DI CARICO -->
+      <div id="tabPanel_staff" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-3 shadow space-y-2">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400">3. Staffaggio, Sismica &amp; Curve</h2>
+
+        <div>
+          <label for="inpSupport" class="block text-[11px] text-slate-400 mb-0.5">Tipologia Supporto (CEI EN 61537)</label>
+          <select id="inpSupport" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 field">
+            <option value="none" selected>🚫 No Staffaggio (Nessun Supporto CAD)</option>
+            <option value="wall_light">Mensola Parete Leggera C30 (SWL 35 kg @ 1.5m)</option>
+            <option value="wall_med">Mensola Rinforzata con Saetta (SWL 75 kg @ 1.5m)</option>
+            <option value="wall_heavy">Mensola Pesante Doppia C50 (SWL 150 kg @ 1.5m)</option>
+            <option value="ceiling_trap">Trapezio Soffitto 2xM10 + C40 (SWL 210 kg @ 1.5m)</option>
+            <option value="ceiling_single">Pendino Monotirante M10 (SWL 45 kg @ 1.5m)</option>
+            <option value="floor_omega">Supporto a Pavimento su Omega C40 (SWL 180 kg)</option>
+          </select>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded p-2">
+          <div class="flex justify-between text-[11px] mono text-amber-300 mb-0.5">
+            <span>Passo Staffaggio Ls:</span>
+            <span id="lblSpan" class="font-bold">1.50 m (1500 mm)</span>
+          </div>
+          <input id="inpSpan" type="range" min="1.0" max="3.0" step="0.1" value="1.5" oninput="syncFromUI()" class="w-full accent-amber-400">
+        </div>
+
+        <div>
+          <label for="inpSeismic" class="block text-[11px] text-slate-400 font-semibold mb-0.5">Controvento Antisismico (NTC 2018)</label>
+          <select id="inpSeismic" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 field">
+            <option value="none" selected>Nessun Controvento Sismico</option>
+            <option value="cable_9m">Kit Funi Acciaio 45° ogni 9.0 m</option>
+            <option value="rigid_6m">Controvento Rigido Strut 45° ogni 6.0 m</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-800">
+          <div>
+            <label for="inpBends" class="block text-[11px] text-slate-400 mb-0.5">Curve 90°</label>
+            <input id="inpBends" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-1 text-xs mono text-slate-100 font-bold text-center field">
+          </div>
+          <div>
+            <label for="inpTees" class="block text-[11px] text-slate-400 mb-0.5">Deviaz. T</label>
+            <input id="inpTees" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-1 text-xs mono text-slate-100 font-bold text-center field">
+          </div>
+          <div>
+            <label for="inpReducers" class="block text-[11px] text-slate-400 mb-0.5">Riduzioni</label>
+            <input id="inpReducers" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-1 text-xs mono text-slate-100 font-bold text-center field">
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEDA 4: AGGIUNTA CAVI DA PORTFOLIO -->
+      <div id="tabPanel_cavi" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-3 shadow space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400">4. Aggiungi Cavi alla Canalina</h2>
+        </div>
+
+        <button type="button" onclick="toggleDatabaseModal()" class="w-full py-1.5 bg-gradient-to-r from-blue-600/30 to-cyan-600/30 hover:from-blue-600/50 hover:to-cyan-600/50 text-cyan-300 border border-cyan-500/50 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 mb-1">
+          <span>📚 Sfoglia Database Cavi, Segnali &amp; Mensole</span>
+        </button>
+
+        <select id="selCableCatalog" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-100 mono field"></select>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label for="inpCableQty" class="block text-[11px] text-slate-400 mb-0.5">Quantità</label>
+            <input id="inpCableQty" type="number" value="1" min="1" max="30" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs mono text-slate-100 field">
+          </div>
+          <div class="col-span-2">
+            <label for="inpCableCode" class="block text-[11px] text-slate-400 mb-0.5">Sigla Utenza / Linea</label>
+            <input id="inpCableCode" type="text" placeholder="Es. QGBT-P C-22" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs mono text-slate-100 field">
+          </div>
+        </div>
+
+        <label class="flex items-center gap-2 bg-slate-950 border border-amber-500/40 rounded px-2.5 py-1.5 text-xs text-amber-300 cursor-pointer">
+          <input id="chkTrefoil" type="checkbox" class="accent-amber-400">
+          <span>🔺 Posa a Trifoglio (3 Unipolari legati)</span>
+        </label>
+
+        <button type="button" onclick="addCableFromPortfolio()" class="w-full py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded font-semibold transition text-xs">
+          + Inserisci Cavo/i nella Sezione
+        </button>
+
+        <div class="mt-3 pt-3 border-t border-slate-800">
+          <h3 class="text-[11px] text-cyan-300 font-semibold mb-1">Crea Nuovo Cavo a DB (Sessione Corrente)</h3>
+          <div class="grid grid-cols-4 gap-1">
+            <input id="newCbForm" type="text" placeholder="Form. (es 1G16)" class="col-span-1 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-[11px] text-slate-100 mono field">
+            <input id="newCbDesc" type="text" placeholder="Descrizione / Tipo" class="col-span-2 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-[11px] text-slate-100 field">
+            <input id="newCbD" type="number" step="0.1" placeholder="Ø mm" class="col-span-1 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-[11px] text-slate-100 text-center mono field">
+          </div>
+          <button type="button" onclick="addCustomCableToDB()" class="w-full mt-1.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded font-semibold transition text-[11px]">
+            + Registra nel Catalogo DB
+          </button>
+        </div>
+      </div>
+
+      <!-- WIDGET DEDICATO INTERATTIVO CURVA DI CARICO E FRECCIA (CEI EN 61537) -->
+      <div class="bg-slate-900 border border-cyan-500/40 rounded-xl p-3 shadow">
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-300">📊 Curva di Carico &amp; Freccia EN 61537</h2>
+          <span id="curveStatusBadge" class="text-[11px] mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">—</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-1.5">Clicca o trascina sul grafico per variare il passo staffe <code class="text-amber-300">Ls</code>:</p>
+        <canvas id="loadCurveCanvas" width="380" height="175" class="w-full bg-slate-950 border border-slate-800 rounded-lg cursor-ew-resize"></canvas>
+        <div class="grid grid-cols-3 gap-1 mt-1.5 text-[11px] mono text-center bg-slate-950 p-1.5 rounded border border-slate-800">
+          <div>
+            <div class="text-slate-400">Carico q_tot</div>
+            <div id="lblChartQtot" class="text-amber-300 font-bold">0.0 kg/m</div>
+          </div>
+          <div>
+            <div class="text-slate-400">Portata q_amm</div>
+            <div id="lblChartQamm" class="text-emerald-400 font-bold">50.0 kg/m</div>
+          </div>
+          <div>
+            <div class="text-slate-400">Freccia f / Lim</div>
+            <div id="lblChartDefl" class="text-cyan-300 font-bold">0.4 / 7.5 mm</div>
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-1.5 leading-snug">Portate e frecce sono stime di calcolo: per l'esecutivo verificale con le tabelle del costruttore.</p>
+      </div>
+
+
+
+    </section>
+
+    <!-- AREA CENTRALE / DESTRA: KPI, VIEWPORT CAD 1:1 E TABELLA CAVI -->
+    <section id="rightColSection" class="lg:col-span-8 xl:col-span-9 flex flex-col gap-3">
+
+      <!-- KPI INGEGNERISTICI -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2" id="kpiBar">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[11px] text-slate-400 uppercase font-semibold">Riempimento &amp; Riserva</div>
+          <div class="flex items-baseline gap-1.5 mt-0.5">
+            <span id="kpiFill" class="text-sm font-bold mono text-emerald-400">0.0%</span>
+            <span id="kpiSpare" class="text-[11px] mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Riserva 100%</span>
+          </div>
+          <div class="text-[11px] text-slate-400 mt-0.5"><span id="kpiAreaUsed">0</span> / <span id="kpiAreaTot">15000</span> mm²</div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[11px] text-slate-400 uppercase font-semibold">Carico Mensola EN 61537</div>
+          <div class="text-sm font-bold mono text-cyan-300 mt-0.5"><span id="kpiLoadPct">0.0%</span> <span class="text-[11px] text-slate-400">@ <span id="kpiSpan">1.5m</span></span></div>
+          <div id="kpiLoadTxt" class="text-[11px] text-emerald-400">SWL Verificato</div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[11px] text-slate-400 uppercase font-semibold">Tiro Posa Cavi &amp; R_min</div>
+          <div class="text-sm font-bold mono text-purple-300 mt-0.5"><span id="kpiPull">0.0</span> daN &bull; R=<span id="kpiBendR">0</span>mm</div>
+          <div id="kpiPullTxt" class="text-[11px] text-emerald-400">Trazione Posa OK</div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-[11px] text-slate-400 uppercase font-semibold">Sismica &amp; Tagliafuoco</div>
+          <div id="kpiReiTxt" class="text-sm font-bold mono text-slate-400 mt-0.5">0 Varchi EI120</div>
+          <div id="kpiSeisTxt" class="text-[11px] text-slate-500">NTC 2018: Standard</div>
+        </div>
+
+        <div id="kpiElectricalCard" class="hidden bg-purple-950/30 border border-purple-500/40 rounded-xl p-2.5">
+          <div class="text-[11px] text-purple-300 uppercase font-semibold">Derating Iz' &amp; ΔV% (PDF)</div>
+          <div class="text-sm font-bold mono text-amber-300 mt-0.5"><span id="kpiJoule">0.0</span> W/m &bull; ΔV <span id="kpiDv" class="text-emerald-300">0.0%</span></div>
+          <div id="kpiDeratTxt" class="text-[11px] text-emerald-400">Iz' = Iz·Kr &ge; Ib OK</div>
+        </div>
+
+        <div id="kpiSegCard" class="bg-slate-900 border border-emerald-500/40 rounded-xl p-2.5">
+          <div class="text-[11px] text-slate-400 uppercase font-semibold">Segregazione CEI 64-8</div>
+          <div id="kpiSegTitle" class="text-xs font-bold text-emerald-400 mt-0.5">CONFORME</div>
+          <div class="text-[11px] text-slate-300">Art. 528.1 Rispettato</div>
+        </div>
+      </div>
+
+      <!-- VIEWPORT GRAFICA CAD 1:1 (CON DRAG & DROP FILE) -->
+      <div id="cadViewportContainer" class="flex-1 flex flex-col">
+      <div id="cadDropArea" class="relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-1 min-h-[460px] lg:min-h-[520px] flex flex-col">
+        <div class="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
+          <div class="flex items-center gap-2 bg-slate-900/90 backdrop-blur border border-slate-700/80 px-3 py-1.5 rounded-lg pointer-events-auto">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-xs mono text-amber-400 font-bold">Anteprima 1:1 · trascina i cavi o rilascia qui un file DWG/DXF</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 backdrop-blur border border-slate-700/80 px-2.5 py-1 rounded-lg pointer-events-auto text-xs max-w-full">
+            <div class="flex items-center gap-1 border-r border-slate-700 pr-2 mr-0.5">
+              <span class="text-[11px] text-amber-300 font-semibold" title="Grandezza testi nella tavola CAD">Testi:</span>
+              <select id="selTextScale" onchange="onTextScaleChange(this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] text-slate-100 focus:outline-none field" title="Scala grandezza testi (es. 80%, 100%, 120%)">
+                <option value="0.7">70%</option>
+                <option value="0.8">80%</option>
+                <option value="0.9">90%</option>
+                <option value="1.0" selected>100%</option>
+                <option value="1.1">110%</option>
+                <option value="1.2">120%</option>
+                <option value="1.3">130%</option>
+                <option value="1.5">150%</option>
+                <option value="1.8">180%</option>
+              </select>
+            </div>
+            <span id="lblZoom" class="text-[11px] mono text-slate-400 w-12 text-right mr-1">100%</span>
+            <button type="button" onclick="zoomBy(1.25)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 mono font-bold">+</button>
+            <button type="button" onclick="zoomBy(0.80)" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 mono font-bold">-</button>
+            <button type="button" onclick="fitAll()" class="px-2.5 py-0.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded text-amber-300 font-semibold">Adatta Tutto</button>
+            <button type="button" onclick="zoomSection()" class="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-cyan-300 font-medium">Zoom Sezione</button>
+            <button type="button" onclick="zoomTables()" class="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-emerald-300 font-medium">Zoom Tabelle</button>
+          </div>
+        </div>
+
+        <canvas id="cadCanvas" class="w-full flex-1 cad-grid-dark cursor-grab active:cursor-grabbing"></canvas>
+      </div>
+      </div>
+
+      <!-- TABELLA DISTINTA CAVI INTERATTIVA -->
+      <div id="distintaContainer" class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+            <span>Distinta cavi della sezione</span>
+            <span id="lblTableMode" class="text-[11px] mono bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded">Coordinate &amp; Diametri 1:1</span>
+          </h2>
+          <button type="button" onclick="clearCables()" class="text-xs bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 px-2.5 py-1 rounded transition">
+            Svuota Cavi
+          </button>
+        </div>
+
+        <div class="overflow-x-auto max-h-48">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead id="tblHead"></thead>
+            <tbody id="tblBody" class="divide-y divide-slate-800/70 mono text-xs"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
