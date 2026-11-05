@@ -1,7 +1,7 @@
 // Service worker di CanaloCAD: rende l'app utilizzabile offline quando è servita via http(s).
 // - Pagina (Canalo.html): prima la rete, così gli aggiornamenti arrivano subito; offline usa la copia in cache.
 // - Librerie CDN versionate (pdf.js, LibreDWG, font): prima la cache; vengono salvate al primo utilizzo.
-const CACHE = "canalocad-v16.5";
+const CACHE = "canalocad-v16.6";
 const PRECACHE = ["./", "./Canalo.html", "./manifest.webmanifest", "./icon.svg"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com", "unpkg.com"];
 

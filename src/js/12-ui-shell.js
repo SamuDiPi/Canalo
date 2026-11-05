@@ -348,6 +348,7 @@
     function initUiShell() {
       initSegmented();
       initStatusToasts();
+      initHelpToc();
 
       // Azioni dentro elenchi generati (delegazione)
       document.addEventListener("click", e => {
@@ -402,3 +403,70 @@
       refreshSegmented();
     }
 
+    // --- Guida --------------------------------------------------------------------
+    // Filtra gli argomenti che contengono tutte le parole cercate
+    function filterHelp(q) {
+      const words = String(q || "").toLowerCase().split(/\s+/).filter(Boolean);
+      let shown = 0;
+      document.querySelectorAll("#helpBody [data-help]").forEach(sec => {
+        const ok = !words.length || words.every(w => sec.textContent.toLowerCase().includes(w));
+        sec.classList.toggle("hidden", !ok);
+        const link = document.querySelector(`#helpToc a[href="#${sec.id}"]`);
+        if (link) link.classList.toggle("hidden", !ok);
+        if (ok) shown++;
+      });
+      const none = document.getElementById("helpNoResults");
+      if (none) none.classList.toggle("hidden", shown > 0);
+    }
+
+    // Evidenzia nell'indice l'argomento visibile
+    function initHelpToc() {
+      const body = document.getElementById("helpBody");
+      const toc = document.getElementById("helpToc");
+      if (!body || !toc) return;
+      let lockTocUntil = 0;
+      const mark = () => {
+        if (Date.now() < lockTocUntil) return;
+        const top = body.getBoundingClientRect().top + 40;
+        let cur = null;
+        body.querySelectorAll("[data-help]:not(.hidden)").forEach(s => { if (s.getBoundingClientRect().top <= top) cur = s.id; });
+        if (!cur) { const first = body.querySelector("[data-help]:not(.hidden)"); cur = first && first.id; }
+        toc.querySelectorAll("a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === `#${cur}`));
+      };
+      body.addEventListener("scroll", () => requestAnimationFrame(mark), { passive: true });
+      toc.addEventListener("click", e => {
+        const a = e.target.closest("a[href^='#']");
+        if (!a) return;
+        e.preventDefault();
+        const target = document.getElementById(a.getAttribute("href").slice(1));
+        toc.querySelectorAll("a").forEach(x => x.classList.toggle("on", x === a));
+        if (target) target.scrollIntoView({ block: "start" });
+        lockTocUntil = Date.now() + 700; // durante lo scorrimento animato non cambiare voce
+      });
+      mark();
+    }
+
+    // Apre la guida in una finestra pulita (testo nero su bianco) pronta per stampa o PDF
+    function printHelp() {
+      const body = document.getElementById("helpBody");
+      if (!body) return;
+      const clone = body.cloneNode(true);
+      clone.querySelectorAll(".hidden").forEach(el => el.classList.remove("hidden"));
+      clone.querySelector("#helpNoResults")?.remove();
+      const w = window.open("", "_blank");
+      if (!w) { toast("Il browser ha bloccato la finestra di stampa: consenti i popup per questa pagina.", "warn"); return; }
+      w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Guida di CanaloCAD v${APP_VERSION}</title>
+        <style>
+          body{font:11pt/1.55 Arial,Helvetica,sans-serif;color:#111;margin:18mm 16mm;max-width:180mm}
+          h1{font-size:20pt;margin:0 0 4mm} h3{font-size:14pt;margin:8mm 0 2mm;page-break-after:avoid}
+          section{page-break-inside:auto} p,li,dd{orphans:3;widows:3}
+          table{border-collapse:collapse;width:100%;margin:2mm 0 4mm;font-size:10pt} th,td{border:1px solid #bbb;padding:1.5mm 2mm;text-align:left;vertical-align:top} th{background:#eee}
+          kbd{font:600 9pt Consolas,monospace;border:1px solid #999;border-radius:3px;padding:0 1.5mm}
+          .note{border-left:3px solid #999;padding:1mm 3mm;color:#333;background:#f4f4f4}
+          dt{font-weight:bold;margin-top:3mm} dd{margin:0 0 0 0}
+          .st-ok{color:#1b7a36}.st-warn{color:#9a5b00}.st-err{color:#b3261e}.st-info{color:#2a5aa8}
+        </style></head><body><h1>Guida di CanaloCAD <small style="font-weight:normal;font-size:11pt">v${APP_VERSION}</small></h1>${clone.innerHTML}</body></html>`);
+      w.document.close();
+      w.focus();
+      setTimeout(() => w.print(), 300);
+    }

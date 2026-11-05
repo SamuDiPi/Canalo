@@ -250,51 +250,7 @@
     </div>
   </div>
 
-  <!-- MODALE GUIDA RAPIDA E SCORCIATOIE (F1) -->
-  <div id="quickHelpModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-xs">
-      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="w-6 h-6 rounded bg-cyan-500/20 text-cyan-300 font-bold flex items-center justify-center border border-cyan-500/30">?</span>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Guida Rapida &amp; Scorciatoie CAD</h3>
-        </div>
-        <button type="button" onclick="closeQuickHelpModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
-      </div>
-      <div class="p-4 overflow-y-auto space-y-4 text-slate-300">
-        <div>
-          <h4 class="text-cyan-300 font-bold uppercase text-xs mb-1.5">Scorciatoie da Tastiera</h4>
-          <div class="grid grid-cols-2 gap-2 text-xs mono">
-            <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center"><span class="text-slate-400">Ctrl + O</span><span class="text-amber-300 font-bold">Apri DWG / DXF</span></div>
-            <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center"><span class="text-slate-400">Home</span><span class="text-amber-300 font-bold">Zoom Tutto (Centra)</span></div>
-            <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center"><span class="text-slate-400">Del / Canc</span><span class="text-amber-300 font-bold">Svuota Canalina</span></div>
-            <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center"><span class="text-slate-400">F1</span><span class="text-amber-300 font-bold">Questa Guida</span></div>
-            <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center"><span class="text-slate-400">F5</span><span class="text-amber-300 font-bold">Ricalcola Portate</span></div>
-            <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center"><span class="text-slate-400">Esc</span><span class="text-amber-300 font-bold">Chiudi Finestre / Menu</span></div>
-          </div>
-        </div>
-        <div>
-          <h4 class="text-cyan-300 font-bold uppercase text-xs mb-1.5">Comandi Mouse &amp; Touch</h4>
-          <ul class="list-disc pl-4 space-y-1 text-xs text-slate-300">
-            <li><strong class="text-white">Pan (Spostamento):</strong> Clicca con tasto sinistro e trascina sulla tela CAD, oppure trascina con un dito su touch.</li>
-            <li><strong class="text-white">Zoom:</strong> Ruota la rotellina del mouse in avanti/indietro, oppure fai pinch-to-zoom con due dita su touch.</li>
-            <li><strong class="text-white">Selezione Cavo:</strong> Clicca o tocca un conduttore per evidenziarlo ed esaminarne la scheda tecnica.</li>
-          </ul>
-        </div>
-        <div>
-          <h4 class="text-cyan-300 font-bold uppercase text-xs mb-1.5">Caratteristiche Motore CAD</h4>
-          <ul class="list-disc pl-4 space-y-1 text-xs text-slate-300">
-            <li><strong class="text-white">Motore DWG WASM:</strong> Decompressione diretta dei file binari AutoCAD in memoria client-side.</li>
-            <li><strong class="text-white">PDF Unifilare:</strong> Accoppiamento automatico sigle, descrizioni utenze, sezioni e correnti di progetto.</li>
-            <li><strong class="text-white">Verifica Curva EN 61537:</strong> Calcolo carico di lavoro ammissibile (SWL) e freccia elastica.</li>
-            <li><strong class="text-white">DXF 1:1 Compatibile:</strong> Esportazione conforme AutoCAD AC1009/R12 (apertura istantanea in LT 2021..2026).</li>
-          </ul>
-        </div>
-      </div>
-      <div class="p-3 bg-slate-950 border-t border-slate-800 text-right">
-        <button type="button" onclick="closeQuickHelpModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold transition">Chiudi</button>
-      </div>
-    </div>
-  </div>
+<!-- @include partials/04-help.html -->
 
   <!-- MODALE PWA OFFLINE READY -->
   <div id="pwaOfflineModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">

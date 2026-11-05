@@ -44,6 +44,10 @@ npm run watch      # rigenera a ogni salvataggio in src/
 
 Si modificano sempre i file in `src/`. `Canalo.html` viene sovrascritto a ogni build.
 
+## Progetti
+
+Un progetto si salva come file `.ccad` (JSON leggibile) con tutte le sezioni; si riaprono anche i vecchi `.json`. La guida completa si apre nell'app con F1.
+
 ## Uso offline
 
 Aprendo `Canalo.html` con doppio clic l'app funziona e salva automaticamente il progetto nel browser. Servono però la connessione per i font e, al primo uso, per i motori DWG e PDF.

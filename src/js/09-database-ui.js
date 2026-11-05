@@ -270,7 +270,9 @@
       dropArea.classList.remove("border-cyan-400");
       const files = e.dataTransfer && e.dataTransfer.files;
       if (!files || !files.length) return;
-      if (files[0].name.toLowerCase().endsWith(".pdf")) importPDFFile({ files, value: "" });
+      const nm = files[0].name.toLowerCase();
+      if (nm.endsWith(".ccad") || nm.endsWith(".json")) openProjectFile(files[0]);
+      else if (nm.endsWith(".pdf")) importPDFFile({ files, value: "" });
       else importCADFile({ files, value: "" });
     });
 

@@ -375,35 +375,109 @@
       deleteSectionTabAt(currentSectionIdx);
     }
 
-    function exportProjectJSON() {
+    // ---------------------------------------------------------------------------
+    // FILE DI PROGETTO .ccad (CanaloCAD): contiene TUTTE le sezioni del progetto.
+    // Dentro è JSON leggibile; si riaprono anche i vecchi file .json.
+    // Dove il browser lo consente (File System Access API) "Salva" riscrive lo stesso file.
+    // ---------------------------------------------------------------------------
+    const CCAD_EXT = ".ccad";
+    const CCAD_MIME = "application/x-canalocad";
+    const CCAD_PICKER_TYPES = [{ description: "Progetto CanaloCAD", accept: { [CCAD_MIME]: [CCAD_EXT] } }];
+    let projectFileHandle = null;
+    let projectFileName = "";
+
+    function buildProjectPayload() {
       syncActiveSectionToMultiStore();
-      const payload = { app: APP_NAME, version: APP_VERSION, exportedAt: new Date().toISOString(), currentSectionIdx, projectSections };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      downloadBlob(blob, `${(state.tb.docCode || "PROGETTO_CANALINE").replace(/[^a-zA-Z0-9_-]/g, "_")}.json`);
-      toast("Progetto salvato", "ok", null, 2500);
+      return JSON.stringify({ format: "CanaloCAD project", app: APP_NAME, version: APP_VERSION, savedAt: new Date().toISOString(), currentSectionIdx, projectSections }, null, 2);
+    }
+
+    function suggestedProjectName() {
+      const base = (projectFileName || state.tb.docCode || "PROGETTO_CANALINE").replace(/\.(ccad|json)$/i, "").replace(/[^a-zA-Z0-9_ -]/g, "_").trim();
+      return `${base || "PROGETTO_CANALINE"}${CCAD_EXT}`;
+    }
+
+    // Salva il progetto. saveAs = true chiede sempre dove salvare.
+    async function saveProject(saveAs = false) {
+      const text = buildProjectPayload();
+      const n = projectSections.length;
+      const done = (name) => toast(`Progetto salvato: ${name} (${n} ${n === 1 ? "sezione" : "sezioni"})`, "ok", null, 3000);
+      if (window.showSaveFilePicker) {
+        try {
+          if (!projectFileHandle || saveAs) {
+            projectFileHandle = await window.showSaveFilePicker({ suggestedName: suggestedProjectName(), types: CCAD_PICKER_TYPES });
+          }
+          const w = await projectFileHandle.createWritable();
+          await w.write(new Blob([text], { type: CCAD_MIME }));
+          await w.close();
+          projectFileName = projectFileHandle.name;
+          done(projectFileName);
+          return;
+        } catch (e) {
+          if (e && e.name === "AbortError") return; // l'utente ha annullato
+          console.warn("Salvataggio diretto non riuscito, uso il download:", e);
+          projectFileHandle = null;
+        }
+      }
+      const name = suggestedProjectName();
+      downloadBlob(new Blob([text], { type: CCAD_MIME }), name);
+      done(name);
+    }
+    // Nome storico usato da menu e scorciatoie
+    function exportProjectJSON() { return saveProject(false); }
+
+    function loadProjectText(text, fileName) {
+      let data;
+      try { data = JSON.parse(text); } catch (e) { throw new Error("il file non è un progetto CanaloCAD valido"); }
+      if (!data || !Array.isArray(data.projectSections) || data.projectSections.length === 0) {
+        throw new Error("il file non contiene sezioni di progetto CanaloCAD");
+      }
+      if (scheduleSectionSync.pending()) scheduleSectionSync.flush();
+      projectSections = data.projectSections.map(normalizeSection);
+      currentSectionIdx = Math.min(Math.max(0, data.currentSectionIdx || 0), projectSections.length - 1);
+      state = cloneStateSnapshot(projectSections[currentSectionIdx]);
+      projectFileName = fileName || "";
+      pushStateToUI();
+      fitAll();
+      syncActiveSectionToMultiStore();
+      toast(`Progetto "${fileName}" aperto (${projectSections.length} ${projectSections.length === 1 ? "sezione" : "sezioni"})`, "ok", { label: "Annulla", onClick: undoLastChange });
+    }
+
+    async function openProjectFile(file, handle = null) {
+      try {
+        loadProjectText(await file.text(), file.name);
+        projectFileHandle = handle; // con l'handle, "Salva" riscrive lo stesso file
+      } catch (e) {
+        console.error("Errore apertura progetto:", e);
+        toast(`Impossibile aprire "${file.name}": ${e.message}`, "error", null, 8000);
+      }
+    }
+
+    // Apri progetto: selettore del sistema se disponibile (mantiene il file per "Salva"), altrimenti <input>
+    async function openProjectDialog() {
+      if (window.showOpenFilePicker) {
+        try {
+          const [handle] = await window.showOpenFilePicker({ types: [{ description: "Progetto CanaloCAD", accept: { [CCAD_MIME]: [CCAD_EXT], "application/json": [".json"] } }] });
+          if (handle) await openProjectFile(await handle.getFile(), handle);
+          return;
+        } catch (e) {
+          if (e && e.name === "AbortError") return;
+        }
+      }
+      document.getElementById("jsonProjectInput").click();
     }
 
     async function importProjectJSON(inputEl) {
       const file = inputEl.files && inputEl.files[0];
       if (!file) return;
-      try {
-        const data = JSON.parse(await file.text());
-        if (!data || !Array.isArray(data.projectSections) || data.projectSections.length === 0) {
-          throw new Error("il file non contiene schede di progetto CanaloCAD");
-        }
-        if (scheduleSectionSync.pending()) scheduleSectionSync.flush();
-        projectSections = data.projectSections.map(normalizeSection);
-        currentSectionIdx = Math.min(Math.max(0, data.currentSectionIdx || 0), projectSections.length - 1);
-        state = cloneStateSnapshot(projectSections[currentSectionIdx]);
-        pushStateToUI();
-        fitAll();
-        syncActiveSectionToMultiStore();
-        toast(`Progetto "${file.name}" aperto (${projectSections.length} schede)`, "ok", { label: "Annulla", onClick: undoLastChange });
-      } catch (e) {
-        console.error("Errore caricamento JSON:", e);
-        toast(`Impossibile aprire "${file.name}": ${e.message}`, "error", null, 8000);
-      } finally {
-        inputEl.value = "";
-      }
+      try { await openProjectFile(file, null); } finally { inputEl.value = ""; }
+    }
+
+    // App installata (PWA): doppio clic su un file .ccad apre direttamente il progetto
+    function initProjectFileLaunch() {
+      if (!("launchQueue" in window)) return;
+      window.launchQueue.setConsumer(async (params) => {
+        const handle = params.files && params.files[0];
+        if (handle) await openProjectFile(await handle.getFile(), handle);
+      });
     }
 

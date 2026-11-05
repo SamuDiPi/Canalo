@@ -40,7 +40,7 @@
 
     <input id="dwgInput" type="file" accept=".dwg,.dxf" multiple class="hidden" onchange="importCADFile(this)">
     <input id="pdfInput" type="file" accept=".pdf" multiple class="hidden" onchange="importPDFFile(this)">
-    <input id="jsonProjectInput" type="file" accept=".json" class="hidden" onchange="importProjectJSON(this)">
+    <input id="jsonProjectInput" type="file" accept=".ccad,.json" class="hidden" onchange="importProjectJSON(this)">
 
     <div id="winMenuBar" class="flex items-center gap-2">
       <!-- Importa -->
@@ -50,7 +50,7 @@
           <button type="button" role="menuitem" class="menu-item" onclick="document.getElementById('dwgInput').click(); closeAllMenus();"><svg class="ico"><use href="#i-sezione"/></svg>Disegno DWG / DXF…<span class="kbd" id="badgeMenuDwg">Ctrl+O</span></button>
           <button type="button" role="menuitem" class="menu-item" onclick="document.getElementById('pdfInput').click(); closeAllMenus();"><svg class="ico"><use href="#i-file"/></svg>Schema unifilare PDF…<span class="kbd" id="badgeMenuPdf">Ctrl+U</span></button>
           <div class="menu-sep"></div>
-          <button type="button" role="menuitem" class="menu-item" onclick="document.getElementById('jsonProjectInput').click(); closeAllMenus();"><svg class="ico"><use href="#i-progetto"/></svg>Apri progetto (.json)…</button>
+          <button type="button" role="menuitem" class="menu-item" onclick="closeAllMenus(); openProjectDialog();"><svg class="ico"><use href="#i-progetto"/></svg>Apri progetto (.ccad)…</button>
           <button type="button" role="menuitem" class="menu-item" onclick="toggleDwgInspector(); closeAllMenus();"><svg class="ico"><use href="#i-inspect"/></svg>Ispettore entità DWG</button>
         </div>
       </div>
@@ -63,7 +63,9 @@
         <div class="win-dropdown hidden menu right-0 w-[19rem]" role="menu">
           <div class="menu-label">Progetto</div>
           <button type="button" role="menuitem" class="menu-item" onclick="newProject(); closeAllMenus();"><svg class="ico"><use href="#i-new"/></svg>Nuovo progetto</button>
-          <button type="button" role="menuitem" class="menu-item" onclick="exportProjectJSON(); closeAllMenus();"><svg class="ico"><use href="#i-save"/></svg>Salva progetto (.json)<span class="kbd">Ctrl+S</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="closeAllMenus(); openProjectDialog();"><svg class="ico"><use href="#i-progetto"/></svg>Apri progetto…</button>
+          <button type="button" role="menuitem" class="menu-item" onclick="closeAllMenus(); saveProject(false);"><svg class="ico"><use href="#i-save"/></svg>Salva progetto<span class="kbd">Ctrl+S</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="closeAllMenus(); saveProject(true);"><svg class="ico"><use href="#i-save"/></svg>Salva con nome…<span class="kbd">Ctrl+Maiusc+S</span></button>
           <button type="button" role="menuitem" class="menu-item" onclick="openCartiglioSettingsModal(); closeAllMenus();"><svg class="ico"><use href="#i-tag"/></svg>Dati cartiglio<span class="kbd" id="badgeMenuCartiglio">F2</span></button>
           <div class="menu-sep"></div>
           <div class="menu-label">Vista</div>

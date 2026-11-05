@@ -1,6 +1,50 @@
     // ============================================================================
     // 6. COSTRUZIONE SCENA VETTORIALE 1:1 (CON UNIPOLARI 1X & MORSETTO PE REALISTICO)
     // ============================================================================
+    // ============================================================================
+    // MISURA E "A CAPO" DEI TESTI DELLA TAVOLA
+    // Altezza CAD = altezza delle maiuscole (cap height): per Arial 0,716 em.
+    // La larghezza è misurata sul font reale, così le celle delle tabelle bastano anche in AutoCAD.
+    // ============================================================================
+    const CAD_CAP_HEIGHT_EM = 0.716;
+    const cadMeasureCtx = document.createElement("canvas").getContext("2d");
+    const cadWidthCache = new Map();
+    function cadTextWidth(str, capH) {
+      const s = String(str == null ? "" : str).replace(/%%[cdp]/gi, "Ø");
+      let w100 = cadWidthCache.get(s);
+      if (w100 === undefined) {
+        cadMeasureCtx.font = "100px Arial, 'Liberation Sans', Helvetica, sans-serif";
+        w100 = cadMeasureCtx.measureText(s).width;
+        if (cadWidthCache.size > 5000) cadWidthCache.clear();
+        cadWidthCache.set(s, w100);
+      }
+      return (w100 / 100) * (capH / CAD_CAP_HEIGHT_EM);
+    }
+
+    // Divide il testo in righe larghe al massimo maxW (a parole; una parola troppo lunga va spezzata)
+    function wrapCadText(str, maxW, capH) {
+      const words = String(str).trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return [""];
+      const lines = [];
+      let cur = "";
+      const pushWord = (w) => {
+        const test = cur ? `${cur} ${w}` : w;
+        if (cadTextWidth(test, capH) <= maxW) { cur = test; return; }
+        if (cur) { lines.push(cur); cur = ""; }
+        if (cadTextWidth(w, capH) <= maxW) { cur = w; return; }
+        // parola più larga della cella: spezza preferendo / - ( dopo il carattere
+        let part = "";
+        for (const ch of w) {
+          if (part && cadTextWidth(part + ch, capH) > maxW) { lines.push(part); part = ""; }
+          part += ch;
+        }
+        cur = part;
+      };
+      words.forEach(pushWord);
+      if (cur) lines.push(cur);
+      return lines;
+    }
+
     function buildCADScene() {
       const prims = [];
       const W = state.width, H = state.height, thk = state.thk;
@@ -334,98 +378,142 @@
         lowestY = build3DIsoScene(prims, leftBoxX, lowestY, leftBoxW, W, H, thk, mat, sup);
       }
 
-      const showDesc = state.showTableDesc !== false && !state.hideTableDesc;
-      const maxFormLen = Math.max(10, ...(state.cables || []).map(c => String(c.form || "").length));
-      const formColW = Math.max(40, Math.ceil(maxFormLen * 2.35 * Math.max(0.9, txtMul) + 6));
-      const descColW = 76;
+      // ------------------------------------------------------------------------
+      // TABELLE DELLA COLONNA DESTRA: larghezza massima 200 mm (20 cm sulla tavola 1:1),
+      // colonne dimensionate sul contenuto, testi a capo invece che troncati.
+      // Le larghezze sono misurate con le metriche Arial e la convenzione CAD
+      // (altezza testo = altezza delle maiuscole), così valgono anche in AutoCAD.
+      // ------------------------------------------------------------------------
+      const TAB_MAX_W = 200;
+      const T_BODY = 2.0, T_HEAD = 1.9, T_TITLE = 2.3, T_BOM = 1.95;
+      const PAD_X = 1.4, PAD_Y = 1.8, LINE_K = 1.45;
+      const effH = h => h * txtMul;
+      const tw = (s, h) => cadTextWidth(s, effH(h));
+      const wrap = (s, maxW, h) => wrapCadText(String(s == null ? "" : s), maxW, effH(h));
+      const blockH = (nLines, h) => Math.max(6.5, 2 * PAD_Y + effH(h) + (nLines - 1) * effH(h) * LINE_K);
+      // testo su più righe in una cella; rowTop = bordo superiore della cella
+      const textLines = (layer, x, rowTop, h, lines, color) => {
+        lines.forEach((ln, k) => {
+          const y = rowTop - PAD_Y - effH(h) - k * effH(h) * LINE_K;
+          prims.push({ t: "text", layer, x, y, h: +effH(h).toFixed(3), str: ln, color: isLight && color === "#f8fafc" ? txtCol : color, align: "left" });
+        });
+      };
 
+      const showDesc = state.showTableDesc !== false && !state.hideTableDesc;
       const colDefs = [
-        { key: "pos", header: "POS", w: 14, align: "left", col: "#cbd5e1" },
-        { key: "code", header: "SIGLA LINEA", w: 48, align: "left", col: "#38bdf8" },
-        ...(showDesc ? [{ key: "desc", header: "DESCRIZIONE UTENZA", w: descColW, align: "left", col: "#f8fafc" }] : []),
-        { key: "type", header: "TIPO CAVO", w: 44, align: "left", col: "#f8fafc" },
-        { key: "form", header: "FORMAZIONE", w: formColW, align: "left", col: "#f8fafc" },
-        { key: "diam", header: "Ø mm", w: 18, align: "left", col: "#f8fafc" },
-        { key: "rmin", header: "R_min", w: 24, align: "left", col: "#f8fafc" },
-        { key: "posa", header: "POSA", w: 28, align: "left", col: "#f8fafc" }
+        { key: "pos", header: "POS", col: "#cbd5e1", wrap: false },
+        { key: "code", header: "SIGLA LINEA", col: "#38bdf8", wrap: true, prio: 2 },
+        ...(showDesc ? [{ key: "desc", header: "DESCRIZIONE UTENZA", col: "#f8fafc", wrap: true, prio: 1, grow: true, minW: 30 }] : []),
+        { key: "type", header: "TIPO CAVO", col: "#f8fafc", wrap: true, prio: 3 },
+        { key: "form", header: "FORMAZIONE", col: "#f8fafc", wrap: true, prio: 4 },
+        { key: "diam", header: "Ø mm", col: "#f8fafc", wrap: false },
+        { key: "rmin", header: "R min", col: "#f8fafc", wrap: false },
+        { key: "posa", header: "POSA", col: "#f8fafc", wrap: false }
       ];
 
+      const rowsData = state.cables.map((c, idx) => {
+        const isUni = isUnipolarCable(c);
+        return {
+          isUni,
+          pos: `#${idx + 1}`,
+          code: c.code,
+          desc: cleanUtenzaDescription(c.desc, c.code) || c.desc || "-",
+          type: getDisplayCableType(c, state.cables),
+          form: c.form,
+          diam: String(c.d),
+          rmin: `${Math.round(c.d * (c.bendK || 10))}mm`,
+          posa: isUni ? "1X UNI" : (c.sys === "SPECIAL_ELV" ? "ELV" : "MULTI")
+        };
+      });
+
+      // Larghezze: naturale (tutto su una riga) e minima (parola più lunga)
+      const longestWord = (s, h) => Math.max(0, ...String(s || "").split(/\s+/).map(w => tw(w, h)));
+      colDefs.forEach(cd => {
+        const vals = rowsData.map(r => r[cd.key]);
+        const nat = Math.max(tw(cd.header, T_HEAD), ...vals.map(v => tw(v, T_BODY)));
+        const minHead = longestWord(cd.header, T_HEAD);
+        const minVal = cd.wrap ? Math.max(0, ...vals.map(v => longestWord(v, T_BODY))) : Math.max(0, ...vals.map(v => tw(v, T_BODY)));
+        cd.nat = Math.ceil(nat + 2 * PAD_X);
+        cd.min = Math.ceil(Math.max(minHead, minVal, cd.minW ? cd.minW - 2 * PAD_X : 0) + 2 * PAD_X);
+        cd.w = cd.nat;
+      });
+      let tabSum = colDefs.reduce((a, c) => a + c.w, 0);
+      if (tabSum > TAB_MAX_W) {
+        let excess = tabSum - TAB_MAX_W;
+        colDefs.filter(c => c.wrap).sort((a, b) => a.prio - b.prio).forEach(c => {
+          if (excess <= 0) return;
+          const r = Math.min(excess, c.w - c.min);
+          if (r > 0) { c.w -= r; excess -= r; }
+        });
+      } else {
+        const grow = colDefs.find(c => c.grow) || colDefs.find(c => c.key === "code");
+        grow.w += TAB_MAX_W - tabSum;
+      }
+      colDefs.forEach(c => { c.w = +c.w.toFixed(1); });
       const colW = colDefs.map(c => c.w);
-      const headers = colDefs.map(c => c.header);
-      const tabW = colW.reduce((a, b) => a + b, 0), rowH = 9.0;
-      const nRows = Math.max(1, state.cables.length);
-      const tableInnerH = 10 + (nRows + 1) * rowH;
+      const tabW = +colW.reduce((a, b) => a + b, 0).toFixed(1);
 
-      let rightX, topY, headY;
+      const cellLines = (txt, cd, h) => cd.wrap || tw(txt, h) > cd.w - 2 * PAD_X ? wrap(txt, cd.w - 2 * PAD_X, h) : [String(txt)];
+      const titleLines = wrap(`1. DISTINTA CAVI POSATI NELLA SEZIONE - ${state.title}`, tabW - 8, T_TITLE);
+      const titleH = Math.max(10, blockH(titleLines.length, T_TITLE));
+      const headCells = colDefs.map(cd => wrap(cd.header, cd.w - 2 * PAD_X, T_HEAD));
+      const headerH = blockH(Math.max(...headCells.map(l => l.length)), T_HEAD);
+      const bodyRows = rowsData.map(r => {
+        const cells = colDefs.map(cd => cellLines(r[cd.key], cd, T_BODY));
+        return { r, cells, h: blockH(Math.max(...cells.map(l => l.length)), T_BODY) };
+      });
+      const emptyLines = wrap("Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", tabW - 12, T_BODY);
+      const bodyH = bodyRows.length ? bodyRows.reduce((a, b) => a + b.h, 0) : blockH(emptyLines.length, T_BODY);
+      const tableInnerH = titleH + headerH + bodyH;
 
+      let rightX, topY;
       if (isMinimal) {
-        // LAYOUT MINIMAL: Tabella posizionata SOPRA la vista 2D, spaziata e CENTRATE tra loro
-        // Il centro orizzontale della canalina è a W / 2. Centriamo la tabella sullo stesso asse:
+        // LAYOUT MINIMAL: Tabella posizionata SOPRA la vista 2D, centrata sull'asse della canalina
         const xCenter = W / 2;
         rightX = xCenter - tabW / 2;
         const topOf2D = showCallouts && (leftC.length > 0 || rightC.length > 0)
           ? calloutBaseY + Math.max(leftC.length, rightC.length) * stepY
           : ceilY;
         const spacingAbove2D = 28;
-        const tableBottomY = topOf2D + spacingAbove2D;
-        topY = tableBottomY + tableInnerH;
-        headY = topY - 10;
+        topY = topOf2D + spacingAbove2D + tableInnerH;
       } else {
         // LAYOUT STANDARD: Tabella sulla colonna destra
         rightX = Math.max(W + 35 + maxRW, leftBoxX + leftBoxW) + 24;
-        topY = Math.max(H + 38, calloutBaseY + (showCallouts ? Math.max(leftC.length, rightC.length) * stepY : 0));
-        headY = topY - rowH;
+        topY = Math.max(H + 38, calloutBaseY + (showCallouts ? Math.max(leftC.length, rightC.length) * stepY : 0)) + titleH;
       }
 
-      rect("TABELLA", rightX, isMinimal ? topY - 10 : topY, tabW, 10, "#38bdf8", boxBg, true);
-      text("TABELLA", rightX + 4, isMinimal ? topY - 7 : topY + 3, 2.5, `1. DISTINTA CAVI POSATI NELLA SEZIONE - ${state.title}`, "#38bdf8", "left", tabW - 8);
-
-      rect("TABELLA", rightX, isMinimal ? headY - rowH : headY, tabW, rowH, "#64748b", boxAlt, true);
+      // Titolo
+      rect("TABELLA", rightX, topY - titleH, tabW, titleH, "#38bdf8", boxBg, true);
+      textLines("TABELLA", rightX + 4, topY, T_TITLE, titleLines, "#38bdf8");
+      // Intestazioni
+      let cursorY = topY - titleH;
+      rect("TABELLA", rightX, cursorY - headerH, tabW, headerH, "#64748b", boxAlt, true);
       let cx = rightX;
-      headers.forEach((h, i) => {
-        text("TABELLA", cx + 2, isMinimal ? headY - rowH + 2.8 : headY + 2.8, 2.5, h, "#cbd5e1", "left", colW[i]);
-        cx += colW[i];
+      colDefs.forEach((cd, i) => {
+        textLines("TABELLA", cx + PAD_X, cursorY, T_HEAD, headCells[i], "#cbd5e1");
+        cx += cd.w;
       });
-
-      if (state.cables.length === 0) {
-        const ry = isMinimal ? headY - 2 * rowH : headY - rowH;
-        rect("TABELLA", rightX, ry, tabW, rowH, "#475569", boxBg, true);
-        text("TABELLA", rightX + 6, ry + 2.8, 2.5, "Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", "#94a3b8", "left", tabW - 12);
+      cursorY -= headerH;
+      // Righe
+      if (!bodyRows.length) {
+        const h = blockH(emptyLines.length, T_BODY);
+        rect("TABELLA", rightX, cursorY - h, tabW, h, "#475569", boxBg, true);
+        textLines("TABELLA", rightX + 6, cursorY, T_BODY, emptyLines, "#94a3b8");
+        cursorY -= h;
       } else {
-        const maxDescChars = Math.max(10, Math.floor((descColW - 3) / (2.5 * txtMul * 0.56)));
-        state.cables.forEach((c, idx) => {
-          const ry = isMinimal ? headY - (idx + 2) * rowH : headY - (idx + 1) * rowH;
-          const isUni = isUnipolarCable(c);
-          rect("TABELLA", rightX, ry, tabW, rowH, "#475569", idx % 2 === 0 ? boxBg : boxAlt, true);
-          const displayType = getDisplayCableType(c, state.cables);
-
-          let dText = cleanUtenzaDescription(c.desc, c.code) || c.desc || "-";
-          if (dText.length > maxDescChars) {
-            dText = dText.substring(0, maxDescChars - 2).trim() + "..";
-          }
-
-          const rowData = {
-            pos: `#${idx + 1}`,
-            code: c.code,
-            desc: dText,
-            type: displayType,
-            form: c.form,
-            diam: String(c.d),
-            rmin: `${Math.round(c.d * (c.bendK || 10))}mm`,
-            posa: isUni ? "1X UNI" : (c.sys === "SPECIAL_ELV" ? "ELV" : "MULTI")
-          };
-
+        bodyRows.forEach((row, idx) => {
+          rect("TABELLA", rightX, cursorY - row.h, tabW, row.h, "#475569", idx % 2 === 0 ? boxBg : boxAlt, true);
           let rx = rightX;
-          colDefs.forEach((colDef, i) => {
-            const val = rowData[colDef.key];
-            const color = colDef.key === "code" ? "#38bdf8" : (colDef.key === "posa" && isUni ? "#fbbf24" : colDef.col);
-            text("TABELLA", rx + 2, ry + 2.8, 2.5, val, color, colDef.align, colDef.w);
-            rx += colDef.w;
+          colDefs.forEach((cd, i) => {
+            const color = cd.key === "code" ? "#38bdf8" : (cd.key === "posa" && row.r.isUni ? "#fbbf24" : cd.col);
+            textLines("TABELLA", rx + PAD_X, cursorY, T_BODY, row.cells[i], color);
+            rx += cd.w;
           });
+          cursorY -= row.h;
         });
       }
 
-      let currentRightY = isMinimal ? topY - tableInnerH : headY - nRows * rowH;
+      let currentRightY = cursorY;
 
       // 2. DIAGRAMMA CURVA DI CARICO IN TAVOLA CAD (Opzionale - escluso in Stampa Minimal)
       if (!isMinimal && state.showLoadChart !== false) {
@@ -486,25 +574,37 @@
 
       // 3. COMPUTO METRICO BOM (Opzionale - escluso in Stampa Minimal)
       if (!isMinimal && state.showBOM !== false) {
-        const bomTopY = currentRightY - 2;
-        rect("TABELLA", rightX, bomTopY - 9, tabW, 9, "#4ade80", boxBg, true);
-        text("TABELLA", rightX + 4, bomTopY - 6.2, 2.5, `3. COMPUTO METRICO E DISTINTA MATERIALI (BOM ${state.brand} - Tratto ${state.lengthM}m)`, "#4ade80", "left", tabW - 8);
+        const bomTop = currentRightY - 2;
+        const bTitle = wrap(`3. COMPUTO METRICO E DISTINTA MATERIALI (BOM ${state.brand} - Tratto ${state.lengthM}m)`, tabW - 8, 2.5);
+        const bTitleH = Math.max(9, blockH(bTitle.length, 2.5));
+        rect("TABELLA", rightX, bomTop - bTitleH, tabW, bTitleH, "#4ade80", boxBg, true);
+        textLines("TABELLA", rightX + 4, bomTop, 2.5, bTitle, "#4ade80");
+        let by = bomTop - bTitleH;
+        currentRightY = by;
+        const qtyW = 64, descW = tabW - qtyW;
         metrics.bom.forEach((b, i) => {
-          const by = bomTopY - 9 - (i + 1) * 7;
+          const l1 = wrap(`${b.code} | ${b.desc}`, descW - 6, T_BOM);
+          const l2 = wrap(`Q.ta: ${b.qty} ${b.um} (${b.note})`, qtyW - 4, T_BOM);
+          const h = Math.max(7, blockH(Math.max(l1.length, l2.length), T_BOM));
+          rect("TABELLA", rightX, by - h, tabW, h, "#334155", i % 2 === 0 ? boxBg : boxAlt, true);
+          textLines("TABELLA", rightX + 3, by, T_BOM, l1, "#f8fafc");
+          textLines("TABELLA", rightX + descW + 1, by, T_BOM, l2, "#4ade80");
+          by -= h;
           currentRightY = by;
-          rect("TABELLA", rightX, by, tabW, 7, "#334155", i % 2 === 0 ? boxBg : boxAlt, true);
-          text("TABELLA", rightX + 3, by + 2.2, 1.95, `${b.code} | ${b.desc}`, "#f8fafc", "left", tabW - 75);
-          text("TABELLA", rightX + tabW - 70, by + 2.2, 1.95, `Q.ta: ${b.qty} ${b.um} (${b.note})`, "#4ade80", "left", 68);
         });
       }
 
       // 4. CARTIGLIO PROGETTO E COMMITTENTE (Opzionale - escluso in Stampa Minimal)
       if (!isMinimal && state.showCartiglio !== false) {
-        const tbY = currentRightY - 24;
+        const c1 = wrap(`COMMITTENTE: ${state.tb.client} | CODICE: ${state.tb.docCode}`, tabW - 8, 2.3);
+        const c2 = wrap(`PROGETTISTA: ${state.tb.author} | SCALA: ${state.scale || "1:1"} (${state.tb.scaleRev})`, tabW - 8, 2.2);
+        const h1 = blockH(c1.length, 2.3), h2 = blockH(c2.length, 2.2);
+        const tbH = Math.max(20, h1 + h2 - PAD_Y);
+        const tbY = currentRightY - 4 - tbH;
         currentRightY = tbY;
-        rect("CORNICE", rightX, tbY, tabW, 20, "#38bdf8", boxBg, true);
-        text("CORNICE", rightX + 4, tbY + 12, 2.3, `COMMITTENTE: ${state.tb.client} | CODICE: ${state.tb.docCode}`, "#f8fafc", "left", tabW - 8);
-        text("CORNICE", rightX + 4, tbY + 4, 2.2, `PROGETTISTA: ${state.tb.author} | SCALA: ${state.scale || "1:1"} (${state.tb.scaleRev})`, "#fbbf24", "left", tabW - 8);
+        rect("CORNICE", rightX, tbY, tabW, tbH, "#38bdf8", boxBg, true);
+        textLines("CORNICE", rightX + 4, tbY + tbH, 2.3, c1, "#f8fafc");
+        textLines("CORNICE", rightX + 4, tbY + tbH - h1 + PAD_Y, 2.2, c2, "#fbbf24");
       }
 
       let minX, maxX, minY, maxY;
@@ -517,11 +617,11 @@
         minX = Math.min(-48 - maxLW - 10, leftBoxX - 10);
         maxX = rightX + tabW + 12;
         minY = Math.min(lowestY - 12, currentRightY - 10);
-        maxY = topY + 22;
+        maxY = topY + 12; // topY = bordo superiore del titolo della distinta
       }
       rect("CORNICE", minX, minY, maxX - minX, maxY - minY, "#475569", null, false);
       text("CORNICE", minX + 6, maxY - 8, 3.5, `PARTICOLARE COSTRUTTIVO ESECUTIVO: ${state.title} (SCALA ${state.scale || "1:1"})`, "#f8fafc", "left", (maxX - minX) * 0.65);
 
-      return { prims, bounds: { minX, maxX, minY, maxY }, rightBounds: { minX: rightX - 8, maxX, minY: currentRightY - 8, maxY: topY + 12 } };
+      return { prims, bounds: { minX, maxX, minY, maxY }, rightBounds: { minX: rightX - 8, maxX, minY: currentRightY - 8, maxY: topY + (isMinimal ? 12 : 2) } };
     }
 

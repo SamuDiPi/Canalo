@@ -1,0 +1,204 @@
+  <!-- GUIDA DI CANALOCAD (F1, pulsante ? della rail, menu Altro → Guida) -->
+  <div id="quickHelpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle" class="hidden fixed inset-0 z-50 flex items-stretch justify-center p-0 sm:p-4" style="background: rgba(0,0,0,.6)">
+    <div class="help-shell w-full max-w-[1100px] flex flex-col overflow-hidden sm:rounded-[28px] shadow-2xl" style="background: var(--md-surface-low)">
+      <div class="flex flex-wrap items-center gap-3 px-5 py-3 border-b" style="border-color: var(--md-divider)">
+        <svg class="ico" style="color: var(--md-primary)"><use href="#i-help"/></svg>
+        <h2 id="helpTitle" class="m-0 text-xl font-semibold">Guida di CanaloCAD</h2>
+        <div class="flex-1"></div>
+        <div class="field on-dialog w-64 max-w-full" style="--tw: 0">
+          <label for="helpSearch">Cerca nella guida</label>
+          <input id="helpSearch" type="search" placeholder="es. setto, DXF, trifoglio" oninput="filterHelp(this.value)" style="height: 40px">
+        </div>
+        <button type="button" class="btn btn-outlined btn-sm" onclick="printHelp()"><svg class="ico ico-s"><use href="#i-print"/></svg>Stampa / PDF</button>
+        <button type="button" class="icon-btn" onclick="closeQuickHelpModal()" aria-label="Chiudi guida"><svg class="ico"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="flex-1 min-h-0 flex">
+        <nav id="helpToc" aria-label="Indice della guida" class="help-toc hidden md:flex flex-col gap-0.5 w-60 flex-none overflow-y-auto p-3 border-r" style="border-color: var(--md-divider)">
+          <a href="#help-inizio">Primi passi</a>
+          <a href="#help-interfaccia">L'interfaccia</a>
+          <a href="#help-dwg">Importare un disegno DWG/DXF</a>
+          <a href="#help-pdf">Importare lo schema unifilare</a>
+          <a href="#help-sezione">Pannello Sezione</a>
+          <a href="#help-cavi">Cavi e distinta</a>
+          <a href="#help-staffaggio">Staffaggio e carichi</a>
+          <a href="#help-verifiche">Verifiche</a>
+          <a href="#help-progetto">Progetto, sezioni e salvataggio</a>
+          <a href="#help-export">Esportare</a>
+          <a href="#help-tavola">La tavola</a>
+          <a href="#help-tastiera">Scorciatoie e comandi</a>
+          <a href="#help-offline">Dati e uso offline</a>
+          <a href="#help-problemi">Problemi frequenti</a>
+        </nav>
+        <article id="helpBody" tabindex="0" aria-label="Contenuto della guida" class="help-body flex-1 min-w-0 overflow-y-auto px-6 py-5">
+
+          <section id="help-inizio" data-help>
+            <h3>Primi passi</h3>
+            <p>CanaloCAD serve a progettare e verificare la sezione di una canalina portacavi: dispone i cavi, controlla riempimento, carichi e segregazione e produce la tavola esecutiva in DXF.</p>
+            <p>Il lavoro tipico segue quattro passaggi:</p>
+            <ol>
+              <li><strong>Importa</strong> il disegno DWG/DXF della sezione oppure parti da una canalina vuota e aggiungi i cavi dal catalogo.</li>
+              <li><strong>Configura</strong> dimensioni, profilo, setti e staffaggio nei pannelli a sinistra.</li>
+              <li><strong>Verifica</strong> nel pannello Verifiche: ogni punto da sistemare ha un pulsante che lo risolve.</li>
+              <li><strong>Esporta</strong> la tavola in DXF, la relazione Word o il computo dei materiali.</li>
+            </ol>
+            <p class="note">Il progetto si salva da solo nel browser a ogni modifica e qualunque operazione si annulla con <kbd>Ctrl</kbd>+<kbd>Z</kbd>.</p>
+          </section>
+
+          <section id="help-interfaccia" data-help>
+            <h3>L'interfaccia</h3>
+            <ul>
+              <li><strong>Barra superiore</strong>: nome della sezione aperta (clic per cambiarla o crearne una nuova), stato del salvataggio, Annulla/Ripeti, <em>Importa</em>, <em>Esporta</em> e il menu <em>Altro</em> (⋮) con vista, contenuto della tavola, catalogo e strumenti.</li>
+              <li><strong>Barra laterale</strong>: apre i pannelli <em>Sezione, Cavi, Staffaggio, Verifiche, Progetto</em>. Un secondo clic sulla voce attiva chiude il pannello e allarga il foglio. Il numero sull'icona Verifiche indica i punti da sistemare.</li>
+              <li><strong>Riepilogo verifiche</strong>: la fila di etichette sopra il foglio; un clic apre il pannello Verifiche.</li>
+              <li><strong>Foglio</strong>: l'anteprima 1:1 della tavola. In alto a destra ci sono grandezza dei testi, zoom, «Adatta» e righello.</li>
+              <li><strong>Distinta cavi</strong>: l'elenco modificabile dei cavi; si comprime con la freccia a destra.</li>
+            </ul>
+            <p>Su tablet e schermi sotto i 1280 px il pannello si apre sopra il foglio e si chiude toccando il disegno.</p>
+          </section>
+
+          <section id="help-dwg" data-help>
+            <h3>Importare un disegno DWG/DXF</h3>
+            <p>Usa <em>Importa → Disegno DWG / DXF</em> (<kbd>Ctrl</kbd>+<kbd>O</kbd>) oppure trascina il file sul foglio. Puoi selezionare più file insieme: ognuno diventa una sezione del progetto.</p>
+            <p>Dal disegno vengono letti:</p>
+            <ul>
+              <li>le <strong>dimensioni</strong> della canalina (larghezza e altezza), anche dal nome del file o dai testi;</li>
+              <li>i <strong>cavi</strong>, riconosciuti dai cerchi della sezione, con diametro e posizione;</li>
+              <li>le <strong>sigle</strong> scritte sulle bandierine collegate ai cavi e le eventuali tabelle cavi presenti nel disegno.</li>
+            </ul>
+            <p>Il motore DWG viene scaricato la prima volta che serve (serve la connessione). Per controllare cosa è stato letto apri <em>Importa → Ispettore entità DWG</em>.</p>
+            <p class="note">Dopo l'import la disposizione è «Automatica»: i cavi vengono riordinati per gravità negli scomparti. Per mantenere le posizioni del disegno scegli «Come nel disegno» nel pannello Sezione.</p>
+          </section>
+
+          <section id="help-pdf" data-help>
+            <h3>Importare lo schema unifilare (PDF)</h3>
+            <p>Con <em>Importa → Schema unifilare PDF</em> (<kbd>Ctrl</kbd>+<kbd>U</kbd>) il programma legge dallo schema le sigle dei circuiti (es. «QGBT-P C-22»), le descrizioni delle utenze, il tipo e la formazione dei cavi e le correnti di impiego.</p>
+            <p>Le informazioni vengono abbinate ai cavi con la stessa sigla: le descrizioni compaiono nella distinta e si attivano le verifiche di portata e caduta di tensione. Se il progetto ha più sezioni puoi applicare lo schema alla sola sezione aperta o a tutte.</p>
+            <p class="note">Il PDF deve contenere testo selezionabile: uno schema scansionato come immagine non può essere letto.</p>
+          </section>
+
+          <section id="help-sezione" data-help>
+            <h3>Pannello Sezione</h3>
+            <ul>
+              <li><strong>Nome sezione</strong>: compare nel titolo della tavola e nel nome dei file esportati.</li>
+              <li><strong>Dimensioni</strong>: larghezza e altezza interne in mm, lunghezza del tratto in m, spessore della lamiera. <em>Dimensiona larghezza</em> sceglie la larghezza commerciale minima che lascia la riserva indicata.</li>
+              <li><strong>Disposizione dei cavi</strong>: <em>Automatica</em> dispone i cavi per gravità, dal più grande, rispettando gli scomparti; <em>Come nel disegno</em> mantiene le posizioni importate o trascinate a mano.</li>
+              <li><strong>Setti separatori</strong>: da 0 a 2. Si regolano con i cursori sotto i pulsanti oppure trascinando il setto nel disegno. Con i setti, i cavi dati e di sicurezza vanno negli scomparti dedicati.</li>
+              <li><strong>Produttore e materiale</strong>, <strong>Dotazioni</strong> (coperchio, conduttore di terra, distanza dal solaio, varchi tagliafuoco, bordino, fascette) e cartellino di planimetria: determinano il disegno e il computo dei materiali.</li>
+            </ul>
+          </section>
+
+          <section id="help-cavi" data-help>
+            <h3>Cavi e distinta</h3>
+            <p>Nel pannello <em>Cavi</em> scegli un cavo dal catalogo, la quantità e, se vuoi, la sigla dell'utenza, poi premi <em>Aggiungi alla sezione</em>. Il pulsante «Aggiungi cavo» sul foglio apre lo stesso pannello.</p>
+            <ul>
+              <li><strong>Posa a trifoglio</strong>: con un cavo unipolare inserisce le tre fasi (L1, L2, L3) legate a triangolo.</li>
+              <li><strong>Catalogo completo</strong>: elenco di cavi, serie di canaline e supporti con i dati tecnici.</li>
+              <li><strong>Cavo personalizzato</strong>: formazione, diametro e descrizione liberi; resta disponibile fino alla chiusura della pagina.</li>
+            </ul>
+            <p>Nella <strong>distinta</strong> puoi correggere sigla, diametro, descrizione, tipo e formazione direttamente nelle celle. Un clic su una riga evidenzia il cavo nel disegno e un clic su un cavo nel disegno evidenzia la sua riga. La × elimina il cavo; <em>Svuota</em> li rimuove tutti (entrambe le operazioni si annullano con <kbd>Ctrl</kbd>+<kbd>Z</kbd>).</p>
+            <p>Modificando la descrizione di un cavo di una terna, l'aggiornamento vale per tutte le fasi dello stesso circuito.</p>
+          </section>
+
+          <section id="help-staffaggio" data-help>
+            <h3>Staffaggio e carichi</h3>
+            <p>Scegli il <strong>supporto</strong> (mensole, trapezi, pendini) e il <strong>passo</strong> tra le mensole con il cursore. Il grafico mostra la portata ammessa al variare del passo (curva verde) e il carico attuale (punto giallo, rosso se oltre il limite); puoi anche trascinare sul grafico o usare le frecce della tastiera.</p>
+            <p>Sotto trovi carico, portata e freccia, la controventatura sismica (NTC 2018) e i pezzi speciali del tratto (curve, derivazioni, riduzioni), che entrano nel computo e nella verifica del tiro di posa.</p>
+            <p class="note">Portate e frecce sono stime di calcolo: per l'esecutivo verificale con le tabelle del costruttore.</p>
+          </section>
+
+          <section id="help-verifiche" data-help>
+            <h3>Verifiche</h3>
+            <p>Il pannello elenca i controlli con un colore e un'icona: <span class="st-ok">✓ superato</span>, <span class="st-warn">⚠ da sistemare</span>, <span class="st-err">✕ non conforme</span>, <span class="st-info">ⓘ informazione</span>. Quando possibile un pulsante risolve il problema in un clic (e si annulla con <kbd>Ctrl</kbd>+<kbd>Z</kbd>).</p>
+            <table>
+              <thead><tr><th>Controllo</th><th>Cosa verifica</th><th>Azione proposta</th></tr></thead>
+              <tbody>
+                <tr><td>Segregazione</td><td>Cavi di segnale non schermati nello stesso scomparto della potenza (CEI 64-8 art. 528.1)</td><td>Aggiungi setto separatore</td></tr>
+                <tr><td>Riempimento</td><td>Spazio libero rispetto alla riserva richiesta (pannello Sezione, campo Riserva)</td><td>Allarga la canalina</td></tr>
+                <tr><td>Carico sulle mensole</td><td>Peso di cavi e canalina rispetto alla portata del supporto al passo scelto</td><td>Riduci il passo / cambia supporto</td></tr>
+                <tr><td>Freccia</td><td>Abbassamento tra due mensole entro L/200</td><td>Riduci il passo</td></tr>
+                <tr><td>Tiro di posa</td><td>Forza di tiro stimata per lunghezza e curve del tratto</td><td>—</td></tr>
+                <tr><td>Raggio di curvatura</td><td>Raggio minimo del cavo più rigido e raggio delle curve da prevedere</td><td>—</td></tr>
+                <tr><td>Portate</td><td>Portata ridotta (Iz × Kr) rispetto alla corrente di impiego; richiede lo schema PDF</td><td>Importa schema PDF</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section id="help-progetto" data-help>
+            <h3>Progetto, sezioni e salvataggio</h3>
+            <p>Un progetto contiene una o più <strong>sezioni</strong> (le canaline). Le gestisci dal selettore nella barra superiore o dal pannello <em>Progetto</em>: <em>Nuova</em>, <em>Duplica</em> (copia la sezione aperta con i suoi cavi) ed <em>Elimina</em>. Con <kbd>Ctrl</kbd>+<kbd>PagGiù</kbd> / <kbd>PagSu</kbd> passi alla sezione successiva o precedente.</p>
+            <p><strong>Salvataggio automatico</strong>: ogni modifica viene salvata nel browser e alla riapertura ritrovi il lavoro. Il salvataggio automatico vale solo su quel computer e quel browser.</p>
+            <p><strong>File di progetto .ccad</strong>: <em>Salva progetto</em> (<kbd>Ctrl</kbd>+<kbd>S</kbd>) crea un file <span class="mono">.ccad</span> con <strong>tutte le sezioni</strong>, i cavi, lo staffaggio, il cartiglio e le opzioni della tavola. Su Chrome ed Edge, dopo il primo salvataggio, <kbd>Ctrl</kbd>+<kbd>S</kbd> aggiorna lo stesso file; <em>Salva con nome</em> (<kbd>Ctrl</kbd>+<kbd>Maiusc</kbd>+<kbd>S</kbd>) ne crea uno nuovo. Per riaprirlo usa <em>Apri progetto</em> o trascina il file sul foglio. Si aprono anche i file <span class="mono">.json</span> delle versioni precedenti.</p>
+            <p><strong>Cartiglio</strong> (<kbd>F2</kbd>): committente, progetto, progettista, codice elaborato, revisione e scala. Con «Memorizza questi dati come predefiniti» i dati dello studio vengono proposti nei nuovi progetti.</p>
+            <p><strong>Annulla e Ripeti</strong> (<kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd>) valgono per tutte le operazioni, comprese eliminazione di sezioni e nuovo progetto.</p>
+          </section>
+
+          <section id="help-export" data-help>
+            <h3>Esportare</h3>
+            <p>Il pulsante <em>Esporta</em> apre la scelta del formato; il nome del file si modifica nella stessa finestra. Con più sezioni puoi esportare <em>tutte le sezioni</em> in file separati.</p>
+            <ul>
+              <li><strong>Disegno DXF</strong> (consigliato, <kbd>Ctrl</kbd>+<kbd>E</kbd>): si apre direttamente in AutoCAD, AutoCAD LT e Revit, con layer, colori, retini pieni e testi. Nelle <em>Opzioni DXF e tavola</em> puoi scegliere <strong>R2000</strong> (predefinito) o <strong>R12</strong> per programmi datati, la scala e la grandezza dei testi.</li>
+              <li><strong>Script AutoCAD (.SCR)</strong>: disegna la sezione nel file aperto (trascinalo nel disegno o usa il comando SCRIPT). Richiede AutoLISP: AutoCAD completo o AutoCAD LT dal 2024.</li>
+              <li><strong>Relazione tecnica (Word)</strong>: dati della sezione, elenco cavi e verifiche.</li>
+              <li><strong>Computo materiali (CSV)</strong>: codici, descrizioni e quantità, da aprire in Excel.</li>
+            </ul>
+            <p><em>Altro → Stampa</em> (<kbd>Ctrl</kbd>+<kbd>P</kbd>) stampa la tavola o la salva in PDF.</p>
+          </section>
+
+          <section id="help-tavola" data-help>
+            <h3>La tavola</h3>
+            <p>La tavola contiene la sezione 1:1 con quote e bandierine dei cavi, l'assonometria del tratto, la distinta cavi, la curva di carico, il computo dei materiali e il cartiglio. Da <em>Altro → Contenuto della tavola</em> scegli quali parti includere; la <em>tavola compatta</em> mostra solo sezione e distinta.</p>
+            <p>La <strong>distinta cavi</strong> nella tavola è larga al massimo <strong>20 cm</strong> (in scala 1:1): le colonne si adattano al contenuto e i testi lunghi vanno a capo, senza essere tagliati.</p>
+            <p><em>Grandezza testi</em> (sul foglio, da 70 % a 180 %) ingrandisce o riduce tutti i testi della tavola, anche negli export. Lo sfondo del foglio, scuro o chiaro, si cambia da <em>Altro → Foglio</em>.</p>
+          </section>
+
+          <section id="help-tastiera" data-help>
+            <h3>Scorciatoie e comandi</h3>
+            <table>
+              <thead><tr><th>Tasti</th><th>Azione</th></tr></thead>
+              <tbody>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Annulla / Ripeti</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd> · <kbd>Ctrl</kbd>+<kbd>Maiusc</kbd>+<kbd>S</kbd></td><td>Salva progetto · Salva con nome</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd> · <kbd>Ctrl</kbd>+<kbd>U</kbd></td><td>Importa DWG/DXF · Importa schema PDF</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Scarica il DXF della sezione aperta</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>PagGiù</kbd> / <kbd>PagSu</kbd></td><td>Sezione successiva / precedente</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>I</kbd></td><td>Inverti larghezza e altezza</td></tr>
+                <tr><td><kbd>Canc</kbd></td><td>Svuota i cavi della sezione (annullabile)</td></tr>
+                <tr><td><kbd>Home</kbd> · doppio clic sul foglio</td><td>Adatta il disegno alla finestra</td></tr>
+                <tr><td><kbd>F1</kbd> <kbd>F2</kbd> <kbd>F3</kbd> <kbd>F4</kbd> <kbd>F5</kbd></td><td>Guida · Cartiglio · Catalogo · Scorciatoie · Ricalcola</td></tr>
+                <tr><td><kbd>Esc</kbd></td><td>Chiude menu e finestre</td></tr>
+              </tbody>
+            </table>
+            <p>Le scorciatoie si possono cambiare da <em>Altro → Scorciatoie da tastiera</em> (<kbd>F4</kbd>).</p>
+            <p><strong>Mouse e touch sul foglio</strong>: trascina per spostare la vista, rotella o due dita per lo zoom, trascina un cavo o un setto per spostarlo, doppio clic o doppio tocco per adattare. Il <em>righello</em> misura la distanza tra due punti cliccati.</p>
+          </section>
+
+          <section id="help-offline" data-help>
+            <h3>Dati e uso offline</h3>
+            <p>Tutta l'elaborazione avviene nel tuo browser: disegni, schemi e progetti non vengono inviati a nessun server.</p>
+            <p>Aperto con un doppio clic sul file, CanaloCAD funziona e salva il progetto nel browser; servono la connessione per i caratteri e, al primo uso, per i motori DWG e PDF. Se l'app è pubblicata su un indirizzo web (es. GitHub Pages) si può installare come applicazione e funziona anche senza connessione; da installata apre direttamente i file <span class="mono">.ccad</span> con un doppio clic.</p>
+          </section>
+
+          <section id="help-problemi" data-help>
+            <h3>Problemi frequenti</h3>
+            <dl>
+              <dt>AutoCAD non apre il DXF o chiede di premere Invio</dt>
+              <dd>Esporta di nuovo con la versione attuale. Se usi un programma datato, scegli <em>R12</em> in <em>Esporta → Opzioni DXF e tavola</em>.</dd>
+              <dt>Lo script .SCR non fa nulla</dt>
+              <dd>Lo script usa AutoLISP: con AutoCAD LT precedente al 2024 non è supportato. Usa il DXF.</dd>
+              <dt>Il DWG non viene letto</dt>
+              <dd>Controlla la connessione (il motore DWG si scarica al primo uso). In alternativa salva il disegno come DXF da AutoCAD e importa quello.</dd>
+              <dt>I cavi importati non sono nella posizione giusta</dt>
+              <dd>Imposta la disposizione su «Come nel disegno» nel pannello Sezione; con «Automatica» il programma li ridispone.</dd>
+              <dt>Le descrizioni delle utenze mancano</dt>
+              <dd>Importa lo schema unifilare PDF con le stesse sigle oppure scrivile nella distinta.</dd>
+              <dt>Ho perso il lavoro</dt>
+              <dd>Il salvataggio automatico è legato al browser: se cancelli i dati di navigazione o usi la navigazione privata va perso. Salva periodicamente il progetto come file <span class="mono">.ccad</span>.</dd>
+            </dl>
+            <p class="note">CanaloCAD v<span data-app-version></span>. I calcoli sono stime d'ausilio alla progettazione: le verifiche finali restano responsabilità del progettista.</p>
+          </section>
+
+          <p id="helpNoResults" class="hidden helper" style="font-size: 14px">Nessun argomento corrisponde alla ricerca.</p>
+        </article>
+      </div>
+    </div>
+  </div>

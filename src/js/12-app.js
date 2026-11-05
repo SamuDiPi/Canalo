@@ -25,7 +25,8 @@
       openDb: { key: 'F3', ctrl: false, shift: false, alt: false, label: 'Catalogo Tecnico Database' },
       shortcuts: { key: 'F4', ctrl: false, shift: false, alt: false, label: 'Personalizza Scorciatoie' },
       help: { key: 'F1', ctrl: false, shift: false, alt: false, label: 'Guida Rapida' },
-      saveJson: { key: 's', ctrl: true, shift: false, alt: false, label: 'Salva Progetto JSON' }
+      saveJson: { key: 's', ctrl: true, shift: false, alt: false, label: 'Salva progetto (.ccad)' },
+      saveAs: { key: 's', ctrl: true, shift: true, alt: false, label: 'Salva progetto con nome' }
     };
 
     let userShortcuts = Object.assign({}, DEFAULT_KEY_SHORTCUTS);
@@ -362,9 +363,12 @@
         } else if (matchShortcutEvent(e, userShortcuts.help)) {
           e.preventDefault();
           showQuickHelpModal();
+        } else if (matchShortcutEvent(e, userShortcuts.saveAs)) {
+          e.preventDefault();
+          saveProject(true);
         } else if (matchShortcutEvent(e, userShortcuts.saveJson)) {
           e.preventDefault();
-          exportProjectJSON();
+          saveProject(false);
         }
       });
     }
@@ -425,7 +429,7 @@
     // Modali accessibili: focus al primo campo all'apertura, ritorno al pulsante d'origine alla chiusura,
     // Tab confinato nella finestra, clic sullo sfondo = chiudi (come Esc).
     function initModalA11y() {
-      const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
       document.querySelectorAll('[role="dialog"]').forEach(modal => {
         const heading = modal.querySelector("h2, h3");
         if (heading && !modal.hasAttribute("aria-label")) modal.setAttribute("aria-label", heading.textContent.trim());
@@ -434,7 +438,7 @@
           const open = !modal.classList.contains("hidden");
           if (open && !modal._wasOpen) {
             opener = document.activeElement;
-            const first = [...modal.querySelectorAll(FOCUSABLE)].find(el => el.offsetParent !== null);
+            const first = [...modal.querySelectorAll(FOCUSABLE)].find(el => el instanceof HTMLElement && el.offsetParent !== null);
             setTimeout(() => (first || modal).focus({ preventScroll: true }), 0);
           } else if (!open && modal._wasOpen && opener && opener.isConnected) {
             opener.focus({ preventScroll: true });
@@ -444,7 +448,7 @@
 
         modal.addEventListener("keydown", e => {
           if (e.key !== "Tab") return;
-          const items = [...modal.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+          const items = [...modal.querySelectorAll(FOCUSABLE)].filter(el => el instanceof HTMLElement && el.offsetParent !== null);
           if (!items.length) return;
           const first = items[0], last = items[items.length - 1];
           if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -460,6 +464,7 @@
       document.querySelectorAll("[data-app-version]").forEach(el => { el.textContent = APP_VERSION; });
       initModalA11y();
       initUiShell();
+      initProjectFileLaunch();
       loadCartiglioDefaults();
       loadUserShortcuts();
       initWindowsMenuBar();

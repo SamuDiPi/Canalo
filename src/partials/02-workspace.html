@@ -256,10 +256,13 @@
           </div>
           <div class="group">
             <h3 class="group-title">File di progetto</h3>
-            <p class="helper" style="margin: 0">Il progetto si salva da solo in questo browser. Per spostarlo su un altro computer salvalo come file.</p>
+            <p class="helper" style="margin: 0">Il progetto, con tutte le sue sezioni, si salva da solo in questo browser. Per archiviarlo o spostarlo su un altro computer salvalo come file <span class="mono">.ccad</span>.</p>
             <div class="grid2">
-              <button type="button" class="btn btn-tonal" onclick="exportProjectJSON()"><svg class="ico ico-s"><use href="#i-save"/></svg>Salva file</button>
-              <button type="button" class="btn btn-outlined" onclick="document.getElementById('jsonProjectInput').click()"><svg class="ico ico-s"><use href="#i-progetto"/></svg>Apri file</button>
+              <button type="button" class="btn btn-tonal" onclick="saveProject(false)"><svg class="ico ico-s"><use href="#i-save"/></svg>Salva</button>
+              <button type="button" class="btn btn-outlined" onclick="openProjectDialog()"><svg class="ico ico-s"><use href="#i-progetto"/></svg>Apri…</button>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <button type="button" class="btn btn-text btn-sm" onclick="saveProject(true)"><svg class="ico ico-s"><use href="#i-save"/></svg>Salva con nome…</button>
             </div>
             <button type="button" class="btn btn-text self-start" onclick="newProject()"><svg class="ico ico-s"><use href="#i-new"/></svg>Nuovo progetto</button>
           </div>
@@ -288,7 +291,7 @@
         <div id="cadViewportContainer" class="flex-1 min-h-0 flex flex-col mx-4">
           <div id="cadDropArea" class="sheet border border-transparent">
             <canvas id="cadCanvas" class="absolute inset-0 block cad-grid-dark" aria-label="Foglio CAD della sezione: trascina per spostare la vista, rotella o due dita per lo zoom, trascina un cavo per spostarlo" role="img"></canvas>
-            <div class="absolute top-3 left-3 text-xs font-medium px-2.5 py-1.5 rounded-lg pointer-events-none" style="color: var(--md-on-surface-variant); background: rgba(17,19,24,.85); border: 1px solid var(--md-outline-variant)">Anteprima 1:1 · rilascia qui un file DWG, DXF o PDF</div>
+            <div class="absolute top-3 left-3 text-xs font-medium px-2.5 py-1.5 rounded-lg pointer-events-none" style="color: var(--md-on-surface-variant); background: rgba(17,19,24,.85); border: 1px solid var(--md-outline-variant)">Anteprima 1:1 · rilascia qui un file DWG, DXF, PDF o CCAD</div>
             <div class="absolute top-2.5 right-3 flex flex-wrap justify-end gap-2">
               <div class="sheet-toolbar">
                 <label for="selTextScale" class="text-xs px-2" style="color: var(--md-on-surface-variant)">Testi</label>
