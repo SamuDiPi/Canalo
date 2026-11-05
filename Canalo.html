@@ -45,6 +45,22 @@
     #cadCanvas { touch-action: none; -webkit-touch-callout: none; user-select: none; }
     #loadCurveCanvas { touch-action: none; user-select: none; }
     .touch-target { min-height: 42px; min-width: 42px; }
+    @media print {
+      body { background-color: #ffffff !important; color: #000000 !important; }
+      nav, #winMenuBar, #tabsDropdownContainer, .win-menu-item,
+      div.bg-slate-900\/90, div.bg-slate-950, #statusBanner,
+      #dwgInspectorModal, #exportOptionsModal, #databaseCatalogModal, #shortcutsModal,
+      #cartiglioSettingsModal, #pdfImportScopeModal, #quickHelpModal,
+      aside, #kpiBar, #cablesTableSection {
+        display: none !important;
+      }
+      #cadCanvas {
+        width: 100% !important;
+        height: auto !important;
+        max-height: 98vh !important;
+        background: #ffffff !important;
+      }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
@@ -218,6 +234,14 @@
               <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
                 <span>🏷️ Descrizione Utenza in Tabella</span>
                 <input type="checkbox" id="menuChkTableDesc" checked onchange="toggleTableDesc(this.checked)" class="rounded text-cyan-500">
+              </label>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>📐 Stampa Minimal (2D + Tabella)</span>
+                <input type="checkbox" id="menuChkLayoutMinimal" onchange="setLayoutMode(this.checked ? 'minimal' : 'standard')" class="rounded text-cyan-500">
+              </label>
+              <label class="px-3 py-1.5 hover:bg-slate-800 text-slate-200 flex items-center justify-between cursor-pointer">
+                <span>🏷️ Bandierine / Testi Cavi in 2D</span>
+                <input type="checkbox" id="menuChkCallouts" checked onchange="toggleCableCallouts(this.checked)" class="rounded text-cyan-500">
               </label>
             </div>
           </div>
@@ -412,6 +436,14 @@
       <button type="button" onclick="openCartiglioSettingsModal()" class="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-[11px] transition" title="Dati Cartiglio, Progettista &amp; Committente (F2)">
         <span>📐 Cartiglio</span>
       </button>
+
+      <button type="button" onclick="toggleLayoutMode()" id="btnToggleLayout" class="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-[11px] transition" title="Alterna tra Layout Standard (Affiancato) e Stampa Minimal (Tabella sopra 2D centrate)">
+        <span>📑 Layout: Standard</span>
+      </button>
+
+      <button type="button" onclick="toggleCableCallouts()" id="btnToggleCallouts" class="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-[11px] transition" title="Mostra/Nascondi le etichette con bandierine esterne dei cavi (in 2D resta solo il numero nel cavo)">
+        <span>🏷️ Testi Cavi 2D: Estesi</span>
+      </button>
     </div>
 
     <!-- AREA EXPORT RAPIDO A DESTRA -->
@@ -485,8 +517,20 @@
         </div>
 
         <div class="pt-2 border-t border-slate-800 space-y-2">
-          <span class="block text-[11px] font-bold text-amber-400 uppercase tracking-wide">Sezioni da Includere nella Tavola:</span>
+          <span class="block text-[11px] font-bold text-amber-400 uppercase tracking-wide">Sezioni da Includere nella Tavola &amp; Layout:</span>
           <div class="grid grid-cols-2 gap-2 text-[11px]">
+            <label class="flex items-center gap-2 cursor-pointer col-span-2 bg-slate-950 p-2 rounded border border-cyan-500/40">
+              <input id="chkExportMinimalLayout" type="checkbox" onchange="setLayoutMode(this.checked ? 'minimal' : 'standard')" class="accent-cyan-400">
+              <span class="font-bold text-cyan-300">📐 Stampa Minimal: Solo Sezione 2D + Tabella Centrate</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportCallouts" type="checkbox" checked onchange="toggleCableCallouts(this.checked)" class="accent-emerald-400">
+              <span>Bandierine Esterne Cavi in 2D</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportTableDesc" type="checkbox" checked onchange="toggleTableDesc(this.checked)" class="accent-amber-400">
+              <span>Descrizione Utenza in Tabella</span>
+            </label>
             <label class="flex items-center gap-2 cursor-pointer">
               <input id="chkExportChart" type="checkbox" checked onchange="toggleSectionExport('chart', this.checked)" class="accent-emerald-400">
               <span>Diagramma Carico EN 61537</span>
@@ -503,18 +547,14 @@
               <input id="chkExportCartiglio" type="checkbox" checked onchange="toggleSectionExport('cartiglio', this.checked)" class="accent-cyan-400">
               <span>Cartiglio con Committente</span>
             </label>
-            <label class="flex items-center gap-2 cursor-pointer col-span-2">
-              <input id="chkExportTableDesc" type="checkbox" checked onchange="toggleTableDesc(this.checked)" class="accent-amber-400">
-              <span>Descrizione Utenza in Tabella CAD</span>
-            </label>
           </div>
         </div>
 
         <div class="pt-2 border-t border-slate-800">
           <label class="block text-[11px] font-semibold text-cyan-300 mb-1">Formato Standard AutoCAD:</label>
           <select id="selDxfFormat" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white">
-            <option value="AC1009" selected>AutoCAD Compatibile 100% (AC1009 / R12 - LT 2021..2026) — Consigliato</option>
-            <option value="AC1018">AutoCAD Avanzato TrueColor (AC1018 con gerarchia handle)</option>
+            <option value="AC1018" selected>AutoCAD &amp; Revit Compatibile (AC1018 con Retini HATCH &amp; TrueColor) — Consigliato</option>
+            <option value="AC1009">AutoCAD Legacy R12 / LT (AC1009 con SOLID 2D)</option>
           </select>
           <p class="text-[10px] text-slate-400 mt-1">Il formato AC1009 si apre all'istante in AutoCAD LT 2021 senza errori o richieste di premere Invio, preservando colori layer, font TTF e geometria 1:1.</p>
         </div>
@@ -522,8 +562,9 @@
         <div>
           <label class="block text-[11px] font-semibold text-emerald-300 mb-1">Carattere / Stile Tipografico:</label>
           <select id="selDxfFont" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white">
-            <option value="consolas" selected>Consolas + Arial (Font di sistema Windows standard — Nessun font mancante)</option>
-            <option value="jetbrains">JetBrains Mono + Inter (Font web moderni — Se installati nel sistema)</option>
+            <option value="arial" selected>Arial (Standard 2,5mm — Compatibile Revit &amp; AutoCAD)</option>
+            <option value="consolas">Consolas + Arial (Font di sistema Windows standard)</option>
+            <option value="jetbrains">JetBrains Mono + Inter (Font web moderni)</option>
           </select>
           <p class="text-[10px] text-slate-400 mt-1">Larghezza caratteri naturale (Width Factor = 1.0, non schiacciata) e altezze calibrate per combaciare perfettamente con le celle delle tabelle.</p>
         </div>
@@ -1785,6 +1826,8 @@
       showPlanTag: false,
       showTableDesc: true,
       hideTableDesc: false,
+      layoutMode: "standard",
+      showCableCallouts: true,
       support: "none",
       spanM: 1.5,
       scale: "1:1",
@@ -1996,6 +2039,8 @@
       state.showCartiglio = true;
       state.showTableDesc = true;
       state.hideTableDesc = false;
+      state.layoutMode = "standard";
+      state.showCableCallouts = true;
       state.support = "none";
       state.clamps = false;
       state.showPlanTag = false;
@@ -2054,6 +2099,8 @@
       safeChk("menuChkCartiglio", state.showCartiglio !== false);
       safeChk("chkExportTableDesc", state.showTableDesc !== false && !state.hideTableDesc);
       safeChk("menuChkTableDesc", state.showTableDesc !== false && !state.hideTableDesc);
+      updateLayoutUI();
+      updateCableCalloutsUI();
 
       safeVal("inpWidth", state.width);
       safeVal("inpHeight", state.height);
@@ -4299,6 +4346,67 @@
       syncActiveSectionToMultiStore();
     }
 
+    function toggleLayoutMode() {
+      state.layoutMode = (state.layoutMode === "minimal") ? "standard" : "minimal";
+      updateLayoutUI();
+      syncActiveSectionToMultiStore();
+      recalculateAll();
+      fitAll();
+    }
+
+    function setLayoutMode(mode) {
+      state.layoutMode = mode === "minimal" ? "minimal" : "standard";
+      updateLayoutUI();
+      syncActiveSectionToMultiStore();
+      recalculateAll();
+      fitAll();
+    }
+
+    function updateLayoutUI() {
+      const isMin = state.layoutMode === "minimal";
+      const btn = document.getElementById("btnToggleLayout");
+      if (btn) {
+        btn.innerHTML = isMin
+          ? `<span>📐 Layout: Minimal (2D+Tab)</span>`
+          : `<span>📑 Layout: Standard (Affiancato)</span>`;
+        btn.className = isMin
+          ? "inline-flex items-center gap-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded font-bold text-[11px] transition shadow-sm"
+          : "inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-[11px] transition";
+      }
+      const chkMenu = document.getElementById("menuChkLayoutMinimal");
+      if (chkMenu) chkMenu.checked = isMin;
+      const chkExp = document.getElementById("chkExportMinimalLayout");
+      if (chkExp) chkExp.checked = isMin;
+    }
+
+    function toggleCableCallouts(enabled) {
+      if (typeof enabled === "boolean") {
+        state.showCableCallouts = enabled;
+      } else {
+        state.showCableCallouts = !(state.showCableCallouts !== false);
+      }
+      updateCableCalloutsUI();
+      syncActiveSectionToMultiStore();
+      drawScene();
+    }
+
+    function updateCableCalloutsUI() {
+      const showCallouts = state.showCableCallouts !== false;
+      const btn = document.getElementById("btnToggleCallouts");
+      if (btn) {
+        btn.innerHTML = showCallouts
+          ? `<span>🏷️ Testi Cavi 2D: Estesi</span>`
+          : `<span>🏷️ Testi Cavi 2D: Solo #</span>`;
+        btn.className = showCallouts
+          ? "inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-medium text-[11px] transition"
+          : "inline-flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold text-[11px] transition shadow-sm";
+      }
+      const chkMenu = document.getElementById("menuChkCallouts");
+      if (chkMenu) chkMenu.checked = showCallouts;
+      const chkExp = document.getElementById("chkExportCallouts");
+      if (chkExp) chkExp.checked = showCallouts;
+    }
+
     function build3DIsoScene(prims, leftBoxX, lowestY, leftBoxW, W, H, thk, mat, sup) {
       const isoH = 126;
       const isoY = lowestY - isoH - 12;
@@ -4776,13 +4884,15 @@
       const rect = (layer, x, y, w, h, color, fill, solid = false) => prims.push({ t: "rect", layer, x, y, w, h, color, fill, solid });
       const circle = (layer, cx, cy, r, color, fill, solid = false) => prims.push({ t: "circle", layer, cx, cy, r, color, fill, solid });
       const txtMul = (typeof state.textScale === "number" && state.textScale > 0) ? state.textScale : 1.0;
-      const text = (layer, x, y, h, str, color, align = "left", maxW = null) => {
+      // Standardizzazione altezza testi: nominale 2.5mm moltiplicata per txtMul
+      const text = (layer, x, y, h = 2.5, str, color, align = "left", maxW = null) => {
         let s = String(str || "");
+        const nominalH = (typeof h === "number" && h > 0) ? h : 2.5;
         if (maxW) {
-          const maxCh = Math.max(4, Math.floor((maxW - 2) / (h * txtMul * 0.56)));
+          const maxCh = Math.max(4, Math.floor((maxW - 2) / (nominalH * txtMul * 0.56)));
           if (s.length > maxCh) s = s.substring(0, maxCh - 2) + "..";
         }
-        const effectiveH = +(h * txtMul).toFixed(3);
+        const effectiveH = +(nominalH * txtMul).toFixed(3);
         prims.push({ t: "text", layer, x, y, h: effectiveH, str: s, color: isLight && color === "#f8fafc" ? txtCol : color, align });
       };
 
@@ -4791,7 +4901,7 @@
         line("STAFFAGGI", -25, ceilY, W + 25, ceilY, "#64748b", 0.6);
         for (let hx = -22; hx <= W + 20; hx += 8) line("STAFFAGGI", hx, ceilY, hx + 5, ceilY + 5, "#475569", 0.3);
         line("QUOTE", -15, H, -15, ceilY, "#38bdf8", 0.4);
-        text("QUOTE", -18, (H + ceilY) / 2 - 1, 2.2, `Rispetto >= ${state.clearance}mm`, "#38bdf8", "right");
+        text("QUOTE", -18, (H + ceilY) / 2 - 1, 2.5, `Rispetto >= ${state.clearance}mm`, "#38bdf8", "right");
       }
 
       // Profilo Canalina
@@ -4987,8 +5097,9 @@
           }
         }
 
-        // Numero identificativo posizione cavo
-        text("Testi", c.x, c.y - 0.7, Math.max(1.5, Math.min(2.8, r * 0.40)), String(idx + 1), "#ffffff", "center");
+        // Numero identificativo posizione cavo: standard 2.5mm (scalato proporzionalmente solo se il cavo è molto piccolo)
+        const numH = Math.max(1.8, Math.min(2.5, r * 0.45));
+        text("Testi", c.x, c.y - 0.7, numH, String(idx + 1), "#ffffff", "center");
         if (c.x <= W / 2) leftC.push({ c, idx }); else rightC.push({ c, idx });
       });
 
@@ -5047,48 +5158,51 @@
         }
       }
 
-      const calloutBaseY = ceilY + 8, stepY = 6.2;
-      let maxLW = 75, maxRW = 75;
-      leftC.forEach((it, i) => {
-        const ty = calloutBaseY + i * stepY;
-        const lbl = `#${it.idx + 1} ${it.c.code} (${it.c.form} Ø${it.c.d})`;
-        maxLW = Math.max(maxLW, lbl.length * 1.35);
-        line("Bandierine", it.c.x, it.c.y + it.c.d / 2, -16, ty, "#fbbf24", 0.22, 0.6);
-        line("Bandierine", -16, ty, -24, ty, "#fbbf24", 0.22, 0.6);
-        text("Testi", -26, ty - 0.6, 2.0, lbl, "#cbd5e1", "right");
-      });
-      rightC.forEach((it, i) => {
-        const ty = calloutBaseY + i * stepY;
-        const lbl = `#${it.idx + 1} ${it.c.code} (${it.c.form} Ø${it.c.d})`;
-        maxRW = Math.max(maxRW, lbl.length * 1.35);
-        line("Bandierine", it.c.x, it.c.y + it.c.d / 2, W + 16, ty, "#fbbf24", 0.22, 0.6);
-        line("Bandierine", W + 16, ty, W + 24, ty, "#fbbf24", 0.22, 0.6);
-        text("Testi", W + 26, ty - 0.6, 2.0, lbl, "#cbd5e1", "left");
-      });
+      const calloutBaseY = ceilY + 8, stepY = 7.5;
+      let maxLW = 0, maxRW = 0;
+      const showCallouts = state.showCableCallouts !== false;
+
+      if (showCallouts) {
+        maxLW = 75; maxRW = 75;
+        leftC.forEach((it, i) => {
+          const ty = calloutBaseY + i * stepY;
+          const lbl = `#${it.idx + 1} ${it.c.code} (${it.c.form} Ø${it.c.d})`;
+          maxLW = Math.max(maxLW, lbl.length * 1.55);
+          line("Bandierine", it.c.x, it.c.y + it.c.d / 2, -16, ty, "#fbbf24", 0.22, 0.6);
+          line("Bandierine", -16, ty, -24, ty, "#fbbf24", 0.22, 0.6);
+          text("Testi", -26, ty - 0.6, 2.5, lbl, "#cbd5e1", "right");
+        });
+        rightC.forEach((it, i) => {
+          const ty = calloutBaseY + i * stepY;
+          const lbl = `#${it.idx + 1} ${it.c.code} (${it.c.form} Ø${it.c.d})`;
+          maxRW = Math.max(maxRW, lbl.length * 1.55);
+          line("Bandierine", it.c.x, it.c.y + it.c.d / 2, W + 16, ty, "#fbbf24", 0.22, 0.6);
+          line("Bandierine", W + 16, ty, W + 24, ty, "#fbbf24", 0.22, 0.6);
+          text("Testi", W + 26, ty - 0.6, 2.5, lbl, "#cbd5e1", "left");
+        });
+      }
 
       const qY = -thk - 22;
       line("QUOTE", 0, qY, W, qY, "#f59e0b", 0.45);
-      text("QUOTE", W / 2, qY + 2.5, 2.6, `Base L = ${W} mm`, "#fbbf24", "center");
+      text("QUOTE", W / 2, qY + 2.5, 2.5, `Base L = ${W} mm`, "#fbbf24", "center");
       line("QUOTE", W + 10, 0, W + 10, H, "#f59e0b", 0.45);
-      text("QUOTE", W + 12, H / 2 - 1, 2.4, `H=${H}mm`, "#fbbf24", "left");
+      text("QUOTE", W + 12, H / 2 - 1, 2.5, `H=${H}mm`, "#fbbf24", "left");
 
+      const isMinimal = state.layoutMode === "minimal";
       const leftBoxX = -48, leftBoxW = Math.max(200, W + 92);
-      if (state.showPlanTag) {
+
+      if (!isMinimal && state.showPlanTag) {
         const ptY = lowestY - 38;
         rect("ETICHETTA_PIANTA", leftBoxX, ptY, leftBoxW, 24, "#4ade80", boxBg, true);
-        text("ETICHETTA_PIANTA", leftBoxX + 5, ptY + 16, 2.3, `ETICHETTA PLANIMETRIA: ${state.title} (${state.planTag})`, "#4ade80", "left", leftBoxW - 10);
-        text("ETICHETTA_PIANTA", leftBoxX + 5, ptY + 6, 2.0, `Riempimento: ${metrics.fillPct}% (Riserva +${metrics.sparePct}%) | Carico: ${metrics.totalKgM} kg/m`, "#f8fafc", "left", leftBoxW - 10);
+        text("ETICHETTA_PIANTA", leftBoxX + 5, ptY + 16, 2.5, `ETICHETTA PLANIMETRIA: ${state.title} (${state.planTag})`, "#4ade80", "left", leftBoxW - 10);
+        text("ETICHETTA_PIANTA", leftBoxX + 5, ptY + 6, 2.5, `Riempimento: ${metrics.fillPct}% (Riserva +${metrics.sparePct}%) | Carico: ${metrics.totalKgM} kg/m`, "#f8fafc", "left", leftBoxW - 10);
         lowestY = ptY;
       }
 
-      if (state.showIso3D) {
+      if (!isMinimal && state.showIso3D) {
         lowestY = build3DIsoScene(prims, leftBoxX, lowestY, leftBoxW, W, H, thk, mat, sup);
       }
 
-      // Colonna Destra: Tabella Cavi
-      const rightX = Math.max(W + 35 + maxRW, leftBoxX + leftBoxW) + 24;
-      const topY = Math.max(H + 38, calloutBaseY + Math.max(leftC.length, rightC.length) * stepY);
-      
       const showDesc = state.showTableDesc !== false && !state.hideTableDesc;
       const maxFormLen = Math.max(10, ...(state.cables || []).map(c => String(c.form || "").length));
       const formColW = Math.max(40, Math.ceil(maxFormLen * 2.35 * Math.max(0.9, txtMul) + 6));
@@ -5107,28 +5221,49 @@
 
       const colW = colDefs.map(c => c.w);
       const headers = colDefs.map(c => c.header);
-      const tabW = colW.reduce((a, b) => a + b, 0), rowH = 8.0;
+      const tabW = colW.reduce((a, b) => a + b, 0), rowH = 9.0;
+      const nRows = Math.max(1, state.cables.length);
+      const tableInnerH = 10 + (nRows + 1) * rowH;
 
-      rect("TABELLA", rightX, topY, tabW, 10, "#38bdf8", boxBg, true);
-      text("TABELLA", rightX + 4, topY + 3, 2.7, `1. DISTINTA CAVI POSATI NELLA SEZIONE - ${state.title}`, "#38bdf8", "left", tabW - 8);
+      let rightX, topY, headY;
 
-      const headY = topY - rowH;
-      rect("TABELLA", rightX, headY, tabW, rowH, "#64748b", boxAlt, true);
+      if (isMinimal) {
+        // LAYOUT MINIMAL: Tabella posizionata SOPRA la vista 2D, spaziata e CENTRATE tra loro
+        // Il centro orizzontale della canalina è a W / 2. Centriamo la tabella sullo stesso asse:
+        const xCenter = W / 2;
+        rightX = xCenter - tabW / 2;
+        const topOf2D = showCallouts && (leftC.length > 0 || rightC.length > 0)
+          ? calloutBaseY + Math.max(leftC.length, rightC.length) * stepY
+          : ceilY;
+        const spacingAbove2D = 28;
+        const tableBottomY = topOf2D + spacingAbove2D;
+        topY = tableBottomY + tableInnerH;
+        headY = topY - 10;
+      } else {
+        // LAYOUT STANDARD: Tabella sulla colonna destra
+        rightX = Math.max(W + 35 + maxRW, leftBoxX + leftBoxW) + 24;
+        topY = Math.max(H + 38, calloutBaseY + (showCallouts ? Math.max(leftC.length, rightC.length) * stepY : 0));
+        headY = topY - rowH;
+      }
+
+      rect("TABELLA", rightX, isMinimal ? topY - 10 : topY, tabW, 10, "#38bdf8", boxBg, true);
+      text("TABELLA", rightX + 4, isMinimal ? topY - 7 : topY + 3, 2.5, `1. DISTINTA CAVI POSATI NELLA SEZIONE - ${state.title}`, "#38bdf8", "left", tabW - 8);
+
+      rect("TABELLA", rightX, isMinimal ? headY - rowH : headY, tabW, rowH, "#64748b", boxAlt, true);
       let cx = rightX;
       headers.forEach((h, i) => {
-        text("TABELLA", cx + 1.5, headY + 2.4, 2.0, h, "#cbd5e1", "left", colW[i]);
+        text("TABELLA", cx + 2, isMinimal ? headY - rowH + 2.8 : headY + 2.8, 2.5, h, "#cbd5e1", "left", colW[i]);
         cx += colW[i];
       });
 
-      const nRows = Math.max(1, state.cables.length);
       if (state.cables.length === 0) {
-        const ry = headY - rowH;
+        const ry = isMinimal ? headY - 2 * rowH : headY - rowH;
         rect("TABELLA", rightX, ry, tabW, rowH, "#475569", boxBg, true);
-        text("TABELLA", rightX + 6, ry + 2.5, 2.0, "Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", "#94a3b8", "left", tabW - 12);
+        text("TABELLA", rightX + 6, ry + 2.8, 2.5, "Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", "#94a3b8", "left", tabW - 12);
       } else {
-        const maxDescChars = Math.max(10, Math.floor((descColW - 3) / (1.95 * txtMul * 0.56)));
+        const maxDescChars = Math.max(10, Math.floor((descColW - 3) / (2.5 * txtMul * 0.56)));
         state.cables.forEach((c, idx) => {
-          const ry = headY - (idx + 1) * rowH;
+          const ry = isMinimal ? headY - (idx + 2) * rowH : headY - (idx + 1) * rowH;
           const isUni = isUnipolarCable(c);
           rect("TABELLA", rightX, ry, tabW, rowH, "#475569", idx % 2 === 0 ? boxBg : boxAlt, true);
           const displayType = getDisplayCableType(c, state.cables);
@@ -5153,16 +5288,16 @@
           colDefs.forEach((colDef, i) => {
             const val = rowData[colDef.key];
             const color = colDef.key === "code" ? "#38bdf8" : (colDef.key === "posa" && isUni ? "#fbbf24" : colDef.col);
-            text("TABELLA", rx + 1.5, ry + 2.4, 1.95, val, color, colDef.align, colDef.w);
+            text("TABELLA", rx + 2, ry + 2.8, 2.5, val, color, colDef.align, colDef.w);
             rx += colDef.w;
           });
         });
       }
 
-      let currentRightY = headY - nRows * rowH;
+      let currentRightY = isMinimal ? topY - tableInnerH : headY - nRows * rowH;
 
-      // 2. DIAGRAMMA CURVA DI CARICO IN TAVOLA CAD (Opzionale)
-      if (state.showLoadChart !== false) {
+      // 2. DIAGRAMMA CURVA DI CARICO IN TAVOLA CAD (Opzionale - escluso in Stampa Minimal)
+      if (!isMinimal && state.showLoadChart !== false) {
         const chartH = 54, chartY = currentRightY - chartH - 22;
         currentRightY = chartY - 6;
         rect("CURVA_CARICO", rightX, chartY, tabW, chartH + 16, "#38bdf8", boxBg, true);
@@ -5218,8 +5353,8 @@
         }
       }
 
-      // 3. COMPUTO METRICO BOM (Opzionale)
-      if (state.showBOM !== false) {
+      // 3. COMPUTO METRICO BOM (Opzionale - escluso in Stampa Minimal)
+      if (!isMinimal && state.showBOM !== false) {
         const bomTopY = currentRightY - 2;
         rect("TABELLA", rightX, bomTopY - 9, tabW, 9, "#4ade80", boxBg, true);
         text("TABELLA", rightX + 4, bomTopY - 6.2, 2.5, `3. COMPUTO METRICO E DISTINTA MATERIALI (BOM ${state.brand} - Tratto ${state.lengthM}m)`, "#4ade80", "left", tabW - 8);
@@ -5232,8 +5367,8 @@
         });
       }
 
-      // 4. CARTIGLIO PROGETTO E COMMITTENTE (Opzionale)
-      if (state.showCartiglio !== false) {
+      // 4. CARTIGLIO PROGETTO E COMMITTENTE (Opzionale - escluso in Stampa Minimal)
+      if (!isMinimal && state.showCartiglio !== false) {
         const tbY = currentRightY - 24;
         currentRightY = tbY;
         rect("CORNICE", rightX, tbY, tabW, 20, "#38bdf8", boxBg, true);
@@ -5241,12 +5376,20 @@
         text("CORNICE", rightX + 4, tbY + 4, 2.2, `PROGETTISTA: ${state.tb.author} | SCALA: ${state.scale || "1:1"} (${state.tb.scaleRev})`, "#fbbf24", "left", tabW - 8);
       }
 
-      const minX = Math.min(-48 - maxLW - 10, leftBoxX - 10);
-      const maxX = rightX + tabW + 12;
-      const minY = Math.min(lowestY - 12, currentRightY - 10);
-      const maxY = topY + 22;
+      let minX, maxX, minY, maxY;
+      if (isMinimal) {
+        minX = Math.min(-24, rightX - 12);
+        maxX = Math.max(W + 24, rightX + tabW + 12);
+        minY = Math.min(-thk - 28, lowestY - 10);
+        maxY = topY + 18;
+      } else {
+        minX = Math.min(-48 - maxLW - 10, leftBoxX - 10);
+        maxX = rightX + tabW + 12;
+        minY = Math.min(lowestY - 12, currentRightY - 10);
+        maxY = topY + 22;
+      }
       rect("CORNICE", minX, minY, maxX - minX, maxY - minY, "#475569", null, false);
-      text("CORNICE", minX + 6, maxY - 8, 3.4, `PARTICOLARE COSTRUTTIVO ESECUTIVO: ${state.title} (SCALA ${state.scale || "1:1"})`, "#f8fafc", "left", (maxX - minX) * 0.65);
+      text("CORNICE", minX + 6, maxY - 8, 3.5, `PARTICOLARE COSTRUTTIVO ESECUTIVO: ${state.title} (SCALA ${state.scale || "1:1"})`, "#f8fafc", "left", (maxX - minX) * 0.65);
 
       return { prims, bounds: { minX, maxX, minY, maxY }, rightBounds: { minX: rightX - 8, maxX, minY: currentRightY - 8, maxY: topY + 12 } };
     }
@@ -5344,7 +5487,7 @@
           ctx.stroke();
           ctx.restore();
         } else if (p.t === "text") {
-          ctx.font = `500 ${(p.h || 2.2) * 0.88}px 'JetBrains Mono', monospace`;
+          ctx.font = `${(p.h || 2.5) * 1.0}px Arial, sans-serif`;
           ctx.fillStyle = p.color; ctx.textAlign = p.align || "left";
           ctx.fillText(p.str, p.x, -p.y);
         }
@@ -5391,7 +5534,7 @@
           ctx.beginPath(); ctx.moveTo(p.x1, -p.y1); ctx.lineTo(p.x2, -p.y2); ctx.stroke();
           ctx.restore();
         } else if (p.t === "text") {
-          ctx.font = `500 ${(p.h || 2.2) * 0.88}px 'JetBrains Mono', monospace`;
+          ctx.font = `${(p.h || 2.5) * 1.0}px Arial, sans-serif`;
           ctx.fillStyle = p.color; ctx.textAlign = p.align || "left";
           ctx.fillText(p.str, p.x, -p.y);
         }
@@ -6350,8 +6493,8 @@
     // 8. ESPORTATORI CERTIFICATI FEDELI 1:1 (.DXF TRUECOLOR, .SCR, .DOC, .CSV) + MULTI-SEZIONE
     // ============================================================================
     let exportDxfOptions = {
-      format: "AC1009", // Default: "AC1009" (AutoCAD R12 / LT 100% Compatibile senza blocchi all'avvio)
-      fontFamily: "consolas", // Default: "consolas" (Consolas + Arial: font di sistema garantiti al 100% su Windows)
+      format: "AC1018", // Default: "AC1018" (AutoCAD & Revit Compatibile con Retini HATCH e TrueColor)
+      fontFamily: "arial", // Default: "arial" (Arial standardizzato a 2.5mm)
       includeBackgrounds: true,
       includeLineweights: true,
       includeUnicode: true
@@ -6577,7 +6720,7 @@
       add(0, "SECTION");
       add(2, "HEADER");
       add(9, "$ACADVER");
-      add(1, "AC1009");
+      add(1, exportDxfOptions.format === "AC1018" ? "AC1018" : "AC1009");
       add(9, "$DWGCODEPAGE");
       add(3, "ANSI_1252");
       add(9, "$PROJECTNAME");
@@ -6613,7 +6756,7 @@
 
       add(0, "TABLE");
       add(2, "STYLE");
-      add(70, 3);
+      add(70, 4);
       add(0, "STYLE");
       add(2, "STANDARD");
       add(70, 0);
@@ -6622,7 +6765,18 @@
       add(50, "0.0");
       add(71, 0);
       add(42, "2.5");
-      add(3, "isocp.shx");
+      add(3, "arial.ttf");
+      add(4, "");
+
+      add(0, "STYLE");
+      add(2, "ARIAL");
+      add(70, 0);
+      add(40, "0.0");
+      add(41, "1.0");
+      add(50, "0.0");
+      add(71, 0);
+      add(42, "2.5");
+      add(3, "arial.ttf");
       add(4, "");
 
       add(0, "STYLE");
@@ -6633,7 +6787,7 @@
       add(50, "0.0");
       add(71, 0);
       add(42, "2.5");
-      add(3, "isocp.shx");
+      add(3, "arial.ttf");
       add(4, "");
 
       add(0, "STYLE");
@@ -6678,7 +6832,56 @@
         add(11, (x2 * s).toFixed(3)); add(21, (y2 * s).toFixed(3)); add(31, "0.0");
       };
 
+      const isRevitHatch = exportDxfOptions.format !== "AC1009";
+
+      // Retino HATCH Standard DXF nativo compatibile con Autodesk Revit (crea Filled Regions 1:1)
+      const addHatchQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, aci = 7) => {
+        add(0, "HATCH");
+        add(8, lay);
+        add(62, aci);
+        add(10, "0.0"); add(20, "0.0"); add(30, "0.0");
+        add(210, "0.0"); add(220, "0.0"); add(230, "1.0");
+        add(2, "SOLID"); // Pattern SOLID standard Revit
+        add(70, 1);      // Solid fill
+        add(71, 0);      // Associativity = 0
+        add(91, 1);      // 1 boundary loop
+        add(92, 2);      // Polyline path
+        add(72, 0);      // No bulge
+        add(73, 1);      // Closed loop
+        add(93, 4);      // 4 vertices
+        add(10, (x1 * s).toFixed(3)); add(20, (y1 * s).toFixed(3));
+        add(10, (x2 * s).toFixed(3)); add(20, (y2 * s).toFixed(3));
+        add(10, (x3 * s).toFixed(3)); add(20, (y3 * s).toFixed(3));
+        add(10, (x4 * s).toFixed(3)); add(20, (y4 * s).toFixed(3));
+        add(97, 0);
+      };
+
+      const addHatchDisk = (lay, cx, cy, r, aci = 7) => {
+        add(0, "HATCH");
+        add(8, lay);
+        add(62, aci);
+        add(10, "0.0"); add(20, "0.0"); add(30, "0.0");
+        add(210, "0.0"); add(220, "0.0"); add(230, "1.0");
+        add(2, "SOLID");
+        add(70, 1);
+        add(71, 0);
+        add(91, 1);
+        add(92, 2);      // Polilinea con archi bulge (compatibile Revit senza errore "line too short")
+        add(72, 1);      // Presenza bulge
+        add(73, 1);      // Closed
+        add(93, 2);      // 2 vertici semicircolari
+        add(10, ((cx - r) * s).toFixed(3)); add(20, (cy * s).toFixed(3));
+        add(42, "1.0");  // Bulge 180°
+        add(10, ((cx + r) * s).toFixed(3)); add(20, (cy * s).toFixed(3));
+        add(42, "1.0");  // Bulge 180°
+        add(97, 0);
+      };
+
       const addSolidQuad = (lay, x1, y1, x2, y2, x3, y3, x4, y4, aci = 7) => {
+        if (isRevitHatch) {
+          addHatchQuad(lay, x1, y1, x2, y2, x3, y3, x4, y4, aci);
+          return;
+        }
         add(0, "SOLID");
         add(8, lay);
         add(62, aci);
@@ -6689,6 +6892,10 @@
       };
 
       const addSolidDisk = (lay, cx, cy, r, aci = 7) => {
+        if (isRevitHatch) {
+          addHatchDisk(lay, cx, cy, r, aci);
+          return;
+        }
         const steps = r > 10 ? 24 : r > 4 ? 16 : 12;
         for (let i = 0; i < steps; i += 2) {
           const a1 = (i * 2 * Math.PI) / steps;
@@ -6769,7 +6976,7 @@
                           (p.layer === "TABELLA" && /^[0-9]\./.test(p.str)) ||
                           (p.layer === "CURVA_CARICO" && /^[0-9]\./.test(p.str)) ||
                           (p.layer === "VISTA_3D_ISO" && p.h >= 2.2);
-          const styleName = isTitle ? "TITLE_CAD" : "MONO_CAD";
+          const styleName = isTitle ? "TITLE_CAD" : "ARIAL";
           const hAlign = p.align === "center" ? 1 : p.align === "right" ? 2 : 0;
 
           add(0, "TEXT");
@@ -6819,6 +7026,8 @@
         showCartiglio: state.showCartiglio !== false,
         showTableDesc: state.showTableDesc !== false && !state.hideTableDesc,
         hideTableDesc: Boolean(state.hideTableDesc),
+        layoutMode: state.layoutMode || "standard",
+        showCableCallouts: state.showCableCallouts !== false,
         textScale: typeof state.textScale === "number" && state.textScale > 0 ? state.textScale : 1.0,
         scale: state.scale || "1:1"
       };
@@ -7001,6 +7210,8 @@
         showCartiglio: state.showCartiglio !== false,
         showTableDesc: state.showTableDesc !== false && !state.hideTableDesc,
         hideTableDesc: Boolean(state.hideTableDesc),
+        layoutMode: state.layoutMode || "standard",
+        showCableCallouts: state.showCableCallouts !== false,
         textScale: typeof state.textScale === "number" && state.textScale > 0 ? state.textScale : 1.0,
         scale: state.scale || "1:1"
       };
