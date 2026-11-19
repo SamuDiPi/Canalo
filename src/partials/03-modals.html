@@ -1,0 +1,464 @@
+  <!-- DIALOGO ESPORTA (Material 3) -->
+  <div id="exportDialog" role="dialog" aria-modal="true" aria-labelledby="expDlgTitle" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,.55)">
+    <div class="w-full max-w-[560px] max-h-[92vh] overflow-y-auto rounded-[28px] p-6 flex flex-col gap-[18px] shadow-2xl" style="background: var(--md-surface-high)">
+      <div>
+        <h2 id="expDlgTitle" class="m-0 text-2xl font-semibold">Esporta</h2>
+        <p class="helper" style="font-size: 14px; margin-top: 6px" id="expDlgSub">Scegli cosa scaricare.</p>
+      </div>
+      <div role="radiogroup" aria-labelledby="expDlgTitle" class="flex flex-col gap-2" id="expChoices">
+        <button type="button" role="radio" aria-checked="true" class="choice" data-exp="dxf"><span class="radio"></span><span class="flex-1"><span class="flex items-center gap-2 font-semibold text-[15px]">Disegno DXF <span class="tag primary">Consigliato</span></span><span class="block text-[13px] mt-0.5" style="color: var(--md-on-surface-variant)">Si apre direttamente nei programmi CAD e BIM, con layer, colori e retini.</span></span></button>
+        <button type="button" role="radio" aria-checked="false" class="choice" data-exp="scr"><span class="radio"></span><span class="flex-1"><span class="block font-semibold text-[15px]">Script CAD (.SCR)</span><span class="block text-[13px] mt-0.5" style="color: var(--md-on-surface-variant)">Disegna la sezione nel file aperto. Richiede un CAD con interprete LISP.</span></span></button>
+        <button type="button" role="radio" aria-checked="false" class="choice" data-exp="doc"><span class="radio"></span><span class="flex-1"><span class="block font-semibold text-[15px]">Relazione tecnica (Word)</span><span class="block text-[13px] mt-0.5" style="color: var(--md-on-surface-variant)">Dati della sezione, cavi e verifiche.</span></span></button>
+        <button type="button" role="radio" aria-checked="false" class="choice" data-exp="csv"><span class="radio"></span><span class="flex-1"><span class="block font-semibold text-[15px]">Computo materiali (CSV)</span><span class="block text-[13px] mt-0.5" style="color: var(--md-on-surface-variant)">Elenco materiali da aprire in Excel.</span></span></button>
+      </div>
+      <div class="field on-dialog"><label for="exportName">Nome del file</label><input id="exportName" type="text" value="NUOVA_CANALINA" class="mono"></div>
+      <div class="switch-row" id="expAllRow" style="border-top: 1px solid var(--md-outline-variant); padding-top: 6px"><label for="expAllSections" id="expAllLabel">Tutte le sezioni del progetto</label><input id="expAllSections" class="sw" type="checkbox" role="switch"></div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" class="btn btn-text" onclick="closeExportDialog(); toggleExportOptionsModal();" style="padding: 0 8px">Opzioni DXF e tavola…</button>
+        <div class="flex-1"></div>
+        <button type="button" class="btn btn-text" onclick="closeExportDialog()">Annulla</button>
+        <button type="button" class="btn btn-filled" onclick="runExport()"><svg class="ico ico-s"><use href="#i-export"/></svg>Scarica</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE OPZIONI ESPORTAZIONE DXF -->
+  <div id="exportOptionsModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-xl p-5 max-w-lg w-full shadow-2xl space-y-4 text-xs">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-sm font-bold text-amber-300 uppercase tracking-wide flex items-center gap-2">
+          <span>⚙️ Opzioni Esportazione DXF (Stile 1:1 Fedele)</span>
+        </h3>
+        <button type="button" onclick="toggleExportOptionsModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+
+      <div class="space-y-3.5 text-slate-300">
+        <div>
+          <label for="selDxfScale" class="block text-xs font-semibold text-slate-400 mb-1">Scala Rappresentazione CAD:</label>
+          <select id="selDxfScale" onchange="onScaleChange(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 field">
+            <option value="1:1" selected>1:1 — Dettaglio Costruttivo Esecutivo (Scala Reale 1:1)</option>
+            <option value="1:2">1:2 — Dettaglio Ingrandito</option>
+            <option value="1:5">1:5 — Dettaglio di Montaggio</option>
+            <option value="1:10">1:10 — Sezione Canalina &amp; Staffaggi</option>
+            <option value="1:20">1:20 — Sezione Cavedio Tecnico</option>
+            <option value="1:50">1:50 — Planimetria Cavedio / Percorsi</option>
+            <option value="1:100">1:100 — Layout Planimetrico Generale (1:100)</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">La scala selezionata viene esplicitata nel cartiglio, nelle quote e nel titolo della tavola DWG/DXF.</p>
+        </div>
+
+        <div>
+          <label for="optDxfTextScale" class="block text-xs font-semibold text-slate-400 mb-1">Grandezza Testi nelle Tavole (Scala Tipografica Utente):</label>
+          <select id="optDxfTextScale" onchange="onTextScaleChange(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 field">
+            <option value="0.7">70% — Molto Compatto</option>
+            <option value="0.8">80% — Compatto</option>
+            <option value="0.9">90% — Leggermente Ridotto</option>
+            <option value="1.0" selected>100% — Standard Nominale (1:1)</option>
+            <option value="1.1">110% — Leggermente Ingrandito</option>
+            <option value="1.2">120% — Ingrandito (+20%)</option>
+            <option value="1.3">130% — Alta Leggibilità (+30%)</option>
+            <option value="1.5">150% — Molto Grande (+50%)</option>
+            <option value="1.8">180% — Massimo Contrasto (+80%)</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">Regola direttamente l'altezza dei testi a video e su stampa CAD: le proporzioni e le quote rimangono perfette a qualsiasi scala.</p>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 space-y-2">
+          <span class="block text-xs font-bold text-amber-400 uppercase tracking-wide">Sezioni da Includere nella Tavola &amp; Layout:</span>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center gap-2 cursor-pointer col-span-2 bg-slate-950 p-2 rounded border border-cyan-500/40">
+              <input id="chkExportMinimalLayout" type="checkbox" onchange="setLayoutMode(this.checked ? 'minimal' : 'standard')" class="accent-cyan-400">
+              <span class="font-bold text-cyan-300">📐 Stampa Minimal: Solo Sezione 2D + Tabella Centrate</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportCallouts" type="checkbox" checked onchange="toggleCableCallouts(this.checked)" class="accent-emerald-400">
+              <span>Bandierine Esterne Cavi in 2D</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportTableDesc" type="checkbox" checked onchange="toggleTableDesc(this.checked)" class="accent-amber-400">
+              <span>Descrizione Utenza in Tabella</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportChart" type="checkbox" checked onchange="toggleSectionExport('chart', this.checked)" class="accent-emerald-400">
+              <span>Diagramma Carico EN 61537</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportBOM" type="checkbox" checked onchange="toggleSectionExport('bom', this.checked)" class="accent-emerald-400">
+              <span>Computo Metrico BOM</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportIso3D" type="checkbox" checked onchange="toggleSectionExport('iso3d', this.checked)" class="accent-cyan-400">
+              <span>Vista Assonometrica 3D</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="chkExportCartiglio" type="checkbox" checked onchange="toggleSectionExport('cartiglio', this.checked)" class="accent-cyan-400">
+              <span>Cartiglio con Committente</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800">
+          <label for="selDxfFormat" class="block text-xs font-semibold text-slate-400 mb-1">Formato DXF:</label>
+          <select id="selDxfFormat" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 field">
+            <option value="AC1015" selected>DXF R2000 — il più diffuso (retini pieni, TrueColor) — Consigliato</option>
+            <option value="AC1009">DXF R12 — massima compatibilità con programmi datati (riempimenti SOLID)</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">Entrambi i formati si aprono direttamente nei programmi CAD, con layer, colori e geometria 1:1.</p>
+        </div>
+
+        <div>
+          <label for="selDxfFont" class="block text-xs font-semibold text-slate-400 mb-1">Carattere / Stile Tipografico:</label>
+          <select id="selDxfFont" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 field">
+            <option value="arial" selected>Arial (Standard 2,5mm — compatibile con tutti i CAD)</option>
+            <option value="consolas">Consolas + Arial (Font di sistema Windows standard)</option>
+            <option value="jetbrains">JetBrains Mono + Inter (Font web moderni)</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">Larghezza caratteri naturale (Width Factor = 1.0, non schiacciata) e altezze calibrate per combaciare perfettamente con le celle delle tabelle.</p>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 space-y-2.5">
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input id="chkDxfBg" type="checkbox" checked class="accent-amber-400 mt-0.5">
+            <div>
+              <span class="font-semibold text-white block">Includi sfondi pannelli e tabelle (Layer SFONDI_RIEMPIMENTI)</span>
+              <span class="text-[11px] text-slate-400 block">Gli sfondi scuri delle tabelle vengono inseriti in un layer dedicato: puoi disattivarli qui o congelare il layer nel CAD per stampare su carta bianca.</span>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input id="chkDxfLw" type="checkbox" checked class="accent-cyan-400 mt-0.5">
+            <div>
+              <span class="font-semibold text-white block">Esporta Spessori Linea reali (Lineweights 370 da 0.20mm a 0.85mm)</span>
+              <span class="text-[11px] text-slate-400 block">Garantisce la stessa gerarchia visiva tra canalina (0.50mm), quote (0.45mm), curve (0.85mm) e bandierine (0.20mm).</span>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input id="chkDxfUnicode" type="checkbox" checked class="accent-emerald-400 mt-0.5">
+            <div>
+              <span class="font-semibold text-white block">Codifica Simboli Ingegneristici ed Accenti (\U+XXXX)</span>
+              <span class="text-[11px] text-slate-400 block">Visualizza correttamente mm², Ø, Continuità, ΔV%, ≥ in qualsiasi lingua o versione del CAD senza caratteri illeggibili.</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-800">
+        <button type="button" onclick="exportAllSectionsDXF(); toggleExportOptionsModal();" class="px-3.5 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow flex items-center gap-1.5" title="Esporta tutte le schede canalina aperte in file .DXF separati">
+          <span>📦 Esporta TUTTE le Schede (.DXF separati)</span>
+        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="toggleExportOptionsModal()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs">Chiudi</button>
+          <button type="button" onclick="exportCadDXF(); toggleExportOptionsModal();" class="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow text-xs">
+            💾 Scarica DXF Scheda Attiva
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODALE DATABASE TECNICO COMPLETO (CAVI BT, SEGNALI, SPECIALI, CANALINE & MENSOLE) -->
+  <div id="databaseCatalogModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-xs">
+      
+      <!-- HEADER MODALE -->
+      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 text-base">
+            📚
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+              Database Tecnico Integrato Normato
+              <span class="text-[11px] mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-semibold">CEI UNEL / EN 61537 / CPR</span>
+            </h3>
+            <p class="text-xs text-slate-400">Cavi Bassa Tensione (Unipolari &amp; Multipolari), Segnali/Controllo, Antincendio PH120, Dati LAN, Canaline e Mensole di Supporto</p>
+          </div>
+        </div>
+        <button type="button" onclick="toggleDatabaseModal()" class="text-slate-400 hover:text-white font-bold text-xl px-2 leading-none transition">&times;</button>
+      </div>
+
+      <!-- BARRA FILTRI E RICERCA -->
+      <div class="p-3 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-1 text-xs">
+          <button type="button" onclick="filterDbCategory('all')" id="dbCatBtn_all" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold transition">Tutti</button>
+          <button type="button" onclick="filterDbCategory('bt_uni')" id="dbCatBtn_bt_uni" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">⚡ BT Unipolari (1X)</button>
+          <button type="button" onclick="filterDbCategory('bt_multi')" id="dbCatBtn_bt_multi" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">🔌 BT Multipolari</button>
+          <button type="button" onclick="filterDbCategory('signal')" id="dbCatBtn_signal" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">📡 Segnali &amp; Bus KNX</button>
+          <button type="button" onclick="filterDbCategory('fire')" id="dbCatBtn_fire" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">🔥 Antincendio PH120 / EVAC</button>
+          <button type="button" onclick="filterDbCategory('data')" id="dbCatBtn_data" class="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition">🌐 Dati LAN &amp; Fibra</button>
+          <button type="button" onclick="filterDbCategory('trays_supports')" id="dbCatBtn_trays_supports" class="px-2.5 py-1 rounded-lg text-amber-300 hover:bg-slate-800 transition">🧱 Canaline &amp; Mensole</button>
+        </div>
+
+        <div class="flex items-center gap-2 flex-1 max-w-xs">
+          <input id="dbSearchInp" type="text" oninput="renderDatabaseItems()" placeholder="Cerca es. 1x185, FTG, 5G16, KNX..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 field">
+        </div>
+      </div>
+
+      <!-- CONTENUTO TABELLARE SCORREVOLE -->
+      <div class="flex-1 overflow-y-auto p-3" id="dbContentArea">
+        <div id="dbCablesTableView">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-[11px] uppercase text-slate-400 mono bg-slate-950/70 sticky top-0">
+                <th class="py-1.5 px-2">Cat.</th>
+                <th class="py-1.5 px-2">Tipo Normato</th>
+                <th class="py-1.5 px-2">Formazione</th>
+                <th class="py-1.5 px-2 text-center">Ø mm</th>
+                <th class="py-1.5 px-2 text-center">kg/m</th>
+                <th class="py-1.5 px-2 text-center">Cu mm²</th>
+                <th class="py-1.5 px-2 text-center">Iz0 (A)</th>
+                <th class="py-1.5 px-2 text-center">R_min</th>
+                <th class="py-1.5 px-2">Descrizione / Applicazione</th>
+                <th class="py-1.5 px-2 text-right">Azione Rapida</th>
+              </tr>
+            </thead>
+            <tbody id="dbCablesTableBody" class="divide-y divide-slate-800/60 mono text-xs"></tbody>
+          </table>
+        </div>
+
+        <div id="dbSupportsTableView" class="hidden space-y-4">
+          <!-- CANALINE COMMERCIALI -->
+          <div>
+            <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+              <span>🧱 Canaline &amp; Passerelle Commerciali da Catalogo (Norma CEI EN 61537)</span>
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5" id="dbBrandSeriesCards"></div>
+          </div>
+
+          <!-- MENSOLE E SISTEMI DI SOSTEGNO -->
+          <div class="pt-3 border-t border-slate-800">
+            <h4 class="text-xs font-bold text-cyan-300 uppercase tracking-wide mb-2 flex items-center gap-2">
+              <span>🛠️ Mensole &amp; Sospensioni con Curve di Carico Verificate SWL</span>
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5" id="dbSupportsCards"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER MODALE -->
+      <div class="px-4 py-2.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        <div>
+          <span id="dbItemsCount" class="text-cyan-300 font-bold">51</span> articoli normati disponibili nel DB
+        </div>
+        <button type="button" onclick="toggleDatabaseModal()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition">
+          Chiudi
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+<!-- @include partials/04-help.html -->
+
+  <!-- MODALE PWA OFFLINE READY -->
+  <div id="pwaOfflineModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border border-emerald-500/50 rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-xs">
+      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-emerald-500/20 text-emerald-300 font-bold flex items-center justify-center border border-emerald-500/30">✓</span>
+          <h3 class="text-sm font-bold text-emerald-300 uppercase tracking-wide">PWA &amp; Disponibilità Offline</h3>
+        </div>
+        <button type="button" onclick="closePwaOfflineModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3.5 text-slate-300 text-xs leading-relaxed">
+        <div class="flex items-start gap-3 bg-emerald-950/40 border border-emerald-500/30 p-3 rounded-xl">
+          <span class="text-2xl">⚡</span>
+          <div>
+            <div class="font-bold text-emerald-300 text-xs mb-0.5">Architettura 100% Client-Side e Sicura</div>
+            <div>CanaloCAD opera interamente all'interno della memoria del browser. Tutti i calcoli (motore LibreDWG WebAssembly, parsing PDF unifilare, verifica curva EN 61537 ed export CAD DXF) avvengono localmente sul dispositivo. Nessun dato, file o disegno viene inviato a server esterni.</div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-cyan-300 font-bold uppercase text-xs mb-1">Come installare come App Desktop o Mobile:</h4>
+          <ol class="list-decimal pl-4 space-y-1 text-slate-300">
+            <li><strong>Google Chrome o Microsoft Edge (PC / Mac):</strong> Clicca sull'icona di installazione <span class="mono text-cyan-300">[⊕]</span> nella barra degli indirizzi o nel menu seleziona <em>"Installa CanaloCAD..."</em>.</li>
+            <li><strong>Smartphone / Tablet Android:</strong> Apri il menu del browser (3 puntini) e tocca <em>"Aggiungi a schermata Home"</em> o <em>"Installa app"</em>.</li>
+            <li><strong>iPhone / iPad (iOS Safari):</strong> Tocca il pulsante di condivisione <span class="mono text-cyan-300">[↑]</span> e seleziona <em>"Aggiungi alla schermata Home"</em>.</li>
+          </ol>
+        </div>
+
+        <div>
+          <h4 class="text-cyan-300 font-bold uppercase text-xs mb-1">Funzionamento Offline Completo</h4>
+          <p>Dopo la prima apertura online l'app resta disponibile anche senza connessione: puoi aprire il progetto, calcolare ed esportare DXF in cantiere. I motori di importazione <strong>DWG</strong> e <strong>PDF</strong> vengono salvati per l'uso offline la prima volta che li usi da online.</p>
+          <p class="mt-1 text-slate-400">La modalità offline richiede che la pagina sia aperta da un indirizzo web (es. GitHub Pages); aprendo il file con doppio clic non è disponibile, ma il progetto viene comunque salvato automaticamente nel browser.</p>
+        </div>
+      </div>
+      <div class="p-3 bg-slate-950 border-t border-slate-800 text-right">
+        <button type="button" onclick="closePwaOfflineModal()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded transition">Ho capito</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE DATI CARTIGLIO, PROGETTISTA & COMMITTENTE (F2) -->
+  <div id="cartiglioSettingsModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl w-full max-w-xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-xs">
+      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center border border-amber-500/30">📐</span>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Dati Cartiglio, Progettista &amp; Committente</h3>
+        </div>
+        <button type="button" onclick="closeCartiglioSettingsModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3.5 text-slate-300 text-xs">
+        <p class="text-xs text-slate-400">Queste informazioni vengono impresse nel cartiglio unificato della tavola grafica CAD 1:1 e nel file .DXF esportato.</p>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2">
+            <label for="cfgClient" class="block text-[11px] uppercase font-bold text-slate-400 mb-1">Committente / Cliente</label>
+            <input id="cfgClient" type="text" value="PROGETTO ESECUTIVO" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-slate-100 focus:outline-none focus:border-amber-400 field">
+          </div>
+          <div class="col-span-2">
+            <label for="cfgProject" class="block text-[11px] uppercase font-bold text-slate-300 mb-1">Titolo Opera / Progetto</label>
+            <input id="cfgProject" type="text" value="IMPIANTI ELETTRICI E SPECIALI" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-400 field">
+          </div>
+          <div>
+            <label for="cfgAuthor" class="block text-[11px] uppercase font-bold text-slate-300 mb-1">Progettista / Disegnatore</label>
+            <input id="cfgAuthor" type="text" value="STUDIO TECNICO" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-slate-100 focus:outline-none focus:border-cyan-400 field">
+          </div>
+          <div>
+            <label for="cfgChecker" class="block text-[11px] uppercase font-bold text-slate-300 mb-1">Responsabile / Approvatore</label>
+            <input id="cfgChecker" type="text" value="RESPONSABILE TECNICO" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-slate-100 focus:outline-none focus:border-cyan-400 field">
+          </div>
+          <div>
+            <label for="cfgDocCode" class="block text-[11px] uppercase font-bold text-slate-300 mb-1">Codice Tavola / Elaborato</label>
+            <input id="cfgDocCode" type="text" value="PE-IMP-EL-PART-02" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-slate-100 focus:outline-none focus:border-cyan-400 field">
+          </div>
+          <div>
+            <label for="cfgRev" class="block text-[11px] uppercase font-bold text-slate-300 mb-1">Revisione</label>
+            <input id="cfgRev" type="text" value="Rev. 00" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-slate-100 focus:outline-none focus:border-cyan-400 field">
+          </div>
+          <div>
+            <label for="cfgScale" class="block text-[11px] uppercase font-bold text-slate-400 mb-1">Scala Rappresentazione CAD</label>
+            <select id="cfgScale" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-100 field">
+              <option value="1:1" selected>1:1 (Costruttivo Esecutivo)</option>
+              <option value="1:2">1:2</option>
+              <option value="1:5">1:5</option>
+              <option value="1:10">1:10</option>
+              <option value="1:20">1:20</option>
+              <option value="1:50">1:50</option>
+              <option value="1:100">1:100 (Layout Planimetrico)</option>
+            </select>
+          </div>
+          <div>
+            <label for="cfgPlanTag" class="block text-[11px] uppercase font-bold text-slate-400 mb-1">Etichetta Planimetria &amp; Quota</label>
+            <input id="cfgPlanTag" type="text" value="SEZ. A-A | H=+3.20m" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs mono text-slate-100 focus:outline-none focus:border-emerald-400 field">
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800">
+          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="cfgSaveDefaults" checked class="accent-amber-400 rounded">
+            <span>Memorizza questi dati come predefiniti per tutti i nuovi progetti (LocalStorage)</span>
+          </label>
+        </div>
+      </div>
+      <div class="p-3 bg-slate-950 border-t border-slate-800 flex justify-between items-center">
+        <button type="button" onclick="closeCartiglioSettingsModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-medium transition">Annulla</button>
+        <button type="button" onclick="saveCartiglioSettings()" class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded font-bold transition">Applica al Disegno</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE PERSONALIZZAZIONE SCORCIATOIE DA TASTIERA (F4) -->
+  <div id="keyboardShortcutsModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl w-full max-w-xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-xs">
+      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-cyan-500/20 text-cyan-300 font-bold flex items-center justify-center border border-cyan-500/30">⌨</span>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Personalizzazione Scorciatoie da Tastiera</h3>
+        </div>
+        <button type="button" onclick="closeShortcutsModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3 text-slate-300 text-xs">
+        <p class="text-xs text-slate-400">Clicca sul tasto a destra di qualsiasi comando per assegnare una nuova combinazione di tasti. Viene salvata automaticamente sul browser.</p>
+        
+        <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/60 divide-y divide-slate-800/80" id="shortcutsTableBody">
+          <!-- Popolato dinamicamente -->
+        </div>
+
+        <div id="rebindBanner" class="hidden bg-amber-500/20 border border-amber-500/50 text-amber-200 p-2.5 rounded-lg text-center font-bold animate-pulse text-xs">
+          Premi la nuova combinazione di tasti sulla tastiera... (o premi Esc per annullare)
+        </div>
+      </div>
+      <div class="p-3 bg-slate-950 border-t border-slate-800 flex justify-between items-center">
+        <button type="button" onclick="resetDefaultShortcuts()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-medium transition text-xs">Ripristina Predefinite</button>
+        <button type="button" onclick="closeShortcutsModal()" class="px-4 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded font-bold transition">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE SCELTA AMBITO IMPORTAZIONE PDF UNIFILARE (SCHEDA CORRENTE VS TUTTE LE SCHEDE) -->
+  <div id="pdfImportScopeModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border border-purple-500/50 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-xs flex flex-col">
+      <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-purple-500/20 text-purple-300 font-bold flex items-center justify-center border border-purple-500/40">📄</span>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Importazione Schema Unifilare PDF</h3>
+        </div>
+        <button type="button" onclick="closePdfImportScopeModal()" class="text-slate-400 hover:text-white font-bold text-lg leading-none">&times;</button>
+      </div>
+
+      <div class="p-4 space-y-3.5 text-slate-300">
+        <div class="bg-slate-950 p-2.5 rounded-lg border border-purple-500/30 flex items-center justify-between">
+          <div class="truncate mr-2">
+            <span class="text-[11px] text-purple-400 font-mono block">FILE SCHEMA CARICATO</span>
+            <span id="pdfScopeFileName" class="text-xs font-semibold text-white truncate block">schema_unifilare.pdf</span>
+          </div>
+          <span id="pdfScopeLinesCount" class="text-xs mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold whitespace-nowrap">
+            0 linee
+          </span>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Nel progetto sono attualmente aperte <strong id="pdfScopeOpenTabsCount" class="text-amber-300">N schede canalina</strong>.
+          Dove desideri applicare le descrizioni, sezioni e formazioni cavi rilevate dal PDF?
+        </p>
+
+        <div class="grid grid-cols-1 gap-2.5 pt-1">
+          <!-- OPZIONE 1: SOLO SCHEDA CORRENTE -->
+          <button type="button" onclick="applyPdfImportScope('current')" class="group text-left p-3 rounded-xl bg-slate-950 hover:bg-cyan-950/40 border border-slate-800 hover:border-cyan-500/70 transition flex items-start gap-3">
+            <span class="text-2xl mt-0.5">🎯</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white group-hover:text-cyan-300 transition">Solo per la Scheda Corrente</span>
+                <span id="pdfScopeCurrentBadge" class="text-[11px] mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">#1</span>
+              </div>
+              <div id="pdfScopeCurrentDetails" class="text-xs text-slate-400 truncate mt-0.5">
+                Canalina Principale (400x100 mm &bull; 14 cavi)
+              </div>
+              <div class="text-[11px] text-slate-500 mt-1">
+                Aggiorna unicamente la tratta attualmente visualizzata a video.
+              </div>
+            </div>
+          </button>
+
+          <!-- OPZIONE 2: PER TUTTE LE SCHEDE APERTE -->
+          <button type="button" onclick="applyPdfImportScope('all')" class="group text-left p-3 rounded-xl bg-slate-950 hover:bg-emerald-950/40 border border-slate-800 hover:border-emerald-500/70 transition flex items-start gap-3">
+            <span class="text-2xl mt-0.5">📑</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white group-hover:text-emerald-300 transition">Per Tutte le Schede Aperte</span>
+                <span id="pdfScopeAllBadge" class="text-[11px] mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">Tutte (N)</span>
+              </div>
+              <div class="text-xs text-slate-400 mt-0.5">
+                Sincronizza tutte le canaline aperte nel progetto con le relative utenze.
+              </div>
+              <div class="text-[11px] text-emerald-400/80 mt-1">
+                Consigliato per progetti multi-tratta che condividono lo stesso quadro generale.
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-end">
+        <button type="button" onclick="closePdfImportScopeModal()" class="px-3.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs transition">
+          Annulla
+        </button>
+      </div>
+    </div>
+  </div>
+

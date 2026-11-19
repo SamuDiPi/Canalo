@@ -1,0 +1,37 @@
+{
+  "name": "CanaloCAD — Cable Tray Studio",
+  "short_name": "CanaloCAD",
+  "description": "Progettazione e verifica di canaline portacavi con export DXF.",
+  "start_url": "./Canalo.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#060911",
+  "theme_color": "#060911",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./Canalo.html",
+      "accept": {
+        "application/x-canalocad": [
+          ".ccad"
+        ]
+      },
+      "icons": [
+        {
+          "src": "icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ],
+      "launch_type": "single-client"
+    }
+  ]
+}
