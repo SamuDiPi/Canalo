@@ -3009,9 +3009,16 @@
       const targetFillFactor = (100 - reservePct) / 100;
       
       const used = state.cables.reduce((s, c) => s + Math.PI * Math.pow(c.d / 2, 2), 0);
-      const widths = [50, 100, 150, 200, 300, 400, 500, 600, 800, 1000];
-      
-      state.width = widths.find(w => w * state.height >= used / targetFillFactor) || widths[widths.length - 1];
+      const widths = [50, 75, 100, 150, 200, 300, 400, 500, 600, 800, 1000];
+      // La più stretta che: non è più stretta che alta, lascia la riserva e tiene i cavi (disposti come nel
+      // progetto) dentro l'altezza della canalina.
+      const fitsHeight = w => {
+        state.width = w;
+        recalculateAll();
+        return state.cables.every(c => c.y + c.d / 2 <= state.height + 0.01);
+      };
+      state.width = widths.find(w => w >= state.height && w * state.height >= used / targetFillFactor && fitsHeight(w))
+        || widths[widths.length - 1];
       state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`);
       
       pushStateToUI();
