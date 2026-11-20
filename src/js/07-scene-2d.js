@@ -579,7 +579,7 @@
       // 3. COMPUTO METRICO BOM (Opzionale - escluso in Stampa Minimal)
       if (!isMinimal && state.showBOM !== false) {
         const bomTop = currentRightY - 2;
-        const bTitle = wrap(`3. COMPUTO METRICO E DISTINTA MATERIALI (BOM ${state.brand} - Tratto ${state.lengthM}m)`, tabW - 8, 2.5);
+        const bTitle = wrap(`3. COMPUTO METRICO E DISTINTA MATERIALI (BOM - Tratto ${state.lengthM}m)`, tabW - 8, 2.5);
         const bTitleH = Math.max(9, blockH(bTitle.length, 2.5));
         rect("TABELLA", rightX, bomTop - bTitleH, tabW, bTitleH, "#4ade80", boxBg, true);
         textLines("TABELLA", rightX + 4, bomTop, 2.5, bTitle, "#4ade80");

@@ -7,18 +7,10 @@
       showPanel(map[id] || id, true);
     }
 
+    // Niente costruttori: la "serie" della distinta è la tipologia di canalina scelta (state.trayType).
     function populateBrandSeries() {
-      const b = document.getElementById("inpBrand").value;
-      state.brand = b;
-      const list = BRAND_SERIES[b] || BRAND_SERIES.MARCA_A;
-      const sel = document.getElementById("inpSeries");
-      sel.innerHTML = "";
-      list.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.id; opt.textContent = s.name;
-        sel.appendChild(opt);
-      });
-      state.seriesId = list[0].id;
+      state.brand = "TIPOLOGIE";
+      state.seriesId = BOM_SERIES_FOR(state.trayType).id;
       syncFromUI();
     }
 
@@ -81,8 +73,8 @@
       state.clamps = getChk("chkClamps", state.clamps);
       state.showIso3D = getChk("chkIso3D", state.showIso3D);
       state.showPlanTag = getChk("chkPlanTag", state.showPlanTag);
-      state.brand = getVal("inpBrand", state.brand);
-      state.seriesId = getVal("inpSeries", state.seriesId);
+      state.brand = "TIPOLOGIE";
+      state.seriesId = BOM_SERIES_FOR(state.trayType).id;
       state.material = getVal("inpMaterial", state.material);
       state.cover = getVal("inpCover", state.cover);
       state.septums = parseInt(getVal("inpSeptums", state.septums || 0)) || 0;
@@ -201,7 +193,6 @@
       safeChk("chkEdge", state.edgeGuard);
       safeChk("chkClamps", state.clamps);
       safeChk("chkPlanTag", state.showPlanTag);
-      safeVal("inpBrand", state.brand);
       safeVal("inpMaterial", state.material);
       safeVal("inpCover", state.cover);
       safeVal("inpSeptums", String(state.septums || 0));
@@ -625,8 +616,8 @@
 
       const nVerghe = Math.ceil(state.lengthM / 3);
       const nStaffe = Math.ceil(state.lengthM / state.spanM) + 1;
-      const serList = BRAND_SERIES[state.brand] || BRAND_SERIES.MARCA_A;
-      const serObj = serList.find(s => s.id === state.seriesId) || serList[0];
+      // Tipologia di canalina (nessun costruttore).
+      const serObj = BOM_SERIES_FOR(state.trayType);
       const pCode = serObj.code;
 
       const freeAreaCm2 = Math.max(0, Math.round((trayArea - usedArea) / 100));

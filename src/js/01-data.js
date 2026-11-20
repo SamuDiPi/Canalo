@@ -1,30 +1,21 @@
     // ============================================================================
     // 1. DATABASE TECNICO, PROFILI CAVI (CON UNIPOLARI 1X) E STATO APPLICAZIONE
     // ============================================================================
+    // Tipologie di canalina (nessun costruttore né modello commerciale): nome e codice generico della distinta.
+    // La tipologia del progetto è state.trayType; la serie la segue (BOM_SERIES_FOR).
     const BRAND_SERIES = {
-      MARCA_A: [
-        { id: "A1_ASO", name: "Marca A Serie A1 — Passerella Asolata (370xx)", code: "A-370", type: "perforated" },
-        { id: "A1_CIE", name: "Marca A Serie A1 — Canale Cieco (372xx)", code: "A-372", type: "solid" },
-        { id: "FILO", name: "Filo CF — Passerella a Filo (CM50/100)", code: "F-CM", type: "mesh" }
-      ],
-      MARCA_B: [
-        { id: "B1", name: "MARCA_B B1 — Passerella Asolata", code: "MARCA_B-604", type: "perforated" },
-        { id: "B2", name: "MARCA_B B2 — Canale Portacavi", code: "MARCA_B-605", type: "solid" },
-        { id: "B3", name: "MARCA_B B3 — Passerella a Filo", code: "MARCA_B-600", type: "mesh" }
-      ],
-      MARCA_C: [
-        { id: "C_S27", name: "Marca C Serie 27 — Passerella Asolata", code: "C-S27", type: "perforated" },
-        { id: "C_S28", name: "Marca C Serie 28 — Canale Cieco IP40", code: "C-S28", type: "solid" }
-      ],
-      MARCA_D: [
-        { id: "D_RL", name: "Marca D RL — Passerella Asolata Standard", code: "D-RL", type: "perforated" },
-        { id: "D_RS", name: "Marca D RS — Canale Chiuso Pesante", code: "D-RS", type: "solid" }
-      ],
-      CUSTOM: [
-        { id: "CUSTOM_ASO", name: "Custom — Passerella Asolata", code: "CST-P", type: "perforated" },
-        { id: "CUSTOM_CIE", name: "Custom — Canale Chiuso", code: "CST-C", type: "solid" }
+      TIPOLOGIE: [
+        { id: "PAS_ASO", name: "Passerella asolata in lamiera forata", code: "PAS", type: "perforated" },
+        { id: "CAN_CIE", name: "Canale portacavi cieco in lamiera piena", code: "CAN", type: "solid" },
+        { id: "PAS_FIL", name: "Passerella a filo (rete elettrosaldata)", code: "PFI", type: "mesh" },
+        { id: "PAS_SCA", name: "Passerella a scala (a pioli)", code: "PSC", type: "ladder" }
       ]
     };
+    // Serie della tipologia scelta.
+    function BOM_SERIES_FOR(trayType) {
+      const list = BRAND_SERIES.TIPOLOGIE;
+      return list.find(s => s.type === trayType) || list[0];
+    }
 
     let CABLE_CATALOG = [
       // ==========================================
@@ -325,8 +316,8 @@
     let state = {
       pdfLoaded: false,
       theme: "dark",
-      brand: "MARCA_A",
-      seriesId: "A1_ASO",
+      brand: "TIPOLOGIE",
+      seriesId: "PAS_ASO",
       title: "NUOVA CANALINA 01 - L=200mm H=75mm",
       planTag: "SEZ. A-A | H=+3.20m",
       width: 200,

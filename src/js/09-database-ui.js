@@ -147,17 +147,15 @@
 
       Object.entries(BRAND_SERIES).forEach(([brand, seriesList]) => {
         seriesList.forEach(ser => {
-          if (searchTxt && !ser.name.toLowerCase().includes(searchTxt) && !brand.toLowerCase().includes(searchTxt)) return;
+          if (searchTxt && !ser.name.toLowerCase().includes(searchTxt)) return;
           const card = document.createElement("div");
           card.className = "bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between";
           card.innerHTML = `
             <div>
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[11px] mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">${brand}</span>
+              <div class="flex items-center justify-end mb-1">
                 <span class="text-[11px] text-slate-400 font-mono">${ser.code}</span>
               </div>
               <h5 class="text-xs font-bold text-white mb-1">${ser.name}</h5>
-              <div class="text-[11px] text-slate-400">Tipologia: <span class="text-cyan-300 font-semibold">${ser.type === "perforated" ? "Passerella Asolata" : ser.type === "mesh" ? "Passerella a Filo Rete" : "Canale Cieco"}</span></div>
             </div>
             <button type="button" onclick="applyBrandSeriesFromDb('${brand}', '${ser.id}')" class="mt-2.5 w-full py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded font-semibold text-[11px] transition">
               ✓ Applica a Progetto
@@ -246,11 +244,11 @@
       }
     }
 
+    // Applica la tipologia della scheda (la distinta segue la tipologia).
     function applyBrandSeriesFromDb(brand, seriesId) {
-      document.getElementById("inpBrand").value = brand;
-      populateBrandSeries();
-      document.getElementById("inpSeries").value = seriesId;
-      state.seriesId = seriesId;
+      const ser = BRAND_SERIES.TIPOLOGIE.find(s => s.id === seriesId);
+      const sel = document.getElementById("inpTrayType");
+      if (ser && sel) sel.value = ser.type;
       syncFromUI();
       toggleDatabaseModal();
     }

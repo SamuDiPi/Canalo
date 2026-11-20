@@ -26,7 +26,7 @@
       const trayLabels = {
         solid: "Canale Chiuso Cieco",
         perforated: "Passerella Asolata / Forata",
-        mesh: "Passerella a Filo / Rete (Filo)",
+        mesh: "Passerella a Filo / Rete",
         ladder: "Passerella a Pioli / Scaletta"
       };
       const trayTypeStr = trayLabels[state.trayType] || "Passerella Portacavi";
@@ -288,7 +288,7 @@
           iLine(0, 0.035, z + 0.06, 1.0, 0.035, z + 0.06, "#fbbf24", 0.5);
         }
       } else if (state.trayType === "mesh") {
-        // Passerella a filo / rete (Filo)
+        // Passerella a filo / rete
         [0.25, 0.50, 0.75].forEach(rx => {
           iLine(rx, 0.01, 0, rx, 0.01, zMax, "#0284c7", 0.55);
         });

@@ -20,6 +20,9 @@
       out.tb = Object.assign({}, DEFAULT_SECTION_STATE.tb, s.tb || {});
       out.cables = Array.isArray(s.cables) ? s.cables.filter(c => c && typeof c === "object" && +c.d > 0) : [];
       out.septumPositions = Array.isArray(s.septumPositions) ? s.septumPositions : [];
+      // Progetti con le vecchie serie dei costruttori: la serie diventa quella della tipologia.
+      out.brand = "TIPOLOGIE";
+      out.seriesId = BOM_SERIES_FOR(out.trayType).id;
       ["width", "height", "thk", "lengthM", "spanM"].forEach(k => {
         out[k] = (+out[k] > 0) ? +out[k] : DEFAULT_SECTION_STATE[k];
       });

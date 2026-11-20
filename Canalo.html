@@ -520,17 +520,7 @@
           </div>
 
           <div class="group">
-            <h3 class="group-title">Produttore e materiale</h3>
-            <div class="field"><label for="inpBrand">Costruttore</label>
-              <select id="inpBrand" onchange="populateBrandSeries()">
-                <option value="MARCA_A" selected>Marca A</option>
-                <option value="MARCA_B">Marca B</option>
-                <option value="MARCA_C">Marca C</option>
-                <option value="MARCA_D">Marca D</option>
-                <option value="CUSTOM">Generico</option>
-              </select><svg class="ico caret"><use href="#i-down"/></svg>
-            </div>
-            <div class="field"><label for="inpSeries">Serie</label><select id="inpSeries" onchange="syncFromUI()"></select><svg class="ico caret"><use href="#i-down"/></svg></div>
+            <h3 class="group-title">Materiale</h3>
             <div class="field"><label for="inpMaterial">Materiale e finitura</label>
               <select id="inpMaterial" onchange="syncFromUI()">
                 <option value="sendzimir" selected>Acciaio zincato Sendzimir (EN 10346)</option>
@@ -994,10 +984,10 @@
         </div>
 
         <div id="dbSupportsTableView" class="hidden space-y-4">
-          <!-- CANALINE COMMERCIALI -->
+          <!-- TIPOLOGIE DI CANALINE -->
           <div>
             <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wide mb-2 flex items-center gap-2">
-              <span>🧱 Canaline &amp; Passerelle Commerciali da Catalogo (Norma CEI EN 61537)</span>
+              <span>🧱 Tipologie di canaline e passerelle (Norma CEI EN 61537)</span>
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5" id="dbBrandSeriesCards"></div>
           </div>
@@ -1602,30 +1592,21 @@
     // ============================================================================
     // 1. DATABASE TECNICO, PROFILI CAVI (CON UNIPOLARI 1X) E STATO APPLICAZIONE
     // ============================================================================
+    // Tipologie di canalina (nessun costruttore né modello commerciale): nome e codice generico della distinta.
+    // La tipologia del progetto è state.trayType; la serie la segue (BOM_SERIES_FOR).
     const BRAND_SERIES = {
-      MARCA_A: [
-        { id: "A1_ASO", name: "Marca A Serie A1 — Passerella Asolata (370xx)", code: "A-370", type: "perforated" },
-        { id: "A1_CIE", name: "Marca A Serie A1 — Canale Cieco (372xx)", code: "A-372", type: "solid" },
-        { id: "FILO", name: "Filo CF — Passerella a Filo (CM50/100)", code: "F-CM", type: "mesh" }
-      ],
-      MARCA_B: [
-        { id: "B1", name: "MARCA_B B1 — Passerella Asolata", code: "MARCA_B-604", type: "perforated" },
-        { id: "B2", name: "MARCA_B B2 — Canale Portacavi", code: "MARCA_B-605", type: "solid" },
-        { id: "B3", name: "MARCA_B B3 — Passerella a Filo", code: "MARCA_B-600", type: "mesh" }
-      ],
-      MARCA_C: [
-        { id: "C_S27", name: "Marca C Serie 27 — Passerella Asolata", code: "C-S27", type: "perforated" },
-        { id: "C_S28", name: "Marca C Serie 28 — Canale Cieco IP40", code: "C-S28", type: "solid" }
-      ],
-      MARCA_D: [
-        { id: "D_RL", name: "Marca D RL — Passerella Asolata Standard", code: "D-RL", type: "perforated" },
-        { id: "D_RS", name: "Marca D RS — Canale Chiuso Pesante", code: "D-RS", type: "solid" }
-      ],
-      CUSTOM: [
-        { id: "CUSTOM_ASO", name: "Custom — Passerella Asolata", code: "CST-P", type: "perforated" },
-        { id: "CUSTOM_CIE", name: "Custom — Canale Chiuso", code: "CST-C", type: "solid" }
+      TIPOLOGIE: [
+        { id: "PAS_ASO", name: "Passerella asolata in lamiera forata", code: "PAS", type: "perforated" },
+        { id: "CAN_CIE", name: "Canale portacavi cieco in lamiera piena", code: "CAN", type: "solid" },
+        { id: "PAS_FIL", name: "Passerella a filo (rete elettrosaldata)", code: "PFI", type: "mesh" },
+        { id: "PAS_SCA", name: "Passerella a scala (a pioli)", code: "PSC", type: "ladder" }
       ]
     };
+    // Serie della tipologia scelta.
+    function BOM_SERIES_FOR(trayType) {
+      const list = BRAND_SERIES.TIPOLOGIE;
+      return list.find(s => s.type === trayType) || list[0];
+    }
 
     let CABLE_CATALOG = [
       // ==========================================
@@ -1926,8 +1907,8 @@
     let state = {
       pdfLoaded: false,
       theme: "dark",
-      brand: "MARCA_A",
-      seriesId: "A1_ASO",
+      brand: "TIPOLOGIE",
+      seriesId: "PAS_ASO",
       title: "NUOVA CANALINA 01 - L=200mm H=75mm",
       planTag: "SEZ. A-A | H=+3.20m",
       width: 200,
@@ -2049,18 +2030,10 @@
       showPanel(map[id] || id, true);
     }
 
+    // Niente costruttori: la "serie" della distinta è la tipologia di canalina scelta (state.trayType).
     function populateBrandSeries() {
-      const b = document.getElementById("inpBrand").value;
-      state.brand = b;
-      const list = BRAND_SERIES[b] || BRAND_SERIES.MARCA_A;
-      const sel = document.getElementById("inpSeries");
-      sel.innerHTML = "";
-      list.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.id; opt.textContent = s.name;
-        sel.appendChild(opt);
-      });
-      state.seriesId = list[0].id;
+      state.brand = "TIPOLOGIE";
+      state.seriesId = BOM_SERIES_FOR(state.trayType).id;
       syncFromUI();
     }
 
@@ -2123,8 +2096,8 @@
       state.clamps = getChk("chkClamps", state.clamps);
       state.showIso3D = getChk("chkIso3D", state.showIso3D);
       state.showPlanTag = getChk("chkPlanTag", state.showPlanTag);
-      state.brand = getVal("inpBrand", state.brand);
-      state.seriesId = getVal("inpSeries", state.seriesId);
+      state.brand = "TIPOLOGIE";
+      state.seriesId = BOM_SERIES_FOR(state.trayType).id;
       state.material = getVal("inpMaterial", state.material);
       state.cover = getVal("inpCover", state.cover);
       state.septums = parseInt(getVal("inpSeptums", state.septums || 0)) || 0;
@@ -2243,7 +2216,6 @@
       safeChk("chkEdge", state.edgeGuard);
       safeChk("chkClamps", state.clamps);
       safeChk("chkPlanTag", state.showPlanTag);
-      safeVal("inpBrand", state.brand);
       safeVal("inpMaterial", state.material);
       safeVal("inpCover", state.cover);
       safeVal("inpSeptums", String(state.septums || 0));
@@ -2667,8 +2639,8 @@
 
       const nVerghe = Math.ceil(state.lengthM / 3);
       const nStaffe = Math.ceil(state.lengthM / state.spanM) + 1;
-      const serList = BRAND_SERIES[state.brand] || BRAND_SERIES.MARCA_A;
-      const serObj = serList.find(s => s.id === state.seriesId) || serList[0];
+      // Tipologia di canalina (nessun costruttore).
+      const serObj = BOM_SERIES_FOR(state.trayType);
       const pCode = serObj.code;
 
       const freeAreaCm2 = Math.max(0, Math.round((trayArea - usedArea) / 100));
@@ -4588,7 +4560,7 @@
       const trayLabels = {
         solid: "Canale Chiuso Cieco",
         perforated: "Passerella Asolata / Forata",
-        mesh: "Passerella a Filo / Rete (Filo)",
+        mesh: "Passerella a Filo / Rete",
         ladder: "Passerella a Pioli / Scaletta"
       };
       const trayTypeStr = trayLabels[state.trayType] || "Passerella Portacavi";
@@ -4850,7 +4822,7 @@
           iLine(0, 0.035, z + 0.06, 1.0, 0.035, z + 0.06, "#fbbf24", 0.5);
         }
       } else if (state.trayType === "mesh") {
-        // Passerella a filo / rete (Filo)
+        // Passerella a filo / rete
         [0.25, 0.50, 0.75].forEach(rx => {
           iLine(rx, 0.01, 0, rx, 0.01, zMax, "#0284c7", 0.55);
         });
@@ -5602,7 +5574,7 @@
       // 3. COMPUTO METRICO BOM (Opzionale - escluso in Stampa Minimal)
       if (!isMinimal && state.showBOM !== false) {
         const bomTop = currentRightY - 2;
-        const bTitle = wrap(`3. COMPUTO METRICO E DISTINTA MATERIALI (BOM ${state.brand} - Tratto ${state.lengthM}m)`, tabW - 8, 2.5);
+        const bTitle = wrap(`3. COMPUTO METRICO E DISTINTA MATERIALI (BOM - Tratto ${state.lengthM}m)`, tabW - 8, 2.5);
         const bTitleH = Math.max(9, blockH(bTitle.length, 2.5));
         rect("TABELLA", rightX, bomTop - bTitleH, tabW, bTitleH, "#4ade80", boxBg, true);
         textLines("TABELLA", rightX + 4, bomTop, 2.5, bTitle, "#4ade80");
@@ -6267,17 +6239,15 @@
 
       Object.entries(BRAND_SERIES).forEach(([brand, seriesList]) => {
         seriesList.forEach(ser => {
-          if (searchTxt && !ser.name.toLowerCase().includes(searchTxt) && !brand.toLowerCase().includes(searchTxt)) return;
+          if (searchTxt && !ser.name.toLowerCase().includes(searchTxt)) return;
           const card = document.createElement("div");
           card.className = "bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between";
           card.innerHTML = `
             <div>
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[11px] mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">${brand}</span>
+              <div class="flex items-center justify-end mb-1">
                 <span class="text-[11px] text-slate-400 font-mono">${ser.code}</span>
               </div>
               <h5 class="text-xs font-bold text-white mb-1">${ser.name}</h5>
-              <div class="text-[11px] text-slate-400">Tipologia: <span class="text-cyan-300 font-semibold">${ser.type === "perforated" ? "Passerella Asolata" : ser.type === "mesh" ? "Passerella a Filo Rete" : "Canale Cieco"}</span></div>
             </div>
             <button type="button" onclick="applyBrandSeriesFromDb('${brand}', '${ser.id}')" class="mt-2.5 w-full py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded font-semibold text-[11px] transition">
               ✓ Applica a Progetto
@@ -6366,11 +6336,11 @@
       }
     }
 
+    // Applica la tipologia della scheda (la distinta segue la tipologia).
     function applyBrandSeriesFromDb(brand, seriesId) {
-      document.getElementById("inpBrand").value = brand;
-      populateBrandSeries();
-      document.getElementById("inpSeries").value = seriesId;
-      state.seriesId = seriesId;
+      const ser = BRAND_SERIES.TIPOLOGIE.find(s => s.id === seriesId);
+      const sel = document.getElementById("inpTrayType");
+      if (ser && sel) sel.value = ser.type;
       syncFromUI();
       toggleDatabaseModal();
     }
@@ -6418,6 +6388,9 @@
       out.tb = Object.assign({}, DEFAULT_SECTION_STATE.tb, s.tb || {});
       out.cables = Array.isArray(s.cables) ? s.cables.filter(c => c && typeof c === "object" && +c.d > 0) : [];
       out.septumPositions = Array.isArray(s.septumPositions) ? s.septumPositions : [];
+      // Progetti con le vecchie serie dei costruttori: la serie diventa quella della tipologia.
+      out.brand = "TIPOLOGIE";
+      out.seriesId = BOM_SERIES_FOR(out.trayType).id;
       ["width", "height", "thk", "lengthM", "spanM"].forEach(k => {
         out[k] = (+out[k] > 0) ? +out[k] : DEFAULT_SECTION_STATE[k];
       });
