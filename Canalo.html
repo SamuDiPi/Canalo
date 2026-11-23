@@ -3487,9 +3487,9 @@
         }
       }
 
-      // Priorità B: Parola chiave canalina seguita da WxH o HxW (es. "CANALINA 75x300", "CANALE 400x75", "A1 75x300")
+      // Priorità B: Parola chiave canalina seguita da WxH o HxW (es. "CANALINA 75x300", "CANALE 400x75", "PASSERELLA 300x75")
       if (!detectedW || !detectedH) {
-        const mTrayKeyword = allTextCorpus.match(/(?:CANALINA|CANALE|PASSERELLA|TRAY|A1|CF|RKS|MKS)\b[^\d\n\r]*(\d{2,4})\s*[xX×*]\s*(\d{2,4})/i);
+        const mTrayKeyword = allTextCorpus.match(/(?:CANALINA|CANALE|PASSERELLA|TRAY)\b[^\d\n\r]*(\d{2,4})\s*[xX×*]\s*(\d{2,4})/i);
         if (mTrayKeyword) {
           assignTrayDims(mTrayKeyword[1], mTrayKeyword[2]);
         }
