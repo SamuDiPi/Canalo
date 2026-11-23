@@ -53,9 +53,18 @@ function expand(file, seen = new Set()) {
   return out.join("\n");
 }
 
+// url("@embed:percorso") -> file di src incorporato come data URI (font woff2).
+function embedFiles(html) {
+  return html.replace(/@embed:([A-Za-z0-9_./-]+)/g, (_, rel) => {
+    const data = fs.readFileSync(path.join(SRC, rel)).toString("base64");
+    const type = rel.endsWith(".woff2") ? "font/woff2" : "application/octet-stream";
+    return `data:${type};base64,${data}`;
+  });
+}
+
 function build() {
   const t0 = Date.now();
-  const html = expand(path.join(SRC, "index.html"));
+  const html = embedFiles(expand(path.join(SRC, "index.html")));
   fs.writeFileSync(OUT, html);
   console.log(`✓ Canalo.html generato (${(html.length / 1024).toFixed(0)} KB) in ${Date.now() - t0} ms`);
 }

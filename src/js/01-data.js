@@ -181,7 +181,7 @@
       return newEntry;
     }
 
-    // Mappa granulare basata sul diametro reale (mm) secondo tabelle dimensionali CEI UNEL 35310
+    // Mappa granulare basata sul diametro reale (mm) secondo le tabelle dimensionali CEI UNEL 35310 e i valori tipici dei cavi in commercio
     // NOTA NORMATIVA: I cavi importati sono SEMPRE BT (sys: "BT_POWER"), salvo esplicita presenza di sigle di segnale/speciali.
     function inferCableSpecsByDiameter(d, codeStr = "", layerStr = "") {
       const combined = (String(codeStr || "") + " " + String(layerStr || "")).toUpperCase();
