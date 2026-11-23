@@ -1,13 +1,14 @@
     // ============================================================================
     // MOTORI DI IMPORTAZIONE CARICATI SU RICHIESTA (LibreDWG WASM e pdf.js)
     // ============================================================================
-    // pdf.js 3.11.174 (Mozilla, Apache-2.0, testo in src/vendor/pdfjs/LICENSE) è incorporato nella pagina: leggere
-    // un PDF non usa la rete. LibreDWG-web (~8 MB) invece si scarica da cdn.jsdelivr.net solo quando si importa un
+    // pdf.js 6.5.438 (Mozilla, Apache-2.0, testo in src/vendor/pdfjs/LICENSE) è incorporato nella pagina: leggere
+    // un PDF non usa la rete. Versione successiva alla correzione di CVE-2024-4367; in più i PDF si aprono con
+    // isEvalSupported: false (nessun codice generato dai font del PDF). LibreDWG-web (~8 MB) invece si scarica da cdn.jsdelivr.net solo quando si importa un
     // DWG: non è incorporato perché il pacchetto si dichiara GPL-2.0-only, licenza non compatibile con la GPL v3
     // di CanaloCAD se distribuiti insieme. I DXF si leggono senza scaricare nulla.
     const LIBREDWG_ESM_URL = "https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.1.3/+esm";
-    const PDFJS_URL = "@embed:vendor/pdfjs/pdf.min.js";
-    const PDFJS_WORKER_URL = "@embed:vendor/pdfjs/pdf.worker.min.js";
+    const PDFJS_URL = "@embed:vendor/pdfjs/pdf.min.mjs";
+    const PDFJS_WORKER_URL = "@embed:vendor/pdfjs/pdf.worker.min.mjs";
 
     // data URI -> URL di un Blob (il worker di pdf.js non parte da un data URI).
     function dataUriToBlobUrl(uri, type) {
@@ -61,22 +62,24 @@
       return libreDwgPromise;
     }
 
+    // pdf.js è un modulo ES: si importa da un Blob, e il worker (modulo anche lui) parte da un altro Blob.
     function loadPdfJs() {
       if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
       if (!pdfJsPromise) {
-        pdfJsPromise = new Promise((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = dataUriToBlobUrl(PDFJS_URL, "text/javascript");
-          s.onload = () => {
-            if (!window.pdfjsLib) return reject(new Error("pdf.js non disponibile"));
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc = dataUriToBlobUrl(PDFJS_WORKER_URL, "text/javascript");
-            resolve(window.pdfjsLib);
-          };
-          s.onerror = () => { pdfJsPromise = null; reject(new Error("pdf.js non caricato.")); };
-          document.head.appendChild(s);
-        });
+        pdfJsPromise = import(dataUriToBlobUrl(PDFJS_URL, "text/javascript"))
+          .then(lib => {
+            lib.GlobalWorkerOptions.workerSrc = dataUriToBlobUrl(PDFJS_WORKER_URL, "text/javascript");
+            window.pdfjsLib = lib;
+            return lib;
+          })
+          .catch(e => { pdfJsPromise = null; throw new Error("pdf.js non caricato: " + (e && e.message ? e.message : e)); });
       }
       return pdfJsPromise;
+    }
+
+    // Apertura di un PDF con le opzioni sicure (vedi sopra).
+    function openPdfDocument(lib, data) {
+      return lib.getDocument({ data, isEvalSupported: false, enableXfa: false }).promise;
     }
 
     function toggleDwgInspector() {

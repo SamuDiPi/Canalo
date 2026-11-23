@@ -15,7 +15,7 @@
       try {
         const buf = await file.arrayBuffer();
         const pdfjsLib = await loadPdfJs();
-        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        const pdf = await openPdfDocument(pdfjsLib, buf);
         for (let p = 1; p <= pdf.numPages; p++) {
           const page = await pdf.getPage(p);
           const tc = await page.getTextContent();

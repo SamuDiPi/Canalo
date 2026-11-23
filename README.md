@@ -64,7 +64,18 @@ Componenti di terze parti: il CSS è generato con [Tailwind CSS](https://tailwin
 
 - Font **Inter** (The Inter Project Authors) e **JetBrains Mono** (The JetBrains Mono Project Authors), incorporati nella pagina, sotto SIL Open Font License 1.1: testi in `src/fonts`.
 - CSS generato con **Tailwind CSS** (MIT).
-- **pdf.js** 3.11.174 (Mozilla Foundation, Apache-2.0, testo in `src/vendor/pdfjs/LICENSE`), incorporato nella pagina per leggere i PDF.
+- **pdf.js** 6.5.438 (Mozilla Foundation, Apache-2.0, testo in `src/vendor/pdfjs/LICENSE`), incorporato nella pagina per leggere i PDF (aperti con `isEvalSupported: false`).
 - Alla prima importazione di un DWG la pagina scarica da cdn.jsdelivr.net **LibreDWG-web** (@mlightcad/libredwg-web 0.1.3, che il pacchetto dichiara GPL-2.0-only e che contiene GNU LibreDWG, GPL-3.0-or-later). Non è incluso né distribuito con CanaloCAD.
 
 CanaloCAD non riporta marche, serie o codici di produttori: i tipi di passerella sono generici e la distinta materiali usa sigle proprie.
+
+## Privacy
+
+CanaloCAD non raccoglie dati: niente account, cookie, statistiche o invio di informazioni all'autore. Tutta l'elaborazione avviene nel browser; progetti, preferenze e dati del cartiglio restano nella memoria locale del browser (localStorage) del computer che li usa.
+
+- La pagina pubblicata è ospitata da GitHub Pages: GitHub registra gli indirizzi IP dei visitatori secondo la [sua informativa](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
+- Font e lettore PDF sono incorporati nella pagina. Solo all'importazione di un DWG il browser scarica il motore LibreDWG-web da cdn.jsdelivr.net, che vede l'indirizzo IP.
+
+## Sicurezza
+
+Vedi [SECURITY.md](SECURITY.md).

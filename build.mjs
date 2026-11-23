@@ -57,7 +57,7 @@ function expand(file, seen = new Set()) {
 function embedFiles(html) {
   return html.replace(/@embed:([A-Za-z0-9_./-]+)/g, (_, rel) => {
     const data = fs.readFileSync(path.join(SRC, rel)).toString("base64");
-    const type = rel.endsWith(".woff2") ? "font/woff2" : rel.endsWith(".js") ? "text/javascript" : "application/octet-stream";
+    const type = rel.endsWith(".woff2") ? "font/woff2" : /\.m?js$/.test(rel) ? "text/javascript" : "application/octet-stream";
     return `data:${type};base64,${data}`;
   });
 }
