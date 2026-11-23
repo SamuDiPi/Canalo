@@ -40,6 +40,7 @@
 
     <input id="dwgInput" type="file" accept=".dwg,.dxf,.ccad" multiple class="hidden" onchange="importCADFile(this)">
     <input id="pdfInput" type="file" accept=".pdf" multiple class="hidden" onchange="importPDFFile(this)">
+    <input id="pdfCaviInput" type="file" accept=".pdf,.dwg,.dxf" class="hidden" onchange="importPdfCablesFile(this)">
     <input id="jsonProjectInput" type="file" accept=".ccad,.json" class="hidden" onchange="importProjectJSON(this)">
 
     <div id="winMenuBar" class="flex items-center gap-2">
@@ -49,6 +50,7 @@
         <div class="win-dropdown hidden menu right-0" role="menu">
           <button type="button" role="menuitem" class="menu-item" onclick="document.getElementById('dwgInput').click(); closeAllMenus();"><svg class="ico"><use href="#i-sezione"/></svg>Disegno DWG / DXF…<span class="kbd" id="badgeMenuDwg">Ctrl+O</span></button>
           <button type="button" role="menuitem" class="menu-item" onclick="document.getElementById('pdfInput').click(); closeAllMenus();"><svg class="ico"><use href="#i-file"/></svg>Schema unifilare PDF…<span class="kbd" id="badgeMenuPdf">Ctrl+U</span></button>
+          <button type="button" role="menuitem" class="menu-item" onclick="document.getElementById('pdfCaviInput').click(); closeAllMenus();" title="Legge i cavi dalle tabelle di uno schema unifilare (PDF, DWG o DXF) e li mette in una canalina nuova"><svg class="ico"><use href="#i-plus"/></svg>Canalina dai cavi di uno schema (PDF / DWG)…</button>
           <div class="menu-sep"></div>
           <button type="button" role="menuitem" class="menu-item" onclick="closeAllMenus(); openProjectDialog();"><svg class="ico"><use href="#i-progetto"/></svg>Apri progetto (.ccad)…</button>
           <button type="button" role="menuitem" class="menu-item" onclick="toggleDwgInspector(); closeAllMenus();"><svg class="ico"><use href="#i-inspect"/></svg>Ispettore entità DWG</button>

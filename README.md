@@ -24,6 +24,7 @@ Moduli JavaScript:
 | `02-core.js` | Sincronizzazione UI ↔ stato, posa a gravità, ricalcolo verifiche |
 | `03-loadcurve-cables.js` | Grafico curva di carico, distinta cavi |
 | `04-import-cad.js`, `05-import-pdf.js` | Import DWG/DXF e schema unifilare PDF |
+| `05b-pdf-cavi.js` | Canalina nuova dai cavi di uno schema unifilare (PDF, DWG o DXF): lettura delle tabelle dei circuiti, scelta delle linee, diametri dal database o stimati |
 | `06-scene-iso.js`, `07-scene-2d.js` | Costruzione della tavola (assonometria e viste 2D) |
 | `08-viewport.js` | Rendering, pan/zoom, trascinamento (Pointer Events) |
 | `09-database-ui.js` | Vista mobile e catalogo |
