@@ -3,7 +3,7 @@
 // - Librerie CDN versionate (pdf.js, LibreDWG, font): prima la cache; vengono salvate al primo utilizzo.
 const CACHE = "canalocad-v1.0";
 const PRECACHE = ["./", "./Canalo.html", "./manifest.webmanifest", "./icon.svg"];
-const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "unpkg.com"];
+const CDN_HOSTS = ["cdn.jsdelivr.net"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
