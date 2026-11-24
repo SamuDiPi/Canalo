@@ -32,8 +32,10 @@
       },
     };
 
-    // "Inserisci nel disegno": la tavola va a CartesioCAD, che la inserisce nel disegno da cui si è arrivati.
-    function sendSheetToCartesio() {
+    // La tavola della scheda attiva a CartesioCAD (con le opzioni di esportazione scelte: caratteri, stili, scala).
+    // "tavola" = Inserisci nel disegno da cui si è arrivati; "copia" = negli appunti di CartesioCAD come blocco, da
+    // incollare con Ctrl+V in qualsiasi disegno aperto.
+    function sendSheetToCartesio(kind = "tavola") {
       if (!cartesioHost) return;
       const { nome, dxf } = window.CanaloHost.sheetDxf();
       let latin1 = "";
@@ -41,7 +43,7 @@
         const c = dxf.charCodeAt(i);
         latin1 += c <= 0xff ? dxf[i] : "?";   // come dxfToBlob: il DXF è a un byte per carattere
       }
-      window.chrome.webview.postMessage({ tipo: "tavola", nome, dxf: btoa(latin1) });
+      window.chrome.webview.postMessage({ tipo: kind, nome, dxf: btoa(latin1) });
     }
 
     if (cartesioHost) {

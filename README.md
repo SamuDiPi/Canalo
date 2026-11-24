@@ -2,7 +2,7 @@
 
 Progettazione e verifica di canaline portacavi nel browser: sezione 1:1, riempimento, carichi sulle mensole, segregazione, import DWG/DXF/PDF ed export DXF, Lisp, Word e CSV.
 
-Dentro [CartesioCAD](https://github.com/SamuDiPi/CartesioCAD) (Windows) la stessa pagina si apre in una scheda accanto ai disegni: CartesioCAD le manda le sezioni selezionate e *Esporta > Inserisci nel disegno* (visibile solo lì) riporta la tavola nel disegno. Il collegamento è in `src/js/13-host.js` e fuori da CartesioCAD non fa nulla.
+Dentro [CartesioCAD](https://github.com/SamuDiPi/CartesioCAD) (Windows) la stessa pagina si apre in una scheda accanto ai disegni: CartesioCAD le manda le sezioni selezionate e *Esporta > Inserisci nel disegno* / *Copia come blocco* (visibili solo lì) riportano la tavola nel disegno o negli appunti del programma. Il collegamento è in `src/js/13-host.js` e fuori da CartesioCAD non fa nulla.
 
 ## Struttura
 

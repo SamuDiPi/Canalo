@@ -149,6 +149,9 @@
         </button>
         <div class="flex items-center gap-2">
           <button type="button" onclick="toggleExportOptionsModal()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs">Chiudi</button>
+          <button type="button" data-cartesio-host onclick="sendSheetToCartesio('copia'); toggleExportOptionsModal();" class="hidden px-4 py-1.5 rounded bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold shadow text-xs" title="Copia la tavola della scheda attiva negli appunti di CartesioCAD come blocco, con caratteri e stili di queste opzioni: si incolla con Ctrl+V in qualsiasi disegno aperto">
+            📋 Copia come blocco
+          </button>
           <button type="button" data-cartesio-host onclick="sendSheetToCartesio(); toggleExportOptionsModal();" class="hidden px-4 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow text-xs" title="Inserisce la tavola della scheda attiva nel disegno di CartesioCAD da cui si è aperto CanaloCAD">
             📐 Inserisci nel disegno
           </button>
