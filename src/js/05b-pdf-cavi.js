@@ -443,7 +443,10 @@
         const buf = await file.arrayBuffer();
         const head = new TextDecoder("latin1").decode(new Uint8Array(buf, 0, Math.min(buf.byteLength, 2048)));
         const lines = [];
-        if (/\.pdf$/i.test(file.name) || head.startsWith("%PDF")) {
+        const list = isCableListFile(file.name, head) || /\.xls$/i.test(file.name);
+        if (list) {
+          lines.push(...await readCableListLines(buf, file.name));
+        } else if (/\.pdf$/i.test(file.name) || head.startsWith("%PDF")) {
           const pdfjsLib = await loadPdfJs();
           const pdf = await openPdfDocument(pdfjsLib, buf);
           for (let p = 1; p <= pdf.numPages; p++) {
@@ -474,14 +477,15 @@
         }
         if (!lines.length) {
           if (banner) banner.textContent = `Nessun cavo riconosciuto in "${file.name}"`;
-          toast("Nel file non ho trovato tabelle con le righe \"Sigla utenza\", \"Sigla\" e \"Sezione\": leggo gli schemi unifilari con la tabella dei circuiti sotto lo schema, in PDF (con testo, non scansioni), DWG o DXF.", "warn", null, 10000);
+          toast(list ? "Nella lista non ho trovato righe con una formazione di cavo leggibile (per esempio 5G2,5 o 3x1x95+1G50)."
+                     : "Nel file non ho trovato tabelle con le righe \"Sigla utenza\", \"Sigla\" e \"Sezione\": leggo gli schemi unifilari con la tabella dei circuiti sotto lo schema, in PDF (con testo, non scansioni), DWG o DXF, oppure una lista di cavi in Excel (.xlsx) o CSV.", "warn", null, 10000);
           return;
         }
         lines.forEach((l, i) => { l.id = i; });
         pdfCaviLines = lines;
         pdfCaviChecked = new Set();
         pdfCaviFileName = file.name;
-        if (banner) banner.textContent = `Schema letto: ${lines.length} linee con cavo`;
+        if (banner) banner.textContent = `${list ? "Lista" : "Schema"} letto: ${lines.length} linee con cavo`;
         openPdfCaviModal();
       } catch (err) {
         console.error("Errore lettura schema:", err);
@@ -503,7 +507,7 @@
       sel.innerHTML = `<option value="">Tutti i quadri (${pdfCaviLines.length})</option>` +
         quadri.map(q => `<option value="${escapeHtml(q)}">${escapeHtml(q)} (${pdfCaviLines.filter(l => l.quadro === q).length})</option>`).join("");
       document.getElementById("pdfCaviFilter").value = "";
-      const base = pdfCaviFileName.replace(/\.(pdf|dwg|dxf)$/i, "").replace(/[^a-zA-Z0-9À-ÿ_ -]+/g, " ").trim();
+      const base = pdfCaviFileName.replace(/\.(pdf|dwg|dxf|csv|tsv|txt|xlsx|xlsm)$/i, "").replace(/[^a-zA-Z0-9À-ÿ_ -]+/g, " ").trim();
       document.getElementById("pdfCaviName").value = `CANALINA ${String(projectSections.length + (state.cables.length ? 1 : 0)).padStart(2, "0")}${base ? " - " + base.slice(0, 40) : ""}`;
       renderPdfCaviList();
       m.classList.remove("hidden");

@@ -2,7 +2,9 @@
 
 Progettazione e verifica di canaline portacavi nel browser: sezione 1:1, riempimento, carichi sulle mensole, segregazione, import DWG/DXF/PDF ed export DXF, Lisp, Word e CSV.
 
-Dentro [CartesioCAD](https://github.com/SamuDiPi/CartesioCAD) (Windows) la stessa pagina si apre in una scheda accanto ai disegni: CartesioCAD le manda le sezioni selezionate e *Esporta > Inserisci nel disegno* / *Copia come blocco* (visibili solo lì) riportano la tavola nel disegno o negli appunti del programma. Il collegamento è in `src/js/13-host.js` e fuori da CartesioCAD non fa nulla.
+Dentro [CartesioCAD](https://github.com/SamuDiPi/CartesioCAD) (Windows) la stessa pagina si apre in una scheda accanto ai disegni: CartesioCAD le manda le sezioni selezionate e *Esporta > Inserisci nel disegno* / *Copia come blocco* / *Copia come immagine* (visibili solo lì) riportano la tavola nel disegno, negli appunti del programma o negli appunti di Windows come immagine.
+
+*Importa > Canalina dai cavi di uno schema o di una lista* legge gli schemi unifilari (PDF, DWG, DXF) e anche le liste di cavi in Excel (.xlsx, primo foglio) o CSV: colonne come Sigla, Descrizione, Tipo, Formazione, Quantità, Lunghezza, Ib, Quadro, riconosciute dal nome. L'Excel si legge nella pagina senza librerie esterne (`src/js/05c-lista-cavi.js`), con limiti di dimensione contro i file costruiti apposta. Il collegamento è in `src/js/13-host.js` e fuori da CartesioCAD non fa nulla.
 
 ## Struttura
 
