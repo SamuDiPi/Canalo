@@ -269,31 +269,47 @@
     }
 
     // contenitori: { nome: { texts: [], inserts: [{ name, x, y, sx, sy, rot }], base: { x, y }, page: bool } }
+    // Tetto ai testi di un contenitore: blocchi inseriti molte volte uno dentro l'altro moltiplicano i testi
+    // (un file costruito apposta potrebbe bloccare la pagina). Oltre il tetto la lettura si ferma e lo si dice.
+    const CAD_TEXT_LIMIT = 500000;
+
     function cadContainersToPages(containers) {
-      const expand = (name, depth, seen) => {
+      const memo = new Map();       // ogni blocco si scioglie una volta sola
+      const visiting = new Set();   // blocchi che si inseriscono da soli (anche attraverso altri): si saltano
+      let truncated = false;
+      const expand = (name) => {
+        if (memo.has(name)) return memo.get(name);
         const c = containers[name];
-        if (!c || depth > 6 || seen.has(name)) return [];
-        const inner = new Set(seen); inner.add(name);
-        const out = c.texts.slice();
-        c.inserts.forEach(ins => {
+        if (!c || visiting.has(name)) return [];
+        visiting.add(name);
+        const out = c.texts.slice(0, CAD_TEXT_LIMIT);
+        for (const ins of c.inserts) {
+          if (out.length >= CAD_TEXT_LIMIT) { truncated = true; break; }
           const b = containers[ins.name];
-          if (!b) return;
+          if (!b) continue;
           const base = b.base || { x: 0, y: 0 };
           const sx = ins.sx || 1, sy = ins.sy || 1;
           const cos = Math.cos((ins.rot || 0) * Math.PI / 180), sin = Math.sin((ins.rot || 0) * Math.PI / 180);
-          expand(ins.name, depth + 1, inner).forEach(t => {
+          for (const t of expand(ins.name)) {
+            if (out.length >= CAD_TEXT_LIMIT) { truncated = true; break; }
             const dx = (t.x - base.x) * sx, dy = (t.y - base.y) * sy;
             out.push({ str: t.str, x: ins.x + dx * cos - dy * sin, y: ins.y + dx * sin + dy * cos, w: t.w * Math.abs(sx) });
-          });
-          (ins.attribs || []).forEach(t => out.push(t));
-        });
+          }
+          for (const t of (ins.attribs || [])) {
+            if (out.length >= CAD_TEXT_LIMIT) { truncated = true; break; }
+            out.push(t);
+          }
+        }
+        visiting.delete(name);
+        memo.set(name, out);
         return out;
       };
       const pages = [];
       Object.keys(containers).filter(n => containers[n].page).forEach(n => {
-        const items = expand(n, 0, new Set());
+        const items = expand(n);
         if (items.length) pages.push(items);
       });
+      pages.truncated = truncated;
       return pages;
     }
 
@@ -452,7 +468,9 @@
             if (!ptr) throw new Error("il DWG non è stato decodificato");
             pages = readDwgTextPages(globalLibreDwgInstance.convert(ptr));
           }
-          pages.forEach((items, i) => lines.push(...extractCableLinesFromTexts(items, i + 1)));
+          pages.forEach((items, i) => { for (const l of extractCableLinesFromTexts(items, i + 1)) lines.push(l); });
+          if (pages.truncated)
+            toast(`Il disegno ha più di ${CAD_TEXT_LIMIT.toLocaleString("it-IT")} testi (blocchi inseriti uno dentro l'altro): ne ho letti solo una parte, alcune linee possono mancare.`, "warn", null, 10000);
         }
         if (!lines.length) {
           if (banner) banner.textContent = `Nessun cavo riconosciuto in "${file.name}"`;

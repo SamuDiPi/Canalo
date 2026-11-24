@@ -3,10 +3,11 @@
     // ============================================================================
     // pdf.js 6.5.438 (Mozilla, Apache-2.0, testo in src/vendor/pdfjs/LICENSE) è incorporato nella pagina: leggere
     // un PDF non usa la rete. Versione successiva alla correzione di CVE-2024-4367; in più i PDF si aprono con
-    // isEvalSupported: false (nessun codice generato dai font del PDF). LibreDWG-web (~8 MB) invece si scarica da cdn.jsdelivr.net solo quando si importa un
-    // DWG: non è incorporato perché il pacchetto si dichiara GPL-2.0-only, licenza non compatibile con la GPL v3
-    // di CanaloCAD se distribuiti insieme. I DXF si leggono senza scaricare nulla.
-    const LIBREDWG_ESM_URL = "https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.1.3/+esm";
+    // isEvalSupported: false (nessun codice generato dai font del PDF). LibreDWG-web (~8 MB) invece si scarica da
+    // cdn.jsdelivr.net solo quando si importa un DWG (versione fissata). Dalla 0.9.3 il pacchetto si dichiara GPL-3.0 e
+    // contiene GNU LibreDWG 0.14.8608: le versioni 0.1.x (LibreDWG del 2025) avevano vulnerabilità note dal 2026.
+    // I DXF si leggono senza scaricare nulla.
+    const LIBREDWG_ESM_URL = "https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.9.3/+esm";
     const PDFJS_URL = "@embed:vendor/pdfjs/pdf.min.mjs";
     const PDFJS_WORKER_URL = "@embed:vendor/pdfjs/pdf.worker.min.mjs";
 

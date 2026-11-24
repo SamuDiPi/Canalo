@@ -59,14 +59,14 @@ Pubblicata via http(s), per esempio su GitHub Pages, l'app si installa come PWA 
 
 CanaloCAD è software libero distribuito secondo la [GNU General Public License v3.0](LICENSE), senza alcuna garanzia. I risultati dei calcoli (carichi degli staffaggi, coefficienti, tiro) sono indicativi e vanno verificati con le norme e con i dati dei costruttori; i codici articolo della distinta non sono quelli dei costruttori e i nomi delle serie sono marchi dei rispettivi proprietari.
 
-Componenti di terze parti: il CSS è generato con [Tailwind CSS](https://tailwindcss.com) (MIT); alla prima importazione di un DWG o di un PDF la pagina scarica [LibreDWG-web](https://github.com/mlightcad/libredwg-web) (GPL-3.0-or-later) e [pdf.js](https://mozilla.github.io/pdf.js/) (Apache-2.0).
+Componenti di terze parti: il CSS è generato con [Tailwind CSS](https://tailwindcss.com) (MIT); [pdf.js](https://mozilla.github.io/pdf.js/) (Apache-2.0) è incorporato nella pagina; alla prima importazione di un DWG la pagina scarica [LibreDWG-web](https://github.com/mlightcad/libredwg-web) (GPL-3.0).
 
 ## Componenti di terze parti
 
 - Font **Inter** (The Inter Project Authors) e **JetBrains Mono** (The JetBrains Mono Project Authors), incorporati nella pagina, sotto SIL Open Font License 1.1: testi in `src/fonts`.
 - CSS generato con **Tailwind CSS** (MIT).
 - **pdf.js** 6.5.438 (Mozilla Foundation, Apache-2.0, testo in `src/vendor/pdfjs/LICENSE`), incorporato nella pagina per leggere i PDF (aperti con `isEvalSupported: false`).
-- Alla prima importazione di un DWG la pagina scarica da cdn.jsdelivr.net **LibreDWG-web** (@mlightcad/libredwg-web 0.1.3, che il pacchetto dichiara GPL-2.0-only e che contiene GNU LibreDWG, GPL-3.0-or-later). Non è incluso né distribuito con CanaloCAD.
+- Alla prima importazione di un DWG la pagina scarica da cdn.jsdelivr.net **LibreDWG-web** (@mlightcad/libredwg-web 0.9.3, GPL-3.0, che contiene GNU LibreDWG 0.14.8608, GPL-3.0-or-later). Non è incluso né distribuito con CanaloCAD.
 
 CanaloCAD non riporta marche, serie o codici di produttori: i tipi di passerella sono generici e la distinta materiali usa sigle proprie.
 
