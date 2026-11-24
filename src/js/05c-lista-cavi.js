@@ -48,7 +48,10 @@
             const chunks = [];
             let total = 0;
             for (;;) {
-              const { done, value } = await reader.read();
+              let step;
+              try { step = await reader.read(); }
+              catch (e) { throw new Error("file Excel danneggiato (dati compressi non validi)"); }
+              const { done, value } = step;
               if (done) break;
               total += value.length;
               if (total > CABLE_LIST_MAX_BYTES) { reader.cancel(); throw new Error("foglio Excel troppo grande"); }
