@@ -149,6 +149,9 @@
         </button>
         <div class="flex items-center gap-2">
           <button type="button" onclick="toggleExportOptionsModal()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs">Chiudi</button>
+          <button type="button" data-cartesio-host onclick="sendSheetToCartesio(); toggleExportOptionsModal();" class="hidden px-4 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow text-xs" title="Inserisce la tavola della scheda attiva nel disegno di CartesioCAD da cui si è aperto CanaloCAD">
+            📐 Inserisci nel disegno
+          </button>
           <button type="button" onclick="exportCadDXF(); toggleExportOptionsModal();" class="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow text-xs">
             💾 Scarica DXF Scheda Attiva
           </button>
