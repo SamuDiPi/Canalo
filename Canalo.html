@@ -9346,6 +9346,10 @@
         await importCADFile({ files: [file], value: "" });
         return { sezioni: projectSections.length, cavi: state.cables.length, titolo: state.title };
       },
+      // Stato della scheda canalina attiva (lo stesso dei progetti salvati): CartesioCAD lo ricalcola con il suo motore.
+      state() {
+        return JSON.parse(JSON.stringify(state));
+      },
       // Tavola DXF della scheda attiva (la stessa di "Scarica DXF Scheda Attiva").
       sheetDxf() {
         const name = ((document.getElementById("exportName") || {}).value || computeExportFileName(state) || "Canalina_1_1")
