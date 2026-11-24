@@ -39,6 +39,7 @@ Requisiti: Node.js 18 o successivo.
 
 ```bash
 npm install        # una sola volta (installa Tailwind)
+npm run vendor     # una sola volta: scarica LibreDWG-web da npm, ne verifica l'impronta e lo prepara in src/vendor
 npm run build      # rigenera Canalo.html da src/
 npm run watch      # rigenera a ogni salvataggio in src/
 ```
@@ -59,14 +60,14 @@ Pubblicata via http(s), per esempio su GitHub Pages, l'app si installa come PWA 
 
 CanaloCAD è software libero distribuito secondo la [GNU General Public License v3.0](LICENSE), senza alcuna garanzia. I risultati dei calcoli (carichi degli staffaggi, coefficienti, tiro) sono indicativi e vanno verificati con le norme e con i dati dei costruttori; i codici articolo della distinta non sono quelli dei costruttori e i nomi delle serie sono marchi dei rispettivi proprietari.
 
-Componenti di terze parti: il CSS è generato con [Tailwind CSS](https://tailwindcss.com) (MIT); [pdf.js](https://mozilla.github.io/pdf.js/) (Apache-2.0) è incorporato nella pagina; alla prima importazione di un DWG la pagina scarica [LibreDWG-web](https://github.com/mlightcad/libredwg-web) (GPL-3.0).
+Componenti di terze parti: il CSS è generato con [Tailwind CSS](https://tailwindcss.com) (MIT); [pdf.js](https://mozilla.github.io/pdf.js/) (Apache-2.0) e [LibreDWG-web](https://github.com/mlightcad/libredwg-web) (GPL-3.0) sono incorporati nella pagina.
 
 ## Componenti di terze parti
 
 - Font **Inter** (The Inter Project Authors) e **JetBrains Mono** (The JetBrains Mono Project Authors), incorporati nella pagina, sotto SIL Open Font License 1.1: testi in `src/fonts`.
 - CSS generato con **Tailwind CSS** (MIT).
 - **pdf.js** 6.5.438 (Mozilla Foundation, Apache-2.0, testo in `src/vendor/pdfjs/LICENSE`), incorporato nella pagina per leggere i PDF (aperti con `isEvalSupported: false`).
-- Alla prima importazione di un DWG la pagina scarica da cdn.jsdelivr.net **LibreDWG-web** (@mlightcad/libredwg-web 0.9.3, GPL-3.0, che contiene GNU LibreDWG 0.14.8608, GPL-3.0-or-later). Non è incluso né distribuito con CanaloCAD.
+- **LibreDWG-web** 0.9.3 (@mlightcad/libredwg-web, GPL-3.0, che contiene GNU LibreDWG 0.14.8608, GPL-3.0-or-later), incorporato nella pagina per leggere i DWG: modulo JavaScript e WebAssembly del pacchetto npm ufficiale, non modificati, riuniti e compressi da `tools/vendor-libredwg-web.mjs` (`npm run vendor`) in `src/vendor/libredwg-web` (testo della licenza in `COPYING`). Sorgenti corrispondenti: tag v0.9.3 di https://github.com/mlightcad/libredwg-web, con una copia allegata a https://github.com/SamuDiPi/Canalo/releases/tag/sorgenti-libredwg-web-0.9.3.
 
 CanaloCAD non riporta marche, serie o codici di produttori: i tipi di passerella sono generici e la distinta materiali usa sigle proprie.
 
@@ -75,7 +76,7 @@ CanaloCAD non riporta marche, serie o codici di produttori: i tipi di passerella
 CanaloCAD non raccoglie dati: niente account, cookie, statistiche o invio di informazioni all'autore. Tutta l'elaborazione avviene nel browser; progetti, preferenze e dati del cartiglio restano nella memoria locale del browser (localStorage) del computer che li usa.
 
 - La pagina pubblicata è ospitata da GitHub Pages: GitHub registra gli indirizzi IP dei visitatori secondo la [sua informativa](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
-- Font e lettore PDF sono incorporati nella pagina. Solo all'importazione di un DWG il browser scarica il motore LibreDWG-web da cdn.jsdelivr.net, che vede l'indirizzo IP.
+- Font e motori di lettura di PDF e DWG sono incorporati nella pagina: non si scarica nulla da altri siti.
 
 ## Sicurezza
 

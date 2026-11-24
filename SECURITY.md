@@ -13,5 +13,5 @@ CanaloCAD è un progetto personale e gratuito: le segnalazioni si esaminano appe
 ## Cose da sapere
 
 - I file importati (DWG, DXF, PDF) vengono letti nel browser. Importa solo file da fonti di cui ti fidi.
-- La lettura dei DWG usa LibreDWG-web, scaricato da cdn.jsdelivr.net al primo uso: le sue vulnerabilità vanno segnalate anche al suo progetto (https://github.com/mlightcad/libredwg-web) e a GNU LibreDWG.
+- La lettura dei DWG usa LibreDWG-web 0.9.3, incorporato nella pagina: le sue vulnerabilità vanno segnalate anche al suo progetto (https://github.com/mlightcad/libredwg-web) e a GNU LibreDWG.
 - La lettura dei PDF usa pdf.js (Mozilla), incorporato nella pagina e aperto con `isEvalSupported: false`.

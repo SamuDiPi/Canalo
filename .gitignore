@@ -1,3 +1,6 @@
 node_modules/
 *.bak
 scratch/
+# Generati da tools/vendor-libredwg-web.mjs (pacchetto npm ufficiale, impronta verificata)
+src/vendor/libredwg-web/libredwg-web.mjs
+src/vendor/libredwg-web/libredwg-web.wasm.gz
