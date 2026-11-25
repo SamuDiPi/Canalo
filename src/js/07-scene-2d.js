@@ -533,7 +533,7 @@
       // 2. TUBAZIONI: verifica di ogni tubo al posto del diagramma di carico (escluso in Stampa Minimal)
       if (!isMinimal && isConduit && metrics.conduit) {
         const mc = metrics.conduit;
-        const vTitle = wrap(`2. VERIFICA DEI TUBI - ${mc.typeName} Ø${Math.round(mc.dn)} (interno ${fmtConduitMm(mc.di)} mm): interno >= 1,3 x Ø fascio (CEI 64-8)`, tabW - 8, 2.5);
+        const vTitle = wrap(`2. VERIFICA DEI TUBI - ${mc.typeName} Ø${Math.round(mc.dn)} (interno ${fmtConduitMm(mc.di)} mm): interno >= ${fmtConduitRatio()} x Ø fascio${conduitRatio() === 1.3 ? " (CEI 64-8)" : ""}`, tabW - 8, 2.5);
         const vTitleH = Math.max(9, blockH(vTitle.length, 2.5));
         let vy = currentRightY - 2;
         rect("TABELLA", rightX, vy - vTitleH, tabW, vTitleH, mc.allOk ? "#4ade80" : "#ef4444", boxBg, true);

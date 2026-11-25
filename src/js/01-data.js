@@ -365,6 +365,7 @@
       conduitGap: 10,
       conduitAssign: "auto",
       conduitPitchM: 0,
+      conduitRatio: 1.3,   // diametro interno / diametro del fascio: 1,3 (CEI 64-8) o 1,5 (capitolati, tratti lunghi)
       trayW: 0,
       trayH: 0,
       tb: { client: "PROGETTO ESECUTIVO", project: "IMPIANTI ELETTRICI E SPECIALI", docCode: "PE-IMP-EL-PART-02", author: "STUDIO TECNICO", checker: "RESPONSABILE TECNICO", rev: "Rev. 00", date: new Date().toLocaleDateString("it-IT"), scaleRev: "Scala 1:1 - Rev.00" },

@@ -91,6 +91,7 @@
         state.conduitCols = Math.round(optNum("inpConduitCols"));
         state.conduitGap = Math.max(0, getNum("inpConduitGap", state.conduitGap));
         state.conduitAssign = getVal("inpConduitAssign", state.conduitAssign) === "manual" ? "manual" : "auto";
+        state.conduitRatio = +getVal("inpConduitRatio", state.conduitRatio) === 1.5 ? 1.5 : 1.3;
       } else {
         state.width = getNum("inpWidth", state.width);
         state.height = getNum("inpHeight", state.height);
@@ -222,6 +223,7 @@
         safeVal("inpConduitCols", +state.conduitCols > 0 ? state.conduitCols : "");
         safeVal("inpConduitGap", +state.conduitGap || 0);
         safeVal("inpConduitAssign", state.conduitAssign === "manual" ? "manual" : "auto");
+        safeVal("inpConduitRatio", +state.conduitRatio === 1.5 ? "1.5" : "1.3");
         safeVal("inpConduitPitch", +state.conduitPitchM > 0 ? state.conduitPitchM : "");
       } else {
         safeVal("inpWidth", state.width);

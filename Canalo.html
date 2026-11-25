@@ -517,7 +517,16 @@
               </div>
               <p class="helper" data-seg-help="inpConduitAssign" data-help-auto="Ogni circuito resta in un solo tubo; segnali non schermati e circuiti di sicurezza in tubi separati dall'energia." data-help-manual="I cavi restano nel tubo scelto: trascinali nel disegno da un tubo all'altro."></p>
             </div>
-            <button type="button" class="btn btn-tonal" style="height: 48px; border-radius: 12px" onclick="applyConduitProposal()" title="Sceglie il numero di tubi e il diametro più piccolo che verificano la regola dell'1,3"><svg class="ico ico-s"><use href="#i-wand"/></svg>Proponi diametro e numero di tubi</button>
+            <div>
+              <span class="seg-label" id="lbl_ratio">Diametro interno minimo</span>
+              <select id="inpConduitRatio" class="hidden" onchange="syncFromUI()" aria-hidden="true" tabindex="-1"><option value="1.3" selected>1.3</option><option value="1.5">1.5</option></select>
+              <div class="seg" role="group" aria-labelledby="lbl_ratio" data-seg-for="inpConduitRatio">
+                <button type="button" data-value="1.3"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>1,3 × fascio</button>
+                <button type="button" data-value="1.5"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>1,5 × fascio</button>
+              </div>
+              <p class="helper" data-seg-help="inpConduitRatio" data-help-1.3="Regola della CEI 64-8: diametro interno almeno 1,3 volte quello del cerchio che contiene il fascio di cavi." data-help-1.5="Margine più ampio, spesso chiesto dai capitolati o per tratti lunghi e con molte curve."></p>
+            </div>
+            <button type="button" class="btn btn-tonal" style="height: 48px; border-radius: 12px" onclick="applyConduitProposal()" title="Sceglie il numero di tubi e il diametro più piccolo che verificano il rapporto scelto"><svg class="ico ico-s"><use href="#i-wand"/></svg>Proponi diametro e numero di tubi</button>
             <p class="helper" id="conduitSummary" aria-live="polite"></p>
           </div>
 
@@ -1181,8 +1190,8 @@
               <li><strong>Tipo di tubo</strong>: rigido a vista, corrugato sottotraccia, cavidotto interrato a doppia parete, metallico in acciaio zincato. Il <strong>diametro interno</strong> in grigio è un valore indicativo del tipo: per l'esecutivo scrivi quello del catalogo del tubo scelto.</li>
               <li><strong>Tubi, Per fila, Distanza</strong>: numero di tubi, quanti per fila (vuoto = automatico) e distanza tra un tubo e l'altro.</li>
               <li><strong>Ripartizione dei cavi</strong>: <em>Automatica</em> tiene i conduttori di uno stesso circuito nello stesso tubo, mette i segnali non schermati e i circuiti di sicurezza in tubi separati dall'energia e usa i tubi che servono (gli altri restano di riserva). <em>A mano</em>: trascina un cavo nel disegno sopra un altro tubo e si sposta con tutto il suo circuito.</li>
-              <li><strong>Proponi diametro e numero di tubi</strong>: sceglie il numero di tubi più piccolo e poi il diametro più piccolo che verificano la regola dell'1,3 (diametro interno almeno 1,3 volte quello del fascio di cavi, CEI 64-8).</li>
-              <li><strong>Verifiche</strong>: regola dell'1,3 per ogni tubo, segregazione (CEI 64-8 art. 528.1), circuiti di sicurezza insieme a quelli ordinari, riempimento. La portata dei cavi usa i coefficienti di raggruppamento in tubo (IEC 60364-5-52 tab. B.52.17) e, per i cavidotti affiancati, quelli dei tubi interrati (tab. B.52.19): valori indicativi.</li>
+              <li><strong>Proponi diametro e numero di tubi</strong>: sceglie il numero di tubi più piccolo e poi il diametro più piccolo che verificano il rapporto scelto: diametro interno almeno 1,3 volte quello del fascio di cavi (CEI 64-8, default) oppure 1,5 volte (<strong>Diametro interno minimo</strong>, per capitolati che lo chiedono o tratti lunghi con molte curve).</li>
+              <li><strong>Verifiche</strong>: rapporto 1,3 (o 1,5) per ogni tubo, segregazione (CEI 64-8 art. 528.1), circuiti di sicurezza insieme a quelli ordinari, riempimento. La portata dei cavi usa i coefficienti di raggruppamento in tubo (IEC 60364-5-52 tab. B.52.17) e, per i cavidotti affiancati, quelli dei tubi interrati (tab. B.52.19): valori indicativi.</li>
               <li><strong>Staffaggio</strong>: per i tubi non c'è la verifica di carico; il pannello chiede il passo dei collari (posa a vista) o la distanza tra i pozzetti (cavidotti). Collari, manicotti, curve, pozzetti, nastro di segnalazione e tappi dei tubi di riserva sono nella distinta materiali.</li>
               <li><strong>Tavola</strong>: tubi sul layer <code>Tubazioni</code>, colonna TUBO nella distinta cavi e tabella <em>Verifica dei tubi</em> al posto del diagramma di carico.</li>
             </ul>
@@ -2122,6 +2131,7 @@
       conduitGap: 10,
       conduitAssign: "auto",
       conduitPitchM: 0,
+      conduitRatio: 1.3,   // diametro interno / diametro del fascio: 1,3 (CEI 64-8) o 1,5 (capitolati, tratti lunghi)
       trayW: 0,
       trayH: 0,
       tb: { client: "PROGETTO ESECUTIVO", project: "IMPIANTI ELETTRICI E SPECIALI", docCode: "PE-IMP-EL-PART-02", author: "STUDIO TECNICO", checker: "RESPONSABILE TECNICO", rev: "Rev. 00", date: new Date().toLocaleDateString("it-IT"), scaleRev: "Scala 1:1 - Rev.00" },
@@ -2295,6 +2305,7 @@
         state.conduitCols = Math.round(optNum("inpConduitCols"));
         state.conduitGap = Math.max(0, getNum("inpConduitGap", state.conduitGap));
         state.conduitAssign = getVal("inpConduitAssign", state.conduitAssign) === "manual" ? "manual" : "auto";
+        state.conduitRatio = +getVal("inpConduitRatio", state.conduitRatio) === 1.5 ? 1.5 : 1.3;
       } else {
         state.width = getNum("inpWidth", state.width);
         state.height = getNum("inpHeight", state.height);
@@ -2426,6 +2437,7 @@
         safeVal("inpConduitCols", +state.conduitCols > 0 ? state.conduitCols : "");
         safeVal("inpConduitGap", +state.conduitGap || 0);
         safeVal("inpConduitAssign", state.conduitAssign === "manual" ? "manual" : "auto");
+        safeVal("inpConduitRatio", +state.conduitRatio === 1.5 ? "1.5" : "1.3");
         safeVal("inpConduitPitch", +state.conduitPitchM > 0 ? state.conduitPitchM : "");
       } else {
         safeVal("inpWidth", state.width);
@@ -2967,7 +2979,8 @@
     // ============================================================================
     // 2b. TUBAZIONI: UNO O PIÙ TUBI (BANCO) AL POSTO DELLA CANALINA
     // La sezione è un banco di tubi uguali (righe e colonne). Ogni cavo ha il suo tubo (c.tube); i cavi di un tubo
-    // formano un fascio appoggiato sul fondo. Verifica: diametro interno almeno 1,3 volte quello del fascio
+    // formano un fascio appoggiato sul fondo. Verifica: diametro interno almeno 1,3 volte quello del fascio (o 1,5,
+    // state.conduitRatio)
     // (CEI 64-8), un circuito tutto nello stesso tubo, segnali non schermati separati dall'energia (CEI 64-8
     // art. 528.1). Il fascio e i coefficienti di raggruppamento sono gli stessi del modulo Impianto di CartesioCAD
     // (core/Plant.cpp: bundleDiameter, groupingFactor), così i due calcoli danno gli stessi numeri.
@@ -3000,6 +3013,16 @@
       }
     };
     const CONDUIT_MAX_COUNT = 24;
+
+    // Rapporto minimo tra diametro interno del tubo e diametro del fascio: 1,3 (CEI 64-8, default) o 1,5.
+    const CONDUIT_RATIOS = [1.3, 1.5];
+    function conduitRatio(st) {
+      const r = +(st || state).conduitRatio;
+      return CONDUIT_RATIOS.indexOf(r) >= 0 ? r : 1.3;
+    }
+    function fmtConduitRatio(st) {
+      return conduitRatio(st).toFixed(1).replace(".", ",");
+    }
 
     function conduitType(st) {
       return CONDUIT_TYPES[(st || state).conduitType] || CONDUIT_TYPES.rigido;
@@ -3269,7 +3292,7 @@
       const ductK = type.laying === "interrato" ? conduitDuctFactor(occupied, g.gap) : 1.0;
       const tubes = perTube.map(p => {
         const bundle = conduitBundleDiameter(p.ds);
-        const need = 1.3 * bundle;
+        const need = conduitRatio(st) * bundle;
         const circuits = Object.keys(p.circuits).length;
         const kGroup = conduitGroupingFactor(circuits);
         const kr = +(kGroup * type.kPosa * ductK).toFixed(2);
@@ -3337,7 +3360,7 @@
           assign.forEach((a, i) => { if (a === t) cls[conduitCableClass(st.cables[i])] = true; });
           if (cls.elv && (cls.power || cls.fire)) conflict = true;
         });
-        return conflict ? null : { assign, need: Math.max.apply(null, groups.map(ds => ds.length ? 1.3 * conduitBundleDiameter(ds) : 0)) };
+        return conflict ? null : { assign, need: Math.max.apply(null, groups.map(ds => ds.length ? conduitRatio(st) * conduitBundleDiameter(ds) : 0)) };
       };
       const cache = {};
       for (const limit of [type.comfortDn || Infinity, Infinity]) {
@@ -3434,6 +3457,7 @@
         // I tubi che servono (dal numero di classi di circuiti in su), gli altri restano di riserva; se nemmeno tutti
         // bastano, i cavi si dividono su tutti (la verifica lo segnala).
         const Di = conduitInnerDiameter(state);
+        const ratio = conduitRatio(state);
         const classes = {};
         state.cables.forEach(c => { classes[conduitCableClass(c)] = true; });
         const fitsWith = (assign, k) => {
@@ -3442,8 +3466,8 @@
             assign.forEach((a, i) => { if (a === t) { ds.push(state.cables[i].d); cls[conduitCableClass(state.cables[i])] = true; } });
             if (cls.elv && (cls.power || cls.fire)) return false;
             // Limite inferiore del fascio (area dei cavi) prima del calcolo esatto.
-            if (ds.length && 1.3 * Math.sqrt(ds.reduce((q, d) => q + d * d, 0)) > Di + 1e-9) return false;
-            if (ds.length && 1.3 * conduitBundleDiameter(ds) > Di + 1e-9) return false;
+            if (ds.length && ratio * Math.sqrt(ds.reduce((q, d) => q + d * d, 0)) > Di + 1e-9) return false;
+            if (ds.length && ratio * conduitBundleDiameter(ds) > Di + 1e-9) return false;
           }
           return true;
         };
@@ -3510,7 +3534,7 @@
         deratingFailCode,
         conduit: {
           type: state.conduitType || "rigido", typeName: type.name, laying: type.laying,
-          dn: g.D, di: g.Di, count: g.tubes.length, cols: g.cols, rows: g.rows, gap: g.gap,
+          dn: g.D, di: g.Di, ratio: conduitRatio(), count: g.tubes.length, cols: g.cols, rows: g.rows, gap: g.gap,
           allOk, worstTube: worst ? worst.n : 0, ductK: a.ductK,
           tubes: a.tubes.map(t => ({ n: t.n, cavi: t.count, circuiti: t.circuits, fascio: t.bundle, minimo: t.need, ok: t.ok,
             riempimento: t.fillPct, kr: t.kr, segregazione: !t.conflict, sicurezzaConEnergia: t.mixedFire }))
@@ -7229,7 +7253,7 @@
       // 2. TUBAZIONI: verifica di ogni tubo al posto del diagramma di carico (escluso in Stampa Minimal)
       if (!isMinimal && isConduit && metrics.conduit) {
         const mc = metrics.conduit;
-        const vTitle = wrap(`2. VERIFICA DEI TUBI - ${mc.typeName} Ø${Math.round(mc.dn)} (interno ${fmtConduitMm(mc.di)} mm): interno >= 1,3 x Ø fascio (CEI 64-8)`, tabW - 8, 2.5);
+        const vTitle = wrap(`2. VERIFICA DEI TUBI - ${mc.typeName} Ø${Math.round(mc.dn)} (interno ${fmtConduitMm(mc.di)} mm): interno >= ${fmtConduitRatio()} x Ø fascio${conduitRatio() === 1.3 ? " (CEI 64-8)" : ""}`, tabW - 8, 2.5);
         const vTitleH = Math.max(9, blockH(vTitle.length, 2.5));
         let vy = currentRightY - 2;
         rect("TABELLA", rightX, vy - vTitleH, tabW, vTitleH, mc.allOk ? "#4ade80" : "#ef4444", boxBg, true);
@@ -9689,13 +9713,13 @@
           value: `T${t.n}: ${fmtIt(t.minimo, 1)} mm`,
           text: `Nel tubo T${t.n} il fascio di ${t.cavi} cavi è Ø${fmtIt(t.fascio, 1)} mm: serve un interno di almeno ${fmtIt(t.minimo, 1)} mm, il Ø${dn} ne ha ${fmtIt(mc.di, 1)}.` +
             (bad.length > 1 ? ` Anche ${bad.slice(1).map(x => "T" + x.n).join(", ")}.` : ""),
-          ref: "Interno ≥ 1,3 × Ø fascio · CEI 64-8", action: { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
+          ref: `Interno ≥ ${fmtConduitRatio()} × Ø fascio${conduitRatio() === 1.3 ? " · CEI 64-8" : ""}`, action: { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
       } else {
         const used = mc.tubes.filter(t => t.cavi);
         const worst = used.slice().sort((a, b) => b.minimo - a.minimo)[0];
         out.push({ id: "tube", tone: "ok", chip: `Tubi Ø${dn}`, title: "Diametro dei tubi", value: `${mc.count} × Ø${dn}`,
           text: worst ? `Il fascio più grande (T${worst.n}, Ø${fmtIt(worst.fascio, 1)} mm) chiede un interno di ${fmtIt(worst.minimo, 1)} mm: il tubo ne ha ${fmtIt(mc.di, 1)}.` : "Tubi vuoti.",
-          ref: "Interno ≥ 1,3 × Ø fascio · CEI 64-8" });
+          ref: `Interno ≥ ${fmtConduitRatio()} × Ø fascio${conduitRatio() === 1.3 ? " · CEI 64-8" : ""}` });
       }
       const conflict = mc.tubes.find(t => !t.segregazione);
       if (conflict) {
@@ -9772,7 +9796,7 @@
       if (sum && mc) {
         const bad = mc.tubes.filter(t => t.cavi && !t.ok).length;
         sum.textContent = `${mc.count} ${mc.count === 1 ? "tubo" : "tubi"} Ø${Math.round(mc.dn)} (interno ${fmtIt(mc.di, 1)} mm), ingombro ${Math.round(state.width)} × ${Math.round(state.height)} mm. ` +
-          (state.cables.length ? (bad ? `${bad} ${bad === 1 ? "tubo non verifica" : "tubi non verificano"} la regola dell'1,3.` : "Tutti i tubi verificano la regola dell'1,3.") : "");
+          (state.cables.length ? (bad ? `${bad} ${bad === 1 ? "tubo non verifica" : "tubi non verificano"} il rapporto ${fmtConduitRatio()}.` : `Tutti i tubi verificano il rapporto ${fmtConduitRatio()}.`) : "");
       }
     }
 

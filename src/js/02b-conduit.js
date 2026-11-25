@@ -1,7 +1,8 @@
     // ============================================================================
     // 2b. TUBAZIONI: UNO O PIÙ TUBI (BANCO) AL POSTO DELLA CANALINA
     // La sezione è un banco di tubi uguali (righe e colonne). Ogni cavo ha il suo tubo (c.tube); i cavi di un tubo
-    // formano un fascio appoggiato sul fondo. Verifica: diametro interno almeno 1,3 volte quello del fascio
+    // formano un fascio appoggiato sul fondo. Verifica: diametro interno almeno 1,3 volte quello del fascio (o 1,5,
+    // state.conduitRatio)
     // (CEI 64-8), un circuito tutto nello stesso tubo, segnali non schermati separati dall'energia (CEI 64-8
     // art. 528.1). Il fascio e i coefficienti di raggruppamento sono gli stessi del modulo Impianto di CartesioCAD
     // (core/Plant.cpp: bundleDiameter, groupingFactor), così i due calcoli danno gli stessi numeri.
@@ -34,6 +35,16 @@
       }
     };
     const CONDUIT_MAX_COUNT = 24;
+
+    // Rapporto minimo tra diametro interno del tubo e diametro del fascio: 1,3 (CEI 64-8, default) o 1,5.
+    const CONDUIT_RATIOS = [1.3, 1.5];
+    function conduitRatio(st) {
+      const r = +(st || state).conduitRatio;
+      return CONDUIT_RATIOS.indexOf(r) >= 0 ? r : 1.3;
+    }
+    function fmtConduitRatio(st) {
+      return conduitRatio(st).toFixed(1).replace(".", ",");
+    }
 
     function conduitType(st) {
       return CONDUIT_TYPES[(st || state).conduitType] || CONDUIT_TYPES.rigido;
@@ -303,7 +314,7 @@
       const ductK = type.laying === "interrato" ? conduitDuctFactor(occupied, g.gap) : 1.0;
       const tubes = perTube.map(p => {
         const bundle = conduitBundleDiameter(p.ds);
-        const need = 1.3 * bundle;
+        const need = conduitRatio(st) * bundle;
         const circuits = Object.keys(p.circuits).length;
         const kGroup = conduitGroupingFactor(circuits);
         const kr = +(kGroup * type.kPosa * ductK).toFixed(2);
@@ -371,7 +382,7 @@
           assign.forEach((a, i) => { if (a === t) cls[conduitCableClass(st.cables[i])] = true; });
           if (cls.elv && (cls.power || cls.fire)) conflict = true;
         });
-        return conflict ? null : { assign, need: Math.max.apply(null, groups.map(ds => ds.length ? 1.3 * conduitBundleDiameter(ds) : 0)) };
+        return conflict ? null : { assign, need: Math.max.apply(null, groups.map(ds => ds.length ? conduitRatio(st) * conduitBundleDiameter(ds) : 0)) };
       };
       const cache = {};
       for (const limit of [type.comfortDn || Infinity, Infinity]) {
@@ -468,6 +479,7 @@
         // I tubi che servono (dal numero di classi di circuiti in su), gli altri restano di riserva; se nemmeno tutti
         // bastano, i cavi si dividono su tutti (la verifica lo segnala).
         const Di = conduitInnerDiameter(state);
+        const ratio = conduitRatio(state);
         const classes = {};
         state.cables.forEach(c => { classes[conduitCableClass(c)] = true; });
         const fitsWith = (assign, k) => {
@@ -476,8 +488,8 @@
             assign.forEach((a, i) => { if (a === t) { ds.push(state.cables[i].d); cls[conduitCableClass(state.cables[i])] = true; } });
             if (cls.elv && (cls.power || cls.fire)) return false;
             // Limite inferiore del fascio (area dei cavi) prima del calcolo esatto.
-            if (ds.length && 1.3 * Math.sqrt(ds.reduce((q, d) => q + d * d, 0)) > Di + 1e-9) return false;
-            if (ds.length && 1.3 * conduitBundleDiameter(ds) > Di + 1e-9) return false;
+            if (ds.length && ratio * Math.sqrt(ds.reduce((q, d) => q + d * d, 0)) > Di + 1e-9) return false;
+            if (ds.length && ratio * conduitBundleDiameter(ds) > Di + 1e-9) return false;
           }
           return true;
         };
@@ -544,7 +556,7 @@
         deratingFailCode,
         conduit: {
           type: state.conduitType || "rigido", typeName: type.name, laying: type.laying,
-          dn: g.D, di: g.Di, count: g.tubes.length, cols: g.cols, rows: g.rows, gap: g.gap,
+          dn: g.D, di: g.Di, ratio: conduitRatio(), count: g.tubes.length, cols: g.cols, rows: g.rows, gap: g.gap,
           allOk, worstTube: worst ? worst.n : 0, ductK: a.ductK,
           tubes: a.tubes.map(t => ({ n: t.n, cavi: t.count, circuiti: t.circuits, fascio: t.bundle, minimo: t.need, ok: t.ok,
             riempimento: t.fillPct, kr: t.kr, segregazione: !t.conflict, sicurezzaConEnergia: t.mixedFire }))

@@ -226,13 +226,13 @@
           value: `T${t.n}: ${fmtIt(t.minimo, 1)} mm`,
           text: `Nel tubo T${t.n} il fascio di ${t.cavi} cavi è Ø${fmtIt(t.fascio, 1)} mm: serve un interno di almeno ${fmtIt(t.minimo, 1)} mm, il Ø${dn} ne ha ${fmtIt(mc.di, 1)}.` +
             (bad.length > 1 ? ` Anche ${bad.slice(1).map(x => "T" + x.n).join(", ")}.` : ""),
-          ref: "Interno ≥ 1,3 × Ø fascio · CEI 64-8", action: { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
+          ref: `Interno ≥ ${fmtConduitRatio()} × Ø fascio${conduitRatio() === 1.3 ? " · CEI 64-8" : ""}`, action: { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
       } else {
         const used = mc.tubes.filter(t => t.cavi);
         const worst = used.slice().sort((a, b) => b.minimo - a.minimo)[0];
         out.push({ id: "tube", tone: "ok", chip: `Tubi Ø${dn}`, title: "Diametro dei tubi", value: `${mc.count} × Ø${dn}`,
           text: worst ? `Il fascio più grande (T${worst.n}, Ø${fmtIt(worst.fascio, 1)} mm) chiede un interno di ${fmtIt(worst.minimo, 1)} mm: il tubo ne ha ${fmtIt(mc.di, 1)}.` : "Tubi vuoti.",
-          ref: "Interno ≥ 1,3 × Ø fascio · CEI 64-8" });
+          ref: `Interno ≥ ${fmtConduitRatio()} × Ø fascio${conduitRatio() === 1.3 ? " · CEI 64-8" : ""}` });
       }
       const conflict = mc.tubes.find(t => !t.segregazione);
       if (conflict) {
@@ -309,7 +309,7 @@
       if (sum && mc) {
         const bad = mc.tubes.filter(t => t.cavi && !t.ok).length;
         sum.textContent = `${mc.count} ${mc.count === 1 ? "tubo" : "tubi"} Ø${Math.round(mc.dn)} (interno ${fmtIt(mc.di, 1)} mm), ingombro ${Math.round(state.width)} × ${Math.round(state.height)} mm. ` +
-          (state.cables.length ? (bad ? `${bad} ${bad === 1 ? "tubo non verifica" : "tubi non verificano"} la regola dell'1,3.` : "Tutti i tubi verificano la regola dell'1,3.") : "");
+          (state.cables.length ? (bad ? `${bad} ${bad === 1 ? "tubo non verifica" : "tubi non verificano"} il rapporto ${fmtConduitRatio()}.` : `Tutti i tubi verificano il rapporto ${fmtConduitRatio()}.`) : "");
       }
     }
 
