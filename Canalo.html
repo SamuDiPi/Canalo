@@ -9592,6 +9592,19 @@
         await importCADFile({ files: [file], value: "" });
         return { sezioni: projectSections.length, cavi: state.cables.length, titolo: state.title };
       },
+      // Progetto intero (tutte le schede canalina, come un file .ccad): CartesioCAD lo salva nel disegno.
+      project() {
+        return buildProjectPayload();
+      },
+      // Il progetto salvato nel disegno da cui si arriva, oppure un progetto nuovo se il disegno non ne ha.
+      loadProject(text) {
+        hostProjectSending = false;
+        if (text) loadProjectText(text, "progetto del disegno");
+        else newProject();
+        lastSentProject = buildProjectPayload();
+        hostProjectSending = true;
+        return { sezioni: projectSections.length };
+      },
       // Stato della scheda canalina attiva (lo stesso dei progetti salvati): CartesioCAD lo ricalcola con il suo motore.
       state() {
         return JSON.parse(JSON.stringify(state));
@@ -9616,6 +9629,27 @@
         latin1 += c <= 0xff ? dxf[i] : "?";   // come dxfToBlob: il DXF è a un byte per carattere
       }
       window.chrome.webview.postMessage({ tipo: kind, nome, dxf: btoa(latin1) });
+    }
+
+    // Ogni salvataggio automatico del progetto va anche a CartesioCAD (che lo mette nel disegno), solo se è cambiato e
+    // non più di una volta al secondo. Fino a loadProject (il progetto del disegno) non si manda nulla.
+    let hostProjectSending = false;
+    let lastSentProject = "";
+    const sendProjectToHost = debounce(() => {
+      if (!cartesioHost || !hostProjectSending) return;
+      const json = buildProjectPayload();
+      // savedAt cambia sempre: si confronta il resto.
+      const strip = s => s.replace(/"savedAt": "[^"]*",/, "");
+      if (strip(json) === strip(lastSentProject)) return;
+      lastSentProject = json;
+      window.chrome.webview.postMessage({ tipo: "progetto", progetto: json });
+    }, 1000);
+    if (cartesioHost) {
+      const persistLocal = persistProject;
+      persistProject = function () {
+        persistLocal();
+        sendProjectToHost();
+      };
     }
 
     if (cartesioHost) {
