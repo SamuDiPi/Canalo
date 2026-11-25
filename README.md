@@ -1,6 +1,8 @@
 # CanaloCAD — Cable Tray Studio
 
-Progettazione e verifica di canaline portacavi nel browser: sezione 1:1, riempimento, carichi sulle mensole, segregazione, import DWG/DXF/PDF ed export DXF, Lisp, Word e CSV.
+Progettazione e verifica di canaline portacavi e tubazioni nel browser: sezione 1:1, riempimento, carichi sulle mensole, segregazione, tubi e cavidotti con la regola dell'1,3, import DWG/DXF/PDF ed export DXF, Lisp, Word e CSV.
+
+*Sezione > Sistema > Tubazioni* trasforma una scheda in uno o più tubi uguali (rigidi, corrugati, cavidotti interrati, metallici): i cavi si ripartiscono tra i tubi (un circuito in un solo tubo, segnali non schermati separati dall'energia), ogni tubo si verifica con la regola dell'1,3 (CEI 64-8) e *Proponi diametro e numero di tubi* sceglie la combinazione più piccola. Il fascio di cavi si calcola come nel modulo Impianto di CartesioCAD, così i due calcoli danno gli stessi numeri (`src/js/02b-conduit.js`).
 
 Dentro [CartesioCAD](https://github.com/SamuDiPi/CartesioCAD) (Windows) la stessa pagina si apre in una scheda accanto ai disegni: CartesioCAD le manda le sezioni selezionate e *Esporta > Inserisci nel disegno* / *Copia come blocco* / *Copia come immagine* (visibili solo lì) riportano la tavola nel disegno, negli appunti del programma o negli appunti di Windows come immagine.
 
@@ -26,6 +28,7 @@ Moduli JavaScript:
 | `00-dwg-engine.js` | Caricamento su richiesta di LibreDWG (WASM) e pdf.js |
 | `01-data.js` | Catalogo cavi, serie, supporti, stato iniziale |
 | `02-core.js` | Sincronizzazione UI ↔ stato, posa a gravità, ricalcolo verifiche |
+| `02b-conduit.js` | Tubazioni: tipi di tubo, fascio di cavi, ripartizione sui tubi, regola dell'1,3, proposta di diametro e numero, distinta |
 | `03-loadcurve-cables.js` | Grafico curva di carico, distinta cavi |
 | `04-import-cad.js`, `05-import-pdf.js` | Import DWG/DXF e schema unifilare PDF |
 | `05b-pdf-cavi.js` | Canalina nuova dai cavi di uno schema unifilare (PDF, DWG o DXF): lettura delle tabelle dei circuiti, scelta delle linee, diametri dal database o stimati |

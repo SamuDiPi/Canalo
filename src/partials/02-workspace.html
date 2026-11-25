@@ -20,18 +20,62 @@
         <section id="panel_sezione" data-panel-body="sezione" class="flex flex-col gap-[22px]" aria-labelledby="ttl_sezione">
           <div>
             <h2 id="ttl_sezione" class="panel-title">Sezione</h2>
-            <p class="helper" style="margin-top: 4px">Dimensioni e caratteristiche della canalina.</p>
+            <p class="helper" style="margin-top: 4px">Dimensioni e caratteristiche della canalina o delle tubazioni.</p>
           </div>
           <div class="field"><label for="inpTitle">Nome sezione</label><input id="inpTitle" type="text" value="NUOVA CANALINA 01 - L=200mm H=75mm" oninput="syncFromUI()"></div>
+          <div>
+            <span class="seg-label" id="lbl_system">Sistema</span>
+            <select id="inpSystem" class="hidden" onchange="syncFromUI()" aria-hidden="true" tabindex="-1"><option value="tray" selected>tray</option><option value="conduit">conduit</option></select>
+            <div class="seg" role="group" aria-labelledby="lbl_system" data-seg-for="inpSystem">
+              <button type="button" data-value="tray"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>Canalina</button>
+              <button type="button" data-value="conduit"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>Tubazioni</button>
+            </div>
+            <p class="helper" data-seg-help="inpSystem" data-help-tray="Canale o passerella con setti, coperchio e staffaggio." data-help-conduit="Uno o più tubi uguali (anche un banco di cavidotti) con i cavi ripartiti tra i tubi."></p>
+          </div>
+
+          <div class="group hidden" data-conduit-only>
+            <h3 class="group-title">Tubazioni</h3>
+            <div class="field"><label for="inpConduitType">Tipo di tubo</label>
+              <select id="inpConduitType" onchange="syncFromUI()">
+                <option value="rigido" selected>Rigido a vista (PVC o senza alogeni)</option>
+                <option value="corrugato">Corrugato flessibile sottotraccia</option>
+                <option value="cavidotto">Cavidotto interrato a doppia parete</option>
+                <option value="metallico">Metallico in acciaio zincato</option>
+              </select><svg class="ico caret"><use href="#i-down"/></svg>
+            </div>
+            <div class="grid2">
+              <div class="field"><label for="inpConduitDn">Diametro esterno</label>
+                <select id="inpConduitDn" onchange="syncFromUI()"><option value="25" selected>Ø25</option></select><svg class="ico caret"><use href="#i-down"/></svg>
+              </div>
+              <div class="field"><label for="inpConduitInner">Diametro interno</label><input id="inpConduitInner" type="number" min="0" max="250" step="0.1" placeholder="da tabella" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">mm</span></div>
+            </div>
+            <p class="helper" id="lblConduitInnerHelp">Vuoto: il valore indicativo del tipo, mostrato in grigio. Per l'esecutivo scrivi quello del catalogo del tubo scelto.</p>
+            <div class="grid3">
+              <div class="field"><label for="inpConduitCount">Tubi</label><input id="inpConduitCount" type="number" value="1" min="1" max="24" onchange="syncFromUI()" class="mono"></div>
+              <div class="field"><label for="inpConduitCols">Per fila</label><input id="inpConduitCols" type="number" min="0" max="24" placeholder="auto" onchange="syncFromUI()" class="mono"></div>
+              <div class="field"><label for="inpConduitGap">Distanza</label><input id="inpConduitGap" type="number" value="10" min="0" max="500" step="5" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">mm</span></div>
+            </div>
+            <div>
+              <span class="seg-label" id="lbl_assign">Ripartizione dei cavi</span>
+              <select id="inpConduitAssign" class="hidden" onchange="syncFromUI()" aria-hidden="true" tabindex="-1"><option value="auto" selected>auto</option><option value="manual">manual</option></select>
+              <div class="seg" role="group" aria-labelledby="lbl_assign" data-seg-for="inpConduitAssign">
+                <button type="button" data-value="auto"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>Automatica</button>
+                <button type="button" data-value="manual"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>A mano</button>
+              </div>
+              <p class="helper" data-seg-help="inpConduitAssign" data-help-auto="Ogni circuito resta in un solo tubo; segnali non schermati e circuiti di sicurezza in tubi separati dall'energia." data-help-manual="I cavi restano nel tubo scelto: trascinali nel disegno da un tubo all'altro."></p>
+            </div>
+            <button type="button" class="btn btn-tonal" style="height: 48px; border-radius: 12px" onclick="applyConduitProposal()" title="Sceglie il numero di tubi e il diametro più piccolo che verificano la regola dell'1,3"><svg class="ico ico-s"><use href="#i-wand"/></svg>Proponi diametro e numero di tubi</button>
+            <p class="helper" id="conduitSummary" aria-live="polite"></p>
+          </div>
 
           <div class="group">
             <h3 class="group-title">Dimensioni</h3>
-            <div class="grid2">
+            <div class="grid2" data-tray-only>
               <div class="field"><label for="inpWidth">Larghezza</label><input id="inpWidth" type="number" value="200" min="50" max="1000" step="25" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">mm</span></div>
               <div class="field"><label for="inpHeight">Altezza</label><input id="inpHeight" type="number" value="75" min="35" max="300" step="5" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">mm</span></div>
             </div>
             <div class="field"><label for="inpLength">Lunghezza del tratto</label><input id="inpLength" type="number" value="30" min="3" max="1000" step="3" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">m</span></div>
-            <div>
+            <div data-tray-only>
               <span class="seg-label" id="lbl_thk">Spessore lamiera</span>
               <select id="inpThk" class="hidden" onchange="syncFromUI()" aria-hidden="true" tabindex="-1"><option value="1.5" selected>1.5</option><option value="2.0">2.0</option><option value="2.5">2.5</option></select>
               <div class="seg" role="group" aria-labelledby="lbl_thk" data-seg-for="inpThk">
@@ -40,13 +84,13 @@
                 <button type="button" data-value="2.5"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>2,5 mm</button>
               </div>
             </div>
-            <div class="flex items-end gap-2">
+            <div class="flex items-end gap-2" data-tray-only>
               <div class="field w-28 flex-none"><label for="inpSpareReserve">Riserva</label><input id="inpSpareReserve" type="number" value="30" min="0" max="80" class="mono has-suffix"><span class="suffix">%</span></div>
               <button type="button" class="btn btn-tonal flex-1" style="height: 48px; border-radius: 12px" onclick="autoSizeTray()" title="Sceglie la larghezza minima che lascia la riserva indicata"><svg class="ico ico-s"><use href="#i-wand"/></svg>Dimensiona larghezza</button>
             </div>
           </div>
 
-          <div class="group">
+          <div class="group" data-tray-only>
             <h3 class="group-title">Profilo e posa</h3>
             <div class="field"><label for="inpTrayType">Tipo di profilo</label>
               <select id="inpTrayType" onchange="syncFromUI()">
@@ -78,7 +122,7 @@
             </div>
           </div>
 
-          <div class="group">
+          <div class="group" data-tray-only>
             <h3 class="group-title">Materiale</h3>
             <div class="field"><label for="inpMaterial">Materiale e finitura</label>
               <select id="inpMaterial" onchange="syncFromUI()">
@@ -94,7 +138,7 @@
 
           <div class="group">
             <h3 class="group-title">Dotazioni</h3>
-            <div class="field"><label for="inpCover">Coperchio</label>
+            <div class="field" data-tray-only><label for="inpCover">Coperchio</label>
               <select id="inpCover" onchange="syncFromUI()">
                 <option value="none">Nessuno (a giorno)</option>
                 <option value="snap" selected>Cieco a scatto</option>
@@ -102,7 +146,7 @@
                 <option value="clamped">Con clip antisfilamento</option>
               </select><svg class="ico caret"><use href="#i-down"/></svg>
             </div>
-            <div class="field"><label for="inpEarth">Conduttore di terra (PE)</label>
+            <div class="field" data-tray-only><label for="inpEarth">Conduttore di terra (PE)</label>
               <select id="inpEarth" onchange="syncFromUI()">
                 <option value="gv16" selected>Giallo/verde FS17 16 mm²</option>
                 <option value="gv25">Giallo/verde FS17 25 mm²</option>
@@ -112,7 +156,7 @@
               </select><svg class="ico caret"><use href="#i-down"/></svg>
             </div>
             <div class="grid2">
-              <div class="field"><label for="inpClearance">Distanza dal solaio</label>
+              <div class="field" data-tray-only><label for="inpClearance">Distanza dal solaio</label>
                 <select id="inpClearance" onchange="syncFromUI()">
                   <option value="0">Non quotare</option>
                   <option value="150" selected>Min. 150 mm</option>
@@ -122,8 +166,8 @@
               <div class="field"><label for="inpRei">Varchi tagliafuoco</label><input id="inpRei" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
             </div>
             <div class="flex flex-col">
-              <div class="switch-row"><label for="chkEdge">Bordino salvacavo</label><input id="chkEdge" class="sw" type="checkbox" role="switch" checked onchange="syncFromUI()"></div>
-              <div class="switch-row"><label for="chkClamps">Fascette di ancoraggio</label><input id="chkClamps" class="sw" type="checkbox" role="switch" onchange="syncFromUI()"></div>
+              <div class="switch-row" data-tray-only><label for="chkEdge">Bordino salvacavo</label><input id="chkEdge" class="sw" type="checkbox" role="switch" checked onchange="syncFromUI()"></div>
+              <div class="switch-row" data-tray-only><label for="chkClamps">Fascette di ancoraggio</label><input id="chkClamps" class="sw" type="checkbox" role="switch" onchange="syncFromUI()"></div>
               <div class="switch-row"><label for="chkIso3D">Vista assonometrica nella tavola</label><input id="chkIso3D" class="sw" type="checkbox" role="switch" checked onchange="syncFromUI()"></div>
               <div class="switch-row"><label for="chkPlanTag">Cartellino di planimetria</label><input id="chkPlanTag" class="sw" type="checkbox" role="switch" onchange="syncFromUI()"></div>
             </div>
@@ -166,7 +210,11 @@
             <h2 id="ttl_staff" class="panel-title">Staffaggio</h2>
             <p class="helper" style="margin-top: 4px">Supporti, passo tra le mensole e verifica del carico.</p>
           </div>
-          <div class="field"><label for="inpSupport">Supporto</label>
+          <div class="flex flex-col gap-2 hidden" data-conduit-only>
+            <div class="field"><label for="inpConduitPitch" id="lblConduitPitch">Passo dei collari</label><input id="inpConduitPitch" type="number" min="0" max="200" step="0.1" placeholder="dal tipo" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">m</span></div>
+            <p class="helper" id="helpConduitPitch">Per le tubazioni il carico non si verifica: collari, manicotti o pozzetti sono nella distinta materiali.</p>
+          </div>
+          <div class="field" data-tray-only><label for="inpSupport">Supporto</label>
             <select id="inpSupport" onchange="syncFromUI()">
               <option value="none" selected>Nessun supporto</option>
               <option value="wall_light">Mensola a parete leggera C30 (35 kg a 1,5 m)</option>
@@ -177,7 +225,7 @@
               <option value="floor_omega">Supporto a pavimento su omega C40 (180 kg)</option>
             </select><svg class="ico caret"><use href="#i-down"/></svg>
           </div>
-          <div>
+          <div data-tray-only>
             <div class="flex justify-between items-baseline">
               <label for="inpSpan" class="seg-label" style="margin: 0">Passo tra le mensole</label>
               <span id="lblSpan" class="val" style="font-size: 15px">1.50 m (1500 mm)</span>
@@ -185,7 +233,7 @@
             <input id="inpSpan" type="range" min="1.0" max="3.0" step="0.05" value="1.5" oninput="syncFromUI()" class="w-full h-7" style="accent-color: var(--md-primary)">
             <div class="flex justify-between text-xs" style="color: var(--md-outline)"><span>1,0 m</span><span>3,0 m</span></div>
           </div>
-          <div class="rounded-xl p-3.5 flex flex-col gap-2.5" style="background: var(--md-surface)">
+          <div class="rounded-xl p-3.5 flex flex-col gap-2.5" style="background: var(--md-surface)" data-tray-only>
             <div class="flex items-center justify-between gap-2">
               <h3 class="group-title">Curva di portata e freccia</h3>
               <span id="curveStatusBadge" class="tag">—</span>
@@ -198,7 +246,7 @@
             </div>
             <p class="helper" style="margin: 0">Trascina sul grafico o usa le frecce per variare il passo. Valori stimati: per l'esecutivo verificali con le tabelle del costruttore.</p>
           </div>
-          <div class="field"><label for="inpSeismic">Controventatura sismica (NTC 2018)</label>
+          <div class="field" data-tray-only><label for="inpSeismic">Controventatura sismica (NTC 2018)</label>
             <select id="inpSeismic" onchange="syncFromUI()">
               <option value="none" selected>Nessuna</option>
               <option value="cable_9m">Funi in acciaio a 45° ogni 9 m</option>
@@ -210,7 +258,7 @@
             <div class="grid3">
               <div class="field"><label for="inpBends">Curve 90°</label><input id="inpBends" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
               <div class="field"><label for="inpTees">Derivazioni</label><input id="inpTees" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
-              <div class="field"><label for="inpReducers">Riduzioni</label><input id="inpReducers" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
+              <div class="field" data-tray-only><label for="inpReducers">Riduzioni</label><input id="inpReducers" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
             </div>
           </div>
         </section>

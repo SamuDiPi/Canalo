@@ -473,18 +473,62 @@
         <section id="panel_sezione" data-panel-body="sezione" class="flex flex-col gap-[22px]" aria-labelledby="ttl_sezione">
           <div>
             <h2 id="ttl_sezione" class="panel-title">Sezione</h2>
-            <p class="helper" style="margin-top: 4px">Dimensioni e caratteristiche della canalina.</p>
+            <p class="helper" style="margin-top: 4px">Dimensioni e caratteristiche della canalina o delle tubazioni.</p>
           </div>
           <div class="field"><label for="inpTitle">Nome sezione</label><input id="inpTitle" type="text" value="NUOVA CANALINA 01 - L=200mm H=75mm" oninput="syncFromUI()"></div>
+          <div>
+            <span class="seg-label" id="lbl_system">Sistema</span>
+            <select id="inpSystem" class="hidden" onchange="syncFromUI()" aria-hidden="true" tabindex="-1"><option value="tray" selected>tray</option><option value="conduit">conduit</option></select>
+            <div class="seg" role="group" aria-labelledby="lbl_system" data-seg-for="inpSystem">
+              <button type="button" data-value="tray"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>Canalina</button>
+              <button type="button" data-value="conduit"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>Tubazioni</button>
+            </div>
+            <p class="helper" data-seg-help="inpSystem" data-help-tray="Canale o passerella con setti, coperchio e staffaggio." data-help-conduit="Uno o più tubi uguali (anche un banco di cavidotti) con i cavi ripartiti tra i tubi."></p>
+          </div>
+
+          <div class="group hidden" data-conduit-only>
+            <h3 class="group-title">Tubazioni</h3>
+            <div class="field"><label for="inpConduitType">Tipo di tubo</label>
+              <select id="inpConduitType" onchange="syncFromUI()">
+                <option value="rigido" selected>Rigido a vista (PVC o senza alogeni)</option>
+                <option value="corrugato">Corrugato flessibile sottotraccia</option>
+                <option value="cavidotto">Cavidotto interrato a doppia parete</option>
+                <option value="metallico">Metallico in acciaio zincato</option>
+              </select><svg class="ico caret"><use href="#i-down"/></svg>
+            </div>
+            <div class="grid2">
+              <div class="field"><label for="inpConduitDn">Diametro esterno</label>
+                <select id="inpConduitDn" onchange="syncFromUI()"><option value="25" selected>Ø25</option></select><svg class="ico caret"><use href="#i-down"/></svg>
+              </div>
+              <div class="field"><label for="inpConduitInner">Diametro interno</label><input id="inpConduitInner" type="number" min="0" max="250" step="0.1" placeholder="da tabella" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">mm</span></div>
+            </div>
+            <p class="helper" id="lblConduitInnerHelp">Vuoto: il valore indicativo del tipo, mostrato in grigio. Per l'esecutivo scrivi quello del catalogo del tubo scelto.</p>
+            <div class="grid3">
+              <div class="field"><label for="inpConduitCount">Tubi</label><input id="inpConduitCount" type="number" value="1" min="1" max="24" onchange="syncFromUI()" class="mono"></div>
+              <div class="field"><label for="inpConduitCols">Per fila</label><input id="inpConduitCols" type="number" min="0" max="24" placeholder="auto" onchange="syncFromUI()" class="mono"></div>
+              <div class="field"><label for="inpConduitGap">Distanza</label><input id="inpConduitGap" type="number" value="10" min="0" max="500" step="5" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">mm</span></div>
+            </div>
+            <div>
+              <span class="seg-label" id="lbl_assign">Ripartizione dei cavi</span>
+              <select id="inpConduitAssign" class="hidden" onchange="syncFromUI()" aria-hidden="true" tabindex="-1"><option value="auto" selected>auto</option><option value="manual">manual</option></select>
+              <div class="seg" role="group" aria-labelledby="lbl_assign" data-seg-for="inpConduitAssign">
+                <button type="button" data-value="auto"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>Automatica</button>
+                <button type="button" data-value="manual"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>A mano</button>
+              </div>
+              <p class="helper" data-seg-help="inpConduitAssign" data-help-auto="Ogni circuito resta in un solo tubo; segnali non schermati e circuiti di sicurezza in tubi separati dall'energia." data-help-manual="I cavi restano nel tubo scelto: trascinali nel disegno da un tubo all'altro."></p>
+            </div>
+            <button type="button" class="btn btn-tonal" style="height: 48px; border-radius: 12px" onclick="applyConduitProposal()" title="Sceglie il numero di tubi e il diametro più piccolo che verificano la regola dell'1,3"><svg class="ico ico-s"><use href="#i-wand"/></svg>Proponi diametro e numero di tubi</button>
+            <p class="helper" id="conduitSummary" aria-live="polite"></p>
+          </div>
 
           <div class="group">
             <h3 class="group-title">Dimensioni</h3>
-            <div class="grid2">
+            <div class="grid2" data-tray-only>
               <div class="field"><label for="inpWidth">Larghezza</label><input id="inpWidth" type="number" value="200" min="50" max="1000" step="25" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">mm</span></div>
               <div class="field"><label for="inpHeight">Altezza</label><input id="inpHeight" type="number" value="75" min="35" max="300" step="5" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">mm</span></div>
             </div>
             <div class="field"><label for="inpLength">Lunghezza del tratto</label><input id="inpLength" type="number" value="30" min="3" max="1000" step="3" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">m</span></div>
-            <div>
+            <div data-tray-only>
               <span class="seg-label" id="lbl_thk">Spessore lamiera</span>
               <select id="inpThk" class="hidden" onchange="syncFromUI()" aria-hidden="true" tabindex="-1"><option value="1.5" selected>1.5</option><option value="2.0">2.0</option><option value="2.5">2.5</option></select>
               <div class="seg" role="group" aria-labelledby="lbl_thk" data-seg-for="inpThk">
@@ -493,13 +537,13 @@
                 <button type="button" data-value="2.5"><svg class="ico ico-s tick"><use href="#i-tick"/></svg>2,5 mm</button>
               </div>
             </div>
-            <div class="flex items-end gap-2">
+            <div class="flex items-end gap-2" data-tray-only>
               <div class="field w-28 flex-none"><label for="inpSpareReserve">Riserva</label><input id="inpSpareReserve" type="number" value="30" min="0" max="80" class="mono has-suffix"><span class="suffix">%</span></div>
               <button type="button" class="btn btn-tonal flex-1" style="height: 48px; border-radius: 12px" onclick="autoSizeTray()" title="Sceglie la larghezza minima che lascia la riserva indicata"><svg class="ico ico-s"><use href="#i-wand"/></svg>Dimensiona larghezza</button>
             </div>
           </div>
 
-          <div class="group">
+          <div class="group" data-tray-only>
             <h3 class="group-title">Profilo e posa</h3>
             <div class="field"><label for="inpTrayType">Tipo di profilo</label>
               <select id="inpTrayType" onchange="syncFromUI()">
@@ -531,7 +575,7 @@
             </div>
           </div>
 
-          <div class="group">
+          <div class="group" data-tray-only>
             <h3 class="group-title">Materiale</h3>
             <div class="field"><label for="inpMaterial">Materiale e finitura</label>
               <select id="inpMaterial" onchange="syncFromUI()">
@@ -547,7 +591,7 @@
 
           <div class="group">
             <h3 class="group-title">Dotazioni</h3>
-            <div class="field"><label for="inpCover">Coperchio</label>
+            <div class="field" data-tray-only><label for="inpCover">Coperchio</label>
               <select id="inpCover" onchange="syncFromUI()">
                 <option value="none">Nessuno (a giorno)</option>
                 <option value="snap" selected>Cieco a scatto</option>
@@ -555,7 +599,7 @@
                 <option value="clamped">Con clip antisfilamento</option>
               </select><svg class="ico caret"><use href="#i-down"/></svg>
             </div>
-            <div class="field"><label for="inpEarth">Conduttore di terra (PE)</label>
+            <div class="field" data-tray-only><label for="inpEarth">Conduttore di terra (PE)</label>
               <select id="inpEarth" onchange="syncFromUI()">
                 <option value="gv16" selected>Giallo/verde FS17 16 mm²</option>
                 <option value="gv25">Giallo/verde FS17 25 mm²</option>
@@ -565,7 +609,7 @@
               </select><svg class="ico caret"><use href="#i-down"/></svg>
             </div>
             <div class="grid2">
-              <div class="field"><label for="inpClearance">Distanza dal solaio</label>
+              <div class="field" data-tray-only><label for="inpClearance">Distanza dal solaio</label>
                 <select id="inpClearance" onchange="syncFromUI()">
                   <option value="0">Non quotare</option>
                   <option value="150" selected>Min. 150 mm</option>
@@ -575,8 +619,8 @@
               <div class="field"><label for="inpRei">Varchi tagliafuoco</label><input id="inpRei" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
             </div>
             <div class="flex flex-col">
-              <div class="switch-row"><label for="chkEdge">Bordino salvacavo</label><input id="chkEdge" class="sw" type="checkbox" role="switch" checked onchange="syncFromUI()"></div>
-              <div class="switch-row"><label for="chkClamps">Fascette di ancoraggio</label><input id="chkClamps" class="sw" type="checkbox" role="switch" onchange="syncFromUI()"></div>
+              <div class="switch-row" data-tray-only><label for="chkEdge">Bordino salvacavo</label><input id="chkEdge" class="sw" type="checkbox" role="switch" checked onchange="syncFromUI()"></div>
+              <div class="switch-row" data-tray-only><label for="chkClamps">Fascette di ancoraggio</label><input id="chkClamps" class="sw" type="checkbox" role="switch" onchange="syncFromUI()"></div>
               <div class="switch-row"><label for="chkIso3D">Vista assonometrica nella tavola</label><input id="chkIso3D" class="sw" type="checkbox" role="switch" checked onchange="syncFromUI()"></div>
               <div class="switch-row"><label for="chkPlanTag">Cartellino di planimetria</label><input id="chkPlanTag" class="sw" type="checkbox" role="switch" onchange="syncFromUI()"></div>
             </div>
@@ -619,7 +663,11 @@
             <h2 id="ttl_staff" class="panel-title">Staffaggio</h2>
             <p class="helper" style="margin-top: 4px">Supporti, passo tra le mensole e verifica del carico.</p>
           </div>
-          <div class="field"><label for="inpSupport">Supporto</label>
+          <div class="flex flex-col gap-2 hidden" data-conduit-only>
+            <div class="field"><label for="inpConduitPitch" id="lblConduitPitch">Passo dei collari</label><input id="inpConduitPitch" type="number" min="0" max="200" step="0.1" placeholder="dal tipo" onchange="syncFromUI()" class="mono has-suffix"><span class="suffix">m</span></div>
+            <p class="helper" id="helpConduitPitch">Per le tubazioni il carico non si verifica: collari, manicotti o pozzetti sono nella distinta materiali.</p>
+          </div>
+          <div class="field" data-tray-only><label for="inpSupport">Supporto</label>
             <select id="inpSupport" onchange="syncFromUI()">
               <option value="none" selected>Nessun supporto</option>
               <option value="wall_light">Mensola a parete leggera C30 (35 kg a 1,5 m)</option>
@@ -630,7 +678,7 @@
               <option value="floor_omega">Supporto a pavimento su omega C40 (180 kg)</option>
             </select><svg class="ico caret"><use href="#i-down"/></svg>
           </div>
-          <div>
+          <div data-tray-only>
             <div class="flex justify-between items-baseline">
               <label for="inpSpan" class="seg-label" style="margin: 0">Passo tra le mensole</label>
               <span id="lblSpan" class="val" style="font-size: 15px">1.50 m (1500 mm)</span>
@@ -638,7 +686,7 @@
             <input id="inpSpan" type="range" min="1.0" max="3.0" step="0.05" value="1.5" oninput="syncFromUI()" class="w-full h-7" style="accent-color: var(--md-primary)">
             <div class="flex justify-between text-xs" style="color: var(--md-outline)"><span>1,0 m</span><span>3,0 m</span></div>
           </div>
-          <div class="rounded-xl p-3.5 flex flex-col gap-2.5" style="background: var(--md-surface)">
+          <div class="rounded-xl p-3.5 flex flex-col gap-2.5" style="background: var(--md-surface)" data-tray-only>
             <div class="flex items-center justify-between gap-2">
               <h3 class="group-title">Curva di portata e freccia</h3>
               <span id="curveStatusBadge" class="tag">—</span>
@@ -651,7 +699,7 @@
             </div>
             <p class="helper" style="margin: 0">Trascina sul grafico o usa le frecce per variare il passo. Valori stimati: per l'esecutivo verificali con le tabelle del costruttore.</p>
           </div>
-          <div class="field"><label for="inpSeismic">Controventatura sismica (NTC 2018)</label>
+          <div class="field" data-tray-only><label for="inpSeismic">Controventatura sismica (NTC 2018)</label>
             <select id="inpSeismic" onchange="syncFromUI()">
               <option value="none" selected>Nessuna</option>
               <option value="cable_9m">Funi in acciaio a 45° ogni 9 m</option>
@@ -663,7 +711,7 @@
             <div class="grid3">
               <div class="field"><label for="inpBends">Curve 90°</label><input id="inpBends" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
               <div class="field"><label for="inpTees">Derivazioni</label><input id="inpTees" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
-              <div class="field"><label for="inpReducers">Riduzioni</label><input id="inpReducers" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
+              <div class="field" data-tray-only><label for="inpReducers">Riduzioni</label><input id="inpReducers" type="number" value="0" min="0" max="20" onchange="syncFromUI()" class="mono"></div>
             </div>
           </div>
         </section>
@@ -1057,6 +1105,7 @@
           <a href="#help-dwg">Importare un disegno DWG/DXF</a>
           <a href="#help-pdf">Importare lo schema unifilare</a>
           <a href="#help-sezione">Pannello Sezione</a>
+          <a href="#help-tubazioni">Tubazioni</a>
           <a href="#help-cavi">Cavi e distinta</a>
           <a href="#help-staffaggio">Staffaggio e carichi</a>
           <a href="#help-verifiche">Verifiche</a>
@@ -1122,6 +1171,20 @@
               <li><strong>Disposizione dei cavi</strong>: <em>Automatica</em> dispone i cavi per gravità, dal più grande, rispettando gli scomparti; <em>Come nel disegno</em> mantiene le posizioni importate o trascinate a mano.</li>
               <li><strong>Setti separatori</strong>: da 0 a 2. Si regolano con i cursori sotto i pulsanti oppure trascinando il setto nel disegno. Con i setti, i cavi dati e di sicurezza vanno negli scomparti dedicati.</li>
               <li><strong>Materiale</strong>, <strong>Dotazioni</strong> (coperchio, conduttore di terra, distanza dal solaio, varchi tagliafuoco, bordino, fascette) e cartellino di planimetria: determinano il disegno e il computo dei materiali.</li>
+            </ul>
+          </section>
+
+          <section id="help-tubazioni" data-help>
+            <h3>Tubazioni</h3>
+            <p>Nel pannello Sezione, <strong>Sistema &gt; Tubazioni</strong> trasforma la scheda in uno o più tubi uguali (anche un banco di cavidotti su più file). Le misure della canalina restano da parte e tornano scegliendo di nuovo <em>Canalina</em>.</p>
+            <ul>
+              <li><strong>Tipo di tubo</strong>: rigido a vista, corrugato sottotraccia, cavidotto interrato a doppia parete, metallico in acciaio zincato. Il <strong>diametro interno</strong> in grigio è un valore indicativo del tipo: per l'esecutivo scrivi quello del catalogo del tubo scelto.</li>
+              <li><strong>Tubi, Per fila, Distanza</strong>: numero di tubi, quanti per fila (vuoto = automatico) e distanza tra un tubo e l'altro.</li>
+              <li><strong>Ripartizione dei cavi</strong>: <em>Automatica</em> tiene i conduttori di uno stesso circuito nello stesso tubo, mette i segnali non schermati e i circuiti di sicurezza in tubi separati dall'energia e usa i tubi che servono (gli altri restano di riserva). <em>A mano</em>: trascina un cavo nel disegno sopra un altro tubo e si sposta con tutto il suo circuito.</li>
+              <li><strong>Proponi diametro e numero di tubi</strong>: sceglie il numero di tubi più piccolo e poi il diametro più piccolo che verificano la regola dell'1,3 (diametro interno almeno 1,3 volte quello del fascio di cavi, CEI 64-8).</li>
+              <li><strong>Verifiche</strong>: regola dell'1,3 per ogni tubo, segregazione (CEI 64-8 art. 528.1), circuiti di sicurezza insieme a quelli ordinari, riempimento. La portata dei cavi usa i coefficienti di raggruppamento in tubo (IEC 60364-5-52 tab. B.52.17) e, per i cavidotti affiancati, quelli dei tubi interrati (tab. B.52.19): valori indicativi.</li>
+              <li><strong>Staffaggio</strong>: per i tubi non c'è la verifica di carico; il pannello chiede il passo dei collari (posa a vista) o la distanza tra i pozzetti (cavidotti). Collari, manicotti, curve, pozzetti, nastro di segnalazione e tappi dei tubi di riserva sono nella distinta materiali.</li>
+              <li><strong>Tavola</strong>: tubi sul layer <code>Tubazioni</code>, colonna TUBO nella distinta cavi e tabella <em>Verifica dei tubi</em> al posto del diagramma di carico.</li>
             </ul>
           </section>
 
@@ -2046,6 +2109,21 @@
       showLoadChart: true,
       showBOM: true,
       showCartiglio: true,
+      // Sistema della sezione: canalina ("tray") o tubazioni ("conduit", vedi 02b-conduit.js). Per i tubi:
+      // tipo, diametro esterno nominale, interno (0 = dalla tabella del tipo), numero, tubi per fila (0 =
+      // automatico), distanza tra i tubi, ripartizione dei cavi ("auto" o "manual"), passo di collari o pozzetti
+      // (0 = quello del tipo). trayW/trayH: dimensioni della canalina da ripristinare tornando alla canalina.
+      system: "tray",
+      conduitType: "rigido",
+      conduitDn: 25,
+      conduitInner: 0,
+      conduitCount: 1,
+      conduitCols: 0,
+      conduitGap: 10,
+      conduitAssign: "auto",
+      conduitPitchM: 0,
+      trayW: 0,
+      trayH: 0,
       tb: { client: "PROGETTO ESECUTIVO", project: "IMPIANTI ELETTRICI E SPECIALI", docCode: "PE-IMP-EL-PART-02", author: "STUDIO TECNICO", checker: "RESPONSABILE TECNICO", rev: "Rev. 00", date: new Date().toLocaleDateString("it-IT"), scaleRev: "Scala 1:1 - Rev.00" },
       cables: []
     };
@@ -2188,8 +2266,39 @@
         if (elTitle) elTitle.value = state.title;
       }
 
-      state.width = getNum("inpWidth", state.width);
-      state.height = getNum("inpHeight", state.height);
+      // Canalina o tubazioni: al cambio la sezione si ricostruisce (dimensioni della canalina conservate).
+      const sys = getVal("inpSystem", state.system || "tray");
+      if (sys !== (state.system || "tray")) {
+        setSectionSystem(sys);
+        pushStateToUI();
+        if (typeof fitAll === "function") fitAll();
+        return;
+      }
+      if (isConduitSystem()) {
+        const optNum = (id) => { const v = String(getVal(id, "")).trim(); return v === "" || !(+v > 0) ? 0 : +v; };
+        const prevType = state.conduitType;
+        state.conduitType = getVal("inpConduitType", state.conduitType);
+        if (state.conduitType !== prevType) {
+          // Tipo nuovo: il diametro più vicino del tipo, interno e passo dalla tabella.
+          const sizes = conduitType().sizes;
+          const cur = +state.conduitDn || 0;
+          state.conduitDn = (sizes.find(sz => sz[0] >= cur) || sizes[sizes.length - 1])[0];
+          state.conduitInner = 0;
+          state.conduitPitchM = 0;
+          if (state.conduitType === "cavidotto" && +state.conduitGap > 0 && +state.conduitGap < 20) state.conduitGap = 0;
+        } else {
+          state.conduitDn = getNum("inpConduitDn", state.conduitDn);
+          state.conduitInner = optNum("inpConduitInner");
+          state.conduitPitchM = optNum("inpConduitPitch");
+        }
+        state.conduitCount = Math.max(1, Math.min(24, Math.round(getNum("inpConduitCount", state.conduitCount))));
+        state.conduitCols = Math.round(optNum("inpConduitCols"));
+        state.conduitGap = Math.max(0, getNum("inpConduitGap", state.conduitGap));
+        state.conduitAssign = getVal("inpConduitAssign", state.conduitAssign) === "manual" ? "manual" : "auto";
+      } else {
+        state.width = getNum("inpWidth", state.width);
+        state.height = getNum("inpHeight", state.height);
+      }
       state.thk = getNum("inpThk", state.thk);
       state.lengthM = getNum("inpLength", state.lengthM);
       state.trayType = getVal("inpTrayType", state.trayType);
@@ -2309,8 +2418,19 @@
       updateLayoutUI();
       updateCableCalloutsUI();
 
-      safeVal("inpWidth", state.width);
-      safeVal("inpHeight", state.height);
+      safeVal("inpSystem", state.system === "conduit" ? "conduit" : "tray");
+      if (state.system === "conduit") {
+        safeVal("inpConduitType", state.conduitType || "rigido");
+        safeVal("inpConduitInner", +state.conduitInner > 0 ? state.conduitInner : "");
+        safeVal("inpConduitCount", state.conduitCount || 1);
+        safeVal("inpConduitCols", +state.conduitCols > 0 ? state.conduitCols : "");
+        safeVal("inpConduitGap", +state.conduitGap || 0);
+        safeVal("inpConduitAssign", state.conduitAssign === "manual" ? "manual" : "auto");
+        safeVal("inpConduitPitch", +state.conduitPitchM > 0 ? state.conduitPitchM : "");
+      } else {
+        safeVal("inpWidth", state.width);
+        safeVal("inpHeight", state.height);
+      }
       safeVal("inpThk", (+state.thk || 1.5).toFixed(1)); // le option sono "1.5", "2.0", "2.5"
       safeVal("inpLength", state.lengthM);
       safeVal("inpTrayType", state.trayType);
@@ -2340,7 +2460,7 @@
       const elScaleRev = document.getElementById("inpScaleRev"); if (elScaleRev) state.tb.scaleRev = elScaleRev.value;
       const elScale = document.getElementById("inpScale"); if (elScale) state.scale = elScale.value || "1:1";
 
-      state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`).replace(/H=\s*\d+\s*mm/i, `H=${state.height}mm`);
+      if (state.system !== "conduit") state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`).replace(/H=\s*\d+\s*mm/i, `H=${state.height}mm`);
       safeVal("inpTitle", state.title);
       const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
       document.title = `${state.title} — ${APP_NAME}`;
@@ -2348,6 +2468,7 @@
       const elElec = document.getElementById("kpiElectricalCard"); if (elElec) elElec.classList.toggle("hidden", !state.pdfLoaded);
       applyThemeUI();
       safeVal("exportName", state.title.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, ""));
+      if (typeof updateConduitUI === "function") updateConduitUI();
 
       recalculateAll();
     }
@@ -2615,6 +2736,7 @@
     }
 
     function recalculateAll() {
+      if (isConduitSystem()) { recalculateConduit(); return; }
       const W = state.width, H = state.height;
       if (state.packing === "input") {
         state.cables.forEach(c => { c.x = -999; c.y = -999; });
@@ -2842,6 +2964,576 @@
       scheduleSectionSync();
     }
 
+    // ============================================================================
+    // 2b. TUBAZIONI: UNO O PIÙ TUBI (BANCO) AL POSTO DELLA CANALINA
+    // La sezione è un banco di tubi uguali (righe e colonne). Ogni cavo ha il suo tubo (c.tube); i cavi di un tubo
+    // formano un fascio appoggiato sul fondo. Verifica: diametro interno almeno 1,3 volte quello del fascio
+    // (CEI 64-8), un circuito tutto nello stesso tubo, segnali non schermati separati dall'energia (CEI 64-8
+    // art. 528.1). Il fascio e i coefficienti di raggruppamento sono gli stessi del modulo Impianto di CartesioCAD
+    // (core/Plant.cpp: bundleDiameter, groupingFactor), così i due calcoli danno gli stessi numeri.
+    // Niente async/await né ?. : questo file gira anche nel motore JavaScript di CartesioCAD.
+    // ============================================================================
+
+    // Tipi di tubo. Diametri: esterno nominale e interno minimo INDICATIVI (i dati del costruttore si scrivono nel
+    // campo "Diametro interno"). kPosa: rapporto indicativo tra la portata del cavo in tubo e quella in aria
+    // libera del catalogo (metodi di posa della CEI 64-8 Cap. 52 / CEI-UNEL 35024/1 e 35026).
+    const CONDUIT_TYPES = {
+      rigido: {
+        name: "Tubo rigido a vista", long: "Tubo rigido in PVC o senza alogeni, posa a vista su parete o soffitto",
+        comfortDn: 50, code: "TRG", laying: "vista", kPosa: 0.80, pitchM: 1.0, bar: 3, stroke: "#cbd5e1", fill: "#475569",
+        sizes: [[16, 13.0], [20, 16.9], [25, 21.4], [32, 27.8], [40, 35.4], [50, 44.3], [63, 56.5]]
+      },
+      corrugato: {
+        name: "Tubo corrugato flessibile", long: "Tubo corrugato flessibile in PVC o senza alogeni, posa sottotraccia",
+        comfortDn: 40, code: "TCF", laying: "incassato", kPosa: 0.70, pitchM: 0, bar: 0, stroke: "#a8a29e", fill: "#57534e",
+        sizes: [[16, 10.7], [20, 14.1], [25, 18.3], [32, 24.3], [40, 31.2], [50, 39.6], [63, 52.6]]
+      },
+      cavidotto: {
+        name: "Cavidotto interrato", long: "Cavidotto corrugato a doppia parete per posa interrata",
+        comfortDn: 160, code: "CAV", laying: "interrato", kPosa: 0.80, pitchM: 25, bar: 0, stroke: "#f87171", fill: "#7f1d1d",
+        sizes: [[40, 32], [50, 41], [63, 51], [75, 61], [90, 76], [110, 94], [125, 107], [140, 120], [160, 137], [200, 172]]
+      },
+      metallico: {
+        name: "Tubo metallico a vista", long: "Tubo in acciaio zincato, posa a vista",
+        comfortDn: 50, code: "TAZ", laying: "vista", kPosa: 0.80, pitchM: 1.0, bar: 3, stroke: "#e2e8f0", fill: "#64748b",
+        sizes: [[16, 12.6], [20, 16.4], [25, 21.4], [32, 28.4], [40, 35.6], [50, 45.6]]
+      }
+    };
+    const CONDUIT_MAX_COUNT = 24;
+
+    function conduitType(st) {
+      return CONDUIT_TYPES[(st || state).conduitType] || CONDUIT_TYPES.rigido;
+    }
+    function isConduitSystem(st) {
+      return (st || state).system === "conduit";
+    }
+
+    // Diametro interno: quello scritto dall'utente, altrimenti dalla tabella del tipo (fuori tabella: stesso
+    // rapporto del diametro più vicino), come tubeInnerDiameter del modulo Impianto.
+    function conduitInnerDiameter(st) {
+      st = st || state;
+      if (+st.conduitInner > 0) return +st.conduitInner;
+      const sizes = conduitType(st).sizes;
+      const dn = +st.conduitDn || sizes[0][0];
+      let best = sizes[0];
+      for (const s of sizes) {
+        if (Math.abs(s[0] - dn) < 0.01) return s[1];
+        if (Math.abs(s[0] - dn) < Math.abs(best[0] - dn)) best = s;
+      }
+      return +(dn * best[1] / best[0]).toFixed(1);
+    }
+
+    // Tubi per fila: quelli scelti, altrimenti tutti in fila fino a 4, poi su due o più file.
+    function conduitColumns(st) {
+      st = st || state;
+      const n = Math.max(1, Math.min(CONDUIT_MAX_COUNT, Math.round(+st.conduitCount || 1)));
+      const cols = Math.round(+st.conduitCols || 0);
+      if (cols > 0) return Math.min(cols, n);
+      if (n <= 4) return n;
+      if (n <= 8) return Math.ceil(n / 2);
+      return Math.ceil(Math.sqrt(n));
+    }
+
+    // Geometria del banco: centri dei tubi (T1 in basso a sinistra, poi verso destra e verso l'alto), ingombro.
+    function conduitGeometry(st) {
+      st = st || state;
+      const n = Math.max(1, Math.min(CONDUIT_MAX_COUNT, Math.round(+st.conduitCount || 1)));
+      const D = +st.conduitDn || conduitType(st).sizes[0][0];
+      const Di = Math.min(D, conduitInnerDiameter(st));
+      const gap = Math.max(0, +st.conduitGap || 0);
+      const cols = conduitColumns(st);
+      const rows = Math.ceil(n / cols);
+      const tubes = [];
+      for (let i = 0; i < n; i++) {
+        const row = Math.floor(i / cols), col = i % cols;
+        tubes.push({ i, cx: D / 2 + col * (D + gap), cy: D / 2 + row * (D + gap), D, Di });
+      }
+      return { tubes, D, Di, gap, cols, rows, W: cols * D + (cols - 1) * gap, H: rows * D + (rows - 1) * gap };
+    }
+
+    // --- Fascio di cavi (traduzione di bundleDiameter/bundleLayout di core/Plant.cpp) ----------------------------
+    // Mette i cerchi (già dal più grande) in un contenitore di raggio R, ciascuno il più esterno possibile.
+    function conduitFits(radii, R, result) {
+      const eps = 1e-9;
+      const placed = [];
+      const ok = (x, y, r) => {
+        if (Math.hypot(x, y) + r > R + 1e-7) return false;
+        for (const p of placed) if (Math.hypot(x - p.x, y - p.y) < p.r + r - 1e-7) return false;
+        return true;
+      };
+      for (const r of radii) {
+        if (r > R + eps) return false;
+        if (!placed.length) { placed.push({ x: 0, y: -(R - r), r }); continue; }
+        let bestX = 0, bestY = 0, bestDist = -1, bestAngle = 0, found = false;
+        const consider = (x, y) => {
+          if (!ok(x, y, r)) return;
+          const dist = Math.hypot(x, y);
+          const angle = Math.atan2(x, -y);
+          if (!found || dist > bestDist + 1e-9 || (Math.abs(dist - bestDist) <= 1e-9 && angle < bestAngle)) {
+            found = true; bestX = x; bestY = y; bestDist = dist; bestAngle = angle;
+          }
+        };
+        const intersect = (x1, y1, a, x2, y2, b) => {
+          const dx = x2 - x1, dy = y2 - y1;
+          const d = Math.hypot(dx, dy);
+          if (d < eps || d > a + b + 1e-9 || d < Math.abs(a - b) - 1e-9) return;
+          const l = (a * a - b * b + d * d) / (2 * d);
+          const h = Math.sqrt(Math.max(0, a * a - l * l));
+          const mx = x1 + l * dx / d, my = y1 + l * dy / d;
+          consider(mx + h * dy / d, my - h * dx / d);
+          consider(mx - h * dy / d, my + h * dx / d);
+        };
+        for (const p of placed) intersect(0, 0, R - r, p.x, p.y, p.r + r);
+        for (let i = 0; i < placed.length; i++)
+          for (let j = i + 1; j < placed.length; j++)
+            intersect(placed[i].x, placed[i].y, placed[i].r + r, placed[j].x, placed[j].y, placed[j].r + r);
+        if (!found && ok(0, 0, r)) consider(0, 0);
+        if (!found) return false;
+        placed.push({ x: bestX, y: bestY, r });
+      }
+      if (result) result.push.apply(result, placed);
+      return true;
+    }
+
+    // Diametro del cerchio più piccolo che contiene cerchi dei diametri dati (ricordato: lo stesso fascio si
+    // chiede più volte tra ripartizione, verifica e disegno).
+    const conduitBundleCache = new Map();
+    function conduitBundleDiameter(diameters) {
+      const ds = diameters.filter(d => d > 0).sort((a, b) => b - a);
+      const key = ds.join(",");
+      if (conduitBundleCache.has(key)) return conduitBundleCache.get(key);
+      const D = conduitBundleDiameterOf(ds);
+      if (conduitBundleCache.size > 400) conduitBundleCache.clear();
+      conduitBundleCache.set(key, D);
+      return D;
+    }
+    function conduitBundleDiameterOf(ds) {
+      if (!ds.length) return 0;
+      if (ds.length === 1) return ds[0];
+      if (ds.length === 2) return ds[0] + ds[1];
+      const radii = ds.map(d => d / 2);
+      let area = 0, sum = 0;
+      ds.forEach(d => { area += d * d; sum += d; });
+      let lo = Math.max(ds[0], Math.sqrt(area)) / 2;
+      let hi = sum / 2 + ds[0];
+      while (!conduitFits(radii, hi)) hi *= 1.5;
+      for (let i = 0; i < 50 && hi - lo > 1e-4; i++) {
+        const mid = (lo + hi) / 2;
+        if (conduitFits(radii, mid)) hi = mid; else lo = mid;
+      }
+      return hi * 2;
+    }
+
+    // Centri dei cerchi del fascio rispetto al centro del fascio, nell'ordine dato.
+    function conduitBundleLayout(diameters) {
+      const out = diameters.map(() => ({ x: 0, y: 0 }));
+      const D = conduitBundleDiameter(diameters);
+      if (diameters.length <= 1) return { D, pos: out };
+      const order = diameters.map((d, i) => i).sort((a, b) => diameters[b] - diameters[a] || a - b);
+      const radii = order.map(i => diameters[i] / 2);
+      let placed = [];
+      if (diameters.length === 2) {
+        placed = [{ x: 0, y: -(D / 2 - radii[0]) }, { x: 0, y: D / 2 - radii[1] }];
+      } else if (!conduitFits(radii, D / 2 + 1e-6, placed)) {
+        return { D, pos: out };
+      }
+      order.forEach((idx, k) => { if (placed[k]) out[idx] = { x: placed[k].x, y: placed[k].y }; });
+      return { D, pos: out };
+    }
+
+    // Coefficiente di riduzione per più circuiti raggruppati in tubo (IEC 60364-5-52:2009 tab. B.52.17, riga 1;
+    // CEI 64-8:2024 Cap. 52; CEI-UNEL 35024/1), come groupingFactor del modulo Impianto.
+    function conduitGroupingFactor(circuits) {
+      const table = [[1, 1.00], [2, 0.80], [3, 0.70], [4, 0.65], [5, 0.60], [6, 0.57], [7, 0.54], [8, 0.52], [9, 0.50], [12, 0.45], [16, 0.41], [20, 0.38]];
+      let k = 1.0;
+      for (const [n, v] of table) if (circuits >= n) k = v;
+      return k;
+    }
+    // Cavidotti interrati affiancati: un circuito per tubo, tubi a contatto (IEC 60364-5-52:2009 tab. B.52.19,
+    // cavi multipolari, distanza nulla) o distanziati di almeno 250 mm.
+    function conduitDuctFactor(ducts, gapMm) {
+      if (ducts <= 1) return 1.0;
+      const touching = [[2, 0.85], [3, 0.75], [4, 0.70], [5, 0.65], [6, 0.60]];
+      const spaced = [[2, 0.90], [3, 0.85], [4, 0.80], [5, 0.80], [6, 0.80]];
+      const table = gapMm >= 250 ? spaced : touching;
+      let k = 1.0;
+      for (const [n, v] of table) if (ducts >= n) k = v;
+      return k;
+    }
+
+    // Classe di un cavo per la segregazione: segnali non schermati da separare, sicurezza, energia.
+    function conduitCableClass(c) {
+      if (c.sys === "SPECIAL_ELV" && !/FTG18|FG16|0,6\/1|1kV|C-4|SCHERM|OH2/i.test(c.type || "")) return "elv";
+      if (c.sys === "BT_FIRE") return "fire";
+      return "power";
+    }
+
+    // Chiave del circuito di un cavo: i conduttori unipolari dello stesso circuito (fasi, neutro, PE) e le terne
+    // restano nello stesso tubo (CEI 64-8 art. 521.6). Un cavo multipolare è un circuito da solo (la pagina numera
+    // L1, L2... anche più cavi multipolari uguali aggiunti insieme). `idx`: posizione del cavo nella sezione.
+    function conduitCircuitKey(c, idx) {
+      if (c.trefoil && c.trefoilGroupId) return "TRF:" + c.trefoilGroupId;
+      if (typeof isUnipolarCable === "function" && !isUnipolarCable(c)) return "M:" + (idx === undefined ? String(c.code || "") : idx);
+      const base = typeof getBaseCircuitCode === "function" ? getBaseCircuitCode(c.code) : String(c.code || "");
+      return "C:" + String(base || c.code || "").toUpperCase();
+    }
+
+    // Unità da ripartire: un circuito (con tutti i suoi cavi).
+    function conduitUnits(cables) {
+      const map = new Map();
+      cables.forEach((c, idx) => {
+        const key = conduitCircuitKey(c, idx);
+        if (!map.has(key)) map.set(key, { key, idx: [], area: 0, cls: "power", ds: [] });
+        const u = map.get(key);
+        u.idx.push(idx);
+        u.ds.push(c.d);
+        u.area += Math.PI * c.d * c.d / 4;
+        const cls = conduitCableClass(c);
+        if (cls === "elv" || (cls === "fire" && u.cls === "power")) u.cls = cls;
+      });
+      return Array.from(map.values());
+    }
+
+    // Ripartizione automatica dei cavi sui tubi: tubi distinti per segnali non schermati (obbligatorio) e, se i tubi
+    // bastano, per i circuiti di sicurezza; poi i circuiti dal più grande nel tubo della stessa classe con meno area
+    // occupata (il fascio esatto si calcola dopo, una volta per tubo).
+    // Restituisce l'indice del tubo di ogni cavo (stesso ordine di cables).
+    function conduitAutoAssign(cables, count) {
+      const out = cables.map(() => 0);
+      if (!cables.length) return out;
+      const units = conduitUnits(cables).sort((a, b) => b.area - a.area);
+      const area = { power: 0, fire: 0, elv: 0 };
+      units.forEach(u => { area[u.cls] += u.area; });
+      let classes = ["power", "fire", "elv"].filter(k => area[k] > 0);
+      // Pochi tubi: la sicurezza va con l'energia (con avviso nelle verifiche); i segnali restano separati se possibile.
+      if (classes.length > count && area.fire > 0 && area.power > 0) {
+        units.forEach(u => { if (u.cls === "fire") u.cls = "power"; });
+        area.power += area.fire; area.fire = 0;
+        classes = classes.filter(k => k !== "fire");
+      }
+      if (classes.length > count) {
+        units.forEach(u => { u.cls = "power"; });
+        classes = ["power"];
+        area.power = units.reduce((s, u) => s + u.area, 0);
+      }
+      // Tubi per classe in proporzione all'area (almeno uno ciascuna).
+      const share = {};
+      let left = count - classes.length;
+      classes.forEach(k => { share[k] = 1; });
+      const total = classes.reduce((s, k) => s + area[k], 0) || 1;
+      while (left > 0) {
+        let best = classes[0], bestGap = -Infinity;
+        classes.forEach(k => {
+          const gap = area[k] / total * count - share[k];
+          if (gap > bestGap) { bestGap = gap; best = k; }
+        });
+        share[best]++;
+        left--;
+      }
+      // Tubi assegnati alle classi in ordine (energia, sicurezza, segnali).
+      const tubesOf = {};
+      let next = 0;
+      classes.forEach(k => {
+        tubesOf[k] = [];
+        for (let i = 0; i < share[k]; i++) tubesOf[k].push(next++);
+      });
+      const used = new Array(count).fill(0);
+      units.forEach(u => {
+        const list = tubesOf[u.cls] || tubesOf[classes[0]];
+        let best = list[0];
+        list.forEach(t => { if (used[t] < used[best] - 1e-9) best = t; });
+        used[best] += u.area;
+        u.idx.forEach(i => { out[i] = best; });
+      });
+      return out;
+    }
+
+    // Verifica di ogni tubo: fascio, 1,3 volte il fascio, riempimento, circuiti, coefficiente di riduzione, classi.
+    function conduitAnalyze(st) {
+      st = st || state;
+      const g = conduitGeometry(st);
+      const type = conduitType(st);
+      const n = g.tubes.length;
+      const perTube = g.tubes.map(t => ({ n: t.i + 1, cables: [], ds: [], area: 0, classes: {}, circuits: {} }));
+      st.cables.forEach((c, idx) => {
+        const t = Math.max(0, Math.min(n - 1, Math.round(+c.tube || 0)));
+        const p = perTube[t];
+        p.cables.push(idx);
+        p.ds.push(c.d);
+        p.area += Math.PI * c.d * c.d / 4;
+        p.classes[conduitCableClass(c)] = true;
+        p.circuits[conduitCircuitKey(c, idx)] = true;
+      });
+      const innerArea = Math.PI * g.Di * g.Di / 4;
+      const occupied = perTube.filter(p => p.cables.length).length;
+      const ductK = type.laying === "interrato" ? conduitDuctFactor(occupied, g.gap) : 1.0;
+      const tubes = perTube.map(p => {
+        const bundle = conduitBundleDiameter(p.ds);
+        const need = 1.3 * bundle;
+        const circuits = Object.keys(p.circuits).length;
+        const kGroup = conduitGroupingFactor(circuits);
+        const kr = +(kGroup * type.kPosa * ductK).toFixed(2);
+        const conflict = !!(p.classes.elv && (p.classes.power || p.classes.fire));
+        return {
+          n: p.n, cables: p.cables, count: p.cables.length, circuits,
+          bundle: +bundle.toFixed(1), need: +need.toFixed(1),
+          ok: !p.cables.length || g.Di + 1e-9 >= need,
+          fillPct: innerArea > 0 ? +(p.area / innerArea * 100).toFixed(1) : 0,
+          kGroup, kr, conflict, mixedFire: !!(p.classes.fire && p.classes.power),
+          classes: Object.keys(p.classes)
+        };
+      });
+      return { geometry: g, type, tubes, ductK, kPosa: type.kPosa };
+    }
+
+    // Cavi nella posizione del disegno: fascio di ogni tubo appoggiato sul fondo del tubo.
+    function conduitPlaceCables(st) {
+      st = st || state;
+      const g = conduitGeometry(st);
+      const n = g.tubes.length;
+      const groups = g.tubes.map(() => []);
+      st.cables.forEach(c => {
+        let t = Math.round(+c.tube || 0);
+        if (!(t >= 0 && t < n)) t = Math.max(0, Math.min(n - 1, t || 0));
+        c.tube = t;
+        groups[t].push(c);
+      });
+      groups.forEach((list, t) => {
+        if (!list.length) return;
+        const tube = g.tubes[t];
+        const lay = conduitBundleLayout(list.map(c => c.d));
+        // Il fascio tocca il fondo del tubo (se è più grande del tubo resta centrato: la verifica lo segnala).
+        const dy = lay.D <= tube.Di ? -(tube.Di / 2 - lay.D / 2) : 0;
+        list.forEach((c, k) => {
+          c.x = +(tube.cx + lay.pos[k].x).toFixed(1);
+          c.y = +(tube.cy + dy + lay.pos[k].y).toFixed(1);
+        });
+      });
+      return g;
+    }
+
+    // Diametro e numero di tubi proposti per i cavi della sezione. Un tubo per ogni classe di circuiti presente
+    // (energia, sicurezza, segnali non schermati), poi il numero più piccolo e il diametro più piccolo del tipo, con
+    // la ripartizione automatica; prima entro il diametro "comodo" del tipo (comfortDn: oltre, tubi difficili da
+    // posare e curvare), poi con tutti i diametri. `keepCount`: numero di tubi fisso (si cerca solo il diametro; se
+    // nessuno basta si aggiungono tubi). Null se nemmeno CONDUIT_MAX_COUNT tubi del diametro massimo bastano.
+    function proposeConduit(st, keepCount) {
+      st = st || state;
+      const type = conduitType(st);
+      if (!st.cables.length) return { dn: type.sizes[0][0], count: Math.max(1, Math.round(+st.conduitCount || 1)) };
+      const units = conduitUnits(st.cables);
+      const classes = {};
+      units.forEach(u => { classes[u.cls] = true; });
+      const minCount = Math.max(Object.keys(classes).length, keepCount ? Math.max(1, Math.round(+st.conduitCount || 1)) : 1);
+      const trial = count => {
+        const assign = conduitAutoAssign(st.cables, count);
+        const groups = [];
+        for (let i = 0; i < count; i++) groups.push([]);
+        assign.forEach((t, i) => groups[t].push(st.cables[i].d));
+        // Segnali non schermati con l'energia: non va bene.
+        let conflict = false;
+        groups.forEach((ds, t) => {
+          const cls = {};
+          assign.forEach((a, i) => { if (a === t) cls[conduitCableClass(st.cables[i])] = true; });
+          if (cls.elv && (cls.power || cls.fire)) conflict = true;
+        });
+        return conflict ? null : { assign, need: Math.max.apply(null, groups.map(ds => ds.length ? 1.3 * conduitBundleDiameter(ds) : 0)) };
+      };
+      const cache = {};
+      for (const limit of [type.comfortDn || Infinity, Infinity]) {
+        for (let count = minCount; count <= CONDUIT_MAX_COUNT; count++) {
+          if (!(count in cache)) cache[count] = trial(count);
+          const t = cache[count];
+          if (!t) continue;
+          for (const sz of type.sizes) {
+            if (sz[0] > limit) break;
+            if (sz[1] + 1e-9 >= t.need) return { dn: sz[0], count, inner: sz[1], assign: t.assign };
+          }
+        }
+      }
+      return null;
+    }
+
+    // Distinta materiali della tubazione.
+    function conduitBom(st, a) {
+      const type = conduitType(st);
+      const g = a.geometry;
+      const n = g.tubes.length;
+      const L = +st.lengthM || 0;
+      const dn = Math.round(g.D);
+      const pitch = +st.conduitPitchM > 0 ? +st.conduitPitchM : type.pitchM;
+      const bom = [
+        { code: `${type.code}-D${dn}`, desc: `${type.long} Ø${dn} mm (interno ${fmtConduitMm(g.Di)} mm)`, qty: +(n * L).toFixed(1), um: "m",
+          note: type.bar ? `${n} × ${L} m (${n * Math.ceil(L / type.bar)} barre da ${type.bar} m)` : `${n} × ${L} m` }
+      ];
+      if (type.bar && L > type.bar) {
+        bom.push({ code: `${type.code}-MAN-${dn}`, desc: `Manicotto di giunzione Ø${dn} mm`, qty: n * (Math.ceil(L / type.bar) - 1), um: "cad", note: `1 ogni ${type.bar} m` });
+      }
+      if (st.bends90 > 0) {
+        bom.push({ code: `${type.code}-CRV90-${dn}`, desc: `Curva 90° Ø${dn} mm`, qty: st.bends90 * n, um: "cad", note: `${st.bends90} per tubo` });
+      }
+      if (type.laying === "vista" && pitch > 0) {
+        bom.push({ code: `${type.code}-COL-${dn}`, desc: `Collare di fissaggio Ø${dn} mm con tassello`, qty: n * (Math.ceil(L / pitch) + 1), um: "cad", note: `passo ${pitch} m` });
+      }
+      if (st.tees > 0) {
+        bom.push({ code: `${type.code}-CAS`, desc: type.laying === "interrato" ? "Pozzetto di derivazione" : "Cassetta di derivazione con raccordi", qty: st.tees, um: "cad", note: "derivazioni del tratto" });
+      }
+      if (type.laying === "interrato") {
+        const nPoz = pitch > 0 ? Math.ceil(L / pitch) + 1 : 2;
+        bom.push({ code: `${type.code}-POZ`, desc: "Pozzetto ispezionabile con chiusino", qty: nPoz, um: "cad", note: pitch > 0 ? `ogni ${pitch} m e alle estremità` : "alle estremità" });
+        bom.push({ code: `${type.code}-NAS`, desc: "Nastro di segnalazione cavi interrati", qty: +L.toFixed(1), um: "m", note: "sopra il cavidotto" });
+        bom.push({ code: `${type.code}-TAP`, desc: `Tappo di chiusura Ø${dn} mm per tubi di riserva`, qty: 2 * a.tubes.filter(t => !t.count).length, um: "cad", note: "tubi vuoti" });
+      }
+      if (st.reiCount > 0) {
+        bom.push({ code: `FIRE-EI120-TUBI-${dn}`, desc: `Sigillatura tagliafuoco EI120 per ${n} tubi Ø${dn} mm (collare intumescente)`, qty: st.reiCount, um: "varco", note: `${n} collari per varco` });
+      }
+      return bom.filter(b => b.qty > 0);
+    }
+
+    function fmtConduitMm(v) {
+      const r = Math.round(v * 10) / 10;
+      return String(r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)).replace(".", ",");
+    }
+
+    // Etichetta corta della tubazione: "2 × Ø32 rigido".
+    function conduitLabel(st) {
+      st = st || state;
+      const n = Math.max(1, Math.round(+st.conduitCount || 1));
+      const t = st.conduitType || "rigido";
+      return `${n > 1 ? n + " × " : ""}Ø${Math.round(+st.conduitDn || 0)} ${t}`;
+    }
+
+    // Passaggio tra canalina e tubazione: le dimensioni della canalina si conservano per il ritorno.
+    function setSectionSystem(sys) {
+      if (sys !== "conduit") sys = "tray";
+      if ((state.system || "tray") === sys) return;
+      if (sys === "conduit") {
+        state.trayW = state.width;
+        state.trayH = state.height;
+        state.system = "conduit";
+        if (!(+state.conduitDn > 0)) state.conduitDn = 25;
+        state.conduitAssign = "auto";
+        const p = proposeConduit(state, false);
+        if (p) { state.conduitDn = p.dn; state.conduitCount = p.count; }
+        state.title = String(state.title || "").replace(/CANALINA/i, "TUBAZIONE").replace(/\s*-\s*L=\s*\d+\s*mm\s*H=\s*\d+\s*mm/i, "");
+      } else {
+        state.system = "tray";
+        if (+state.trayW > 0) state.width = +state.trayW;
+        if (+state.trayH > 0) state.height = +state.trayH;
+        state.title = String(state.title || "").replace(/TUBAZIONE/i, "CANALINA");
+      }
+    }
+
+    // Ricalcolo della sezione a tubi (al posto di quello della canalina in recalculateAll): ripartizione, posizioni,
+    // verifiche, distinta e risultati negli stessi campi di metrics (più metrics.conduit).
+    function recalculateConduit() {
+      const type = conduitType();
+      state.conduitCount = Math.max(1, Math.min(CONDUIT_MAX_COUNT, Math.round(+state.conduitCount || 1)));
+      if (!(+state.conduitDn > 0)) state.conduitDn = type.sizes[0][0];
+      if (state.conduitAssign !== "manual") {
+        // I tubi che servono (dal numero di classi di circuiti in su), gli altri restano di riserva; se nemmeno tutti
+        // bastano, i cavi si dividono su tutti (la verifica lo segnala).
+        const Di = conduitInnerDiameter(state);
+        const classes = {};
+        state.cables.forEach(c => { classes[conduitCableClass(c)] = true; });
+        const fitsWith = (assign, k) => {
+          for (let t = 0; t < k; t++) {
+            const ds = [], cls = {};
+            assign.forEach((a, i) => { if (a === t) { ds.push(state.cables[i].d); cls[conduitCableClass(state.cables[i])] = true; } });
+            if (cls.elv && (cls.power || cls.fire)) return false;
+            // Limite inferiore del fascio (area dei cavi) prima del calcolo esatto.
+            if (ds.length && 1.3 * Math.sqrt(ds.reduce((q, d) => q + d * d, 0)) > Di + 1e-9) return false;
+            if (ds.length && 1.3 * conduitBundleDiameter(ds) > Di + 1e-9) return false;
+          }
+          return true;
+        };
+        let assign = null;
+        for (let k = Math.min(state.conduitCount, Math.max(1, Object.keys(classes).length)); k <= state.conduitCount && !assign; k++) {
+          const a = conduitAutoAssign(state.cables, k);
+          if (fitsWith(a, k)) assign = a;
+        }
+        if (!assign) assign = conduitAutoAssign(state.cables, state.conduitCount);
+        state.cables.forEach((c, i) => { c.tube = assign[i]; });
+      }
+      const g = conduitPlaceCables(state);
+      state.width = +g.W.toFixed(1);
+      state.height = +g.H.toFixed(1);
+      state.support = "none";
+      state.septums = 0;
+      state.septumPositions = [];
+      const a = conduitAnalyze(state);
+
+      let cablesKgM = 0, cuArea = 0, maxBendR = 0, critCode = "-", jouleWm = 0, maxDv = 0, deratingFailCode = null;
+      state.cables.forEach(c => {
+        cablesKgM += c.w || 0;
+        cuArea += (c.sec || 2.5) * (c.cores || 2);
+        const rMin = Math.round(c.d * (c.bendK || 10));
+        if (rMin > maxBendR) { maxBendR = rMin; critCode = c.code; }
+        if (state.pdfLoaded && c.ib > 0) {
+          const kr = a.tubes[c.tube] ? a.tubes[c.tube].kr : 1;
+          jouleWm += (c.cores || 2) * (0.0214 / Math.max(0.5, c.sec || 2.5)) * Math.pow(c.ib, 2);
+          const kP = c.cores === 3 ? 1.732 : 2.0;
+          const vN = c.cores === 3 ? 400 : 230;
+          const dv = ((kP * state.lengthM * c.ib * (0.0214 / Math.max(0.5, c.sec || 2.5)) * 0.9) / vN) * 100;
+          if (dv > maxDv) maxDv = dv;
+          if ((c.iz0 || 27) * kr < c.ib && !deratingFailCode) deratingFailCode = c.code;
+        }
+      });
+
+      const used = a.tubes.filter(t => t.count);
+      const fillPct = used.length ? Math.max.apply(null, used.map(t => t.fillPct)) : 0;
+      const kr = used.length ? Math.min.apply(null, used.map(t => t.kr)) : 1;
+      const conflict = a.tubes.find(t => t.conflict);
+      const segConform = !conflict;
+      const segDetail = conflict
+        ? `Segnali non schermati con l'energia nel tubo T${conflict.n}: separarli`
+        : (a.tubes.some(t => t.classes.indexOf("elv") >= 0) ? "Segnali in tubi separati dall'energia" : "Solo cavi di energia");
+      const allOk = a.tubes.every(t => t.ok);
+      const worst = a.tubes.filter(t => !t.ok).sort((x, y) => (y.need - g.Di) - (x.need - g.Di))[0] || null;
+      const pullDaN = +(cablesKgM * state.lengthM * 0.35 * Math.exp(0.35 * state.bends90 * (Math.PI / 2))).toFixed(1);
+      const maxPullDaN = Math.round(Math.max(15, cuArea * 5.0));
+      const fitR = maxBendR <= 150 ? 150 : maxBendR <= 300 ? 300 : 600;
+      // Peso indicativo dei tubi: parete media (esterno - interno) / 2, PVC 1,4 kg/dm³, acciaio 7,85.
+      const wall = Math.max(0.5, (g.D - g.Di) / 2);
+      const density = state.conduitType === "metallico" ? 7.85 : 1.4;
+      const tubeKgM = +(g.tubes.length * Math.PI * (g.D - wall) * wall * density / 1000).toFixed(2);
+
+      metrics = {
+        fillPct, sparePct: +(Math.max(0, 100 - fillPct)).toFixed(1), kr, nLayers: 1,
+        kFascio: used.length ? Math.min.apply(null, used.map(t => t.kGroup)) : 1, kStrati: 1, kPosa: type.kPosa,
+        segConform, segDetail,
+        totalKgM: +(cablesKgM + tubeKgM).toFixed(2), qMaxKgM: 999, pointLoad: 0, maxPoint: 0, loadPct: 0,
+        deflectionMm: 0, maxDeflectionMm: 0,
+        pullDaN, maxPullDaN, maxBendR, critCode, fitR,
+        jouleWm: +jouleWm.toFixed(1), maxDv: +maxDv.toFixed(2),
+        bom: conduitBom(state, a),
+        deratingFailCode,
+        conduit: {
+          type: state.conduitType || "rigido", typeName: type.name, laying: type.laying,
+          dn: g.D, di: g.Di, count: g.tubes.length, cols: g.cols, rows: g.rows, gap: g.gap,
+          allOk, worstTube: worst ? worst.n : 0, ductK: a.ductK,
+          tubes: a.tubes.map(t => ({ n: t.n, cavi: t.count, circuiti: t.circuits, fascio: t.bundle, minimo: t.need, ok: t.ok,
+            riempimento: t.fillPct, kr: t.kr, segregazione: !t.conflict, sicurezzaConEnergia: t.mixedFire }))
+        }
+      };
+      state.metrics = metrics;
+      if (typeof window !== "undefined") window.metrics = metrics;
+
+      const safeSetText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      safeSetText("kpiAreaUsed", Math.round(state.cables.reduce((s, c) => s + Math.PI * c.d * c.d / 4, 0)));
+      safeSetText("kpiAreaTot", Math.round(g.tubes.length * Math.PI * g.Di * g.Di / 4));
+      safeSetText("kpiFill", `${fillPct}%`);
+      safeSetText("kpiSpare", `Riserva +${metrics.sparePct}%`);
+      safeSetText("kpiPull", pullDaN);
+      safeSetText("kpiBendR", maxBendR);
+      if (state.pdfLoaded) {
+        safeSetText("kpiJoule", metrics.jouleWm);
+        safeSetText("kpiDv", `${metrics.maxDv}%`);
+      }
+      if (typeof updateConduitUI === "function") updateConduitUI();
+      requestRender({ table: true, chart: true, scene: true });
+      scheduleSectionSync();
+    }
     // ============================================================================
     // 4. WIDGET INTERATTIVO DEDICATO CURVA DI CARICO & FRECCIA (CEI EN 61537)
     // ============================================================================
@@ -5953,6 +6645,55 @@
       return isoY;
     }
 
+
+    // Assonometria (obliqua) della tubazione: ogni tubo è un cilindro con la faccia anteriore vera, le generatrici
+    // di contorno e i cavi in sezione sulla faccia anteriore. Restituisce il nuovo punto più basso.
+    function buildConduitIsoScene(prims, leftBoxX, lowestY, leftBoxW) {
+      const isoH = 126;
+      const isoY = lowestY - isoH - 12;
+      const isLight = state.theme === "light";
+      const boxBg = isLight ? "#f8fafc" : "#0f172a";
+      const boxBorder = isLight ? "#cbd5e1" : "#38bdf8";
+      const bg = isLight ? "#ffffff" : "#04070d";
+      const txtMul = (typeof state.textScale === "number" && state.textScale > 0) ? state.textScale : 1.0;
+      const g = conduitGeometry();
+      const type = conduitType();
+      prims.push({ t: "rect", layer: "VISTA_3D_ISO", x: leftBoxX, y: isoY, w: leftBoxW, h: isoH, color: boxBorder, fill: boxBg, solid: true });
+      const text = (x, y, h, str, color) => prims.push({ t: "text", layer: "VISTA_3D_ISO", x, y, h: +(h * txtMul).toFixed(3), str, color, align: "left" });
+      text(leftBoxX + 6, isoY + isoH - 7, 2.3, `ASSONOMETRIA — ${type.name.toUpperCase()} ${conduitLabel().toUpperCase()}`, "#38bdf8");
+      text(leftBoxX + 6, isoY + isoH - 12, 1.85, `${state.cables.length} cavi | Riempimento max ${metrics.fillPct}% | Tratto ${state.lengthM} m`, isLight ? "#475569" : "#94a3b8");
+
+      const ang = 30 * Math.PI / 180;
+      const depth = 1.7 * Math.max(g.W, g.H);
+      const dx = depth * Math.cos(ang), dy = depth * Math.sin(ang);
+      const uMinX = leftBoxX + 14, uMinY = isoY + 10;
+      const availW = leftBoxW - 28, availH = isoH - 34;
+      const s = Math.min(availW / (g.W + dx), availH / (g.H + dy));
+      const ox = uMinX + (availW - (g.W + dx) * s) / 2, oy = uMinY + (availH - (g.H + dy) * s) / 2;
+      const P = (x, y, back) => ({ x: ox + (x + (back ? dx : 0)) * s, y: oy + (y + (back ? dy : 0)) * s });
+      const nx = -Math.sin(ang), ny = Math.cos(ang); // normale alla direzione di profondità
+      // Dal tubo più lontano (in alto a destra) al più vicino, così le facce anteriori coprono le generatrici dietro.
+      const order = g.tubes.slice().sort((a, b) => (b.cy - a.cy) || (b.cx - a.cx));
+      order.forEach(t => {
+        const r = t.D / 2 * s;
+        const f = P(t.cx, t.cy, false), b = P(t.cx, t.cy, true);
+        // Corpo del tubo: quadrilatero tra le generatrici, poi faccia posteriore e anteriore.
+        const pts = [
+          { x: f.x + nx * r, y: f.y + ny * r }, { x: b.x + nx * r, y: b.y + ny * r },
+          { x: b.x - nx * r, y: b.y - ny * r }, { x: f.x - nx * r, y: f.y - ny * r }
+        ];
+        prims.push({ t: "poly", layer: "VISTA_3D_ISO", pts, color: type.stroke, fill: type.fill, lw: 0.35, alpha: 1 });
+        prims.push({ t: "circle", layer: "VISTA_3D_ISO", cx: b.x, cy: b.y, r, color: type.stroke, fill: type.fill, solid: true });
+        prims.push({ t: "circle", layer: "VISTA_3D_ISO", cx: f.x, cy: f.y, r, color: type.stroke, fill: type.fill, solid: true });
+        prims.push({ t: "circle", layer: "VISTA_3D_ISO", cx: f.x, cy: f.y, r: t.Di / 2 * s, color: type.stroke, fill: bg, solid: true });
+      });
+      state.cables.forEach(c => {
+        const p = P(c.x, c.y, false);
+        const col = c.sys === "SPECIAL_ELV" ? "#38bdf8" : c.sys === "BT_FIRE" ? "#f87171" : "#f59e0b";
+        prims.push({ t: "circle", layer: "VISTA_3D_ISO", cx: p.x, cy: p.y, r: Math.max(0.3, c.d / 2 * s), color: col, fill: null, solid: false });
+      });
+      return isoY;
+    }
     // ============================================================================
     // 6. COSTRUZIONE SCENA VETTORIALE 1:1 (CON UNIPOLARI 1X & MORSETTO PE REALISTICO)
     // ============================================================================
@@ -6026,7 +6767,13 @@
         prims.push({ t: "text", layer, x, y, h: effectiveH, str: s, color: isLight && color === "#f8fafc" ? txtCol : color, align });
       };
 
-      const ceilY = H + (state.clearance > 0 ? 42 : 18);
+      const isConduit = isConduitSystem();
+      const ceilY = H + (!isConduit && state.clearance > 0 ? 42 : 18);
+      let lowestY = -thk - 18;
+      if (isConduit) {
+        lowestY = drawConduitProfile({ line, rect, circle, text }, isLight);
+      }
+      if (!isConduit) {
       if (state.clearance > 0) {
         line("STAFFAGGI", -25, ceilY, W + 25, ceilY, "#64748b", 0.6);
         for (let hx = -22; hx <= W + 20; hx += 8) line("STAFFAGGI", hx, ceilY, hx + 5, ceilY + 5, "#475569", 0.3);
@@ -6087,7 +6834,6 @@
       }
 
       // Staffaggi (Disegnati sul layer STAFFAGGI solo se configurato un supporto)
-      let lowestY = -thk - 18;
       if (state.support && state.support !== "none") {
         if (state.support.startsWith("wall_")) {
           const wallX = -25, armH = sup.armH;
@@ -6174,6 +6920,7 @@
         text("Testi", tagX - 2, tagY + 6.0, 1.95, `NODO PE M6 (${isGV ? `FS17 G/V ${secPE}mmq` : `Treccia Cu ${secPE}mmq`})`, isGV ? "#4ade80" : "#fb923c", "right");
         text("Testi", tagX - 2, tagY + 1.8, 1.65, `Continuità CEI 64-8 Art.543`, "#94a3b8", "right");
       }
+      } // fine delle parti della sola canalina
 
       // ==========================================================================
       // PUNTO 2: DISEGNO DIFFERENZIATO CAVI UNIPOLARI (1X) VS MULTIPOLARI
@@ -6240,7 +6987,7 @@
       // ========================================================================
       // FASCETTE DI ANCORAGGIO CAVI (CEI EN 61537) SU LAYER DEDICATO "FASCETTE_ANCORAGGIO"
       // ========================================================================
-      if (state.clamps && state.cables.length > 0) {
+      if (!isConduit && state.clamps && state.cables.length > 0) {
         // A. Fascette amagnetiche per terne a trifoglio
         const trfGroups = {};
         state.cables.forEach(c => {
@@ -6316,11 +7063,13 @@
         });
       }
 
-      const qY = -thk - 22;
-      line("QUOTE", 0, qY, W, qY, "#f59e0b", 0.45);
-      text("QUOTE", W / 2, qY + 2.5, 2.5, `Base L = ${W} mm`, "#fbbf24", "center");
-      line("QUOTE", W + 10, 0, W + 10, H, "#f59e0b", 0.45);
-      text("QUOTE", W + 12, H / 2 - 1, 2.5, `H=${H}mm`, "#fbbf24", "left");
+      if (!isConduit) {
+        const qY = -thk - 22;
+        line("QUOTE", 0, qY, W, qY, "#f59e0b", 0.45);
+        text("QUOTE", W / 2, qY + 2.5, 2.5, `Base L = ${W} mm`, "#fbbf24", "center");
+        line("QUOTE", W + 10, 0, W + 10, H, "#f59e0b", 0.45);
+        text("QUOTE", W + 12, H / 2 - 1, 2.5, `H=${H}mm`, "#fbbf24", "left");
+      }
 
       const isMinimal = state.layoutMode === "minimal";
       const leftBoxX = -48, leftBoxW = Math.max(200, W + 92);
@@ -6334,7 +7083,8 @@
       }
 
       if (!isMinimal && state.showIso3D) {
-        lowestY = build3DIsoScene(prims, leftBoxX, lowestY, leftBoxW, W, H, thk, mat, sup);
+        lowestY = isConduit ? buildConduitIsoScene(prims, leftBoxX, lowestY, leftBoxW)
+                            : build3DIsoScene(prims, leftBoxX, lowestY, leftBoxW, W, H, thk, mat, sup);
       }
 
       // ------------------------------------------------------------------------
@@ -6361,6 +7111,7 @@
       const showDesc = state.showTableDesc !== false && !state.hideTableDesc;
       const colDefs = [
         { key: "pos", header: "POS", col: "#cbd5e1", wrap: false },
+        ...(isConduit ? [{ key: "tube", header: "TUBO", col: "#38bdf8", wrap: false }] : []),
         { key: "code", header: "SIGLA LINEA", col: "#38bdf8", wrap: true, prio: 2 },
         ...(showDesc ? [{ key: "desc", header: "DESCRIZIONE UTENZA", col: "#f8fafc", wrap: true, prio: 1, grow: true, minW: 30 }] : []),
         { key: "type", header: "TIPO CAVO", col: "#f8fafc", wrap: true, prio: 3 },
@@ -6375,6 +7126,7 @@
         return {
           isUni,
           pos: `#${idx + 1}`,
+          tube: `T${(Math.round(+c.tube || 0)) + 1}`,
           code: c.code,
           desc: cleanUtenzaDescription(c.desc, c.code) || c.desc || "-",
           type: getDisplayCableType(c, state.cables),
@@ -6421,7 +7173,7 @@
         const cells = colDefs.map(cd => cellLines(r[cd.key], cd, T_BODY));
         return { r, cells, h: blockH(Math.max(...cells.map(l => l.length)), T_BODY) };
       });
-      const emptyLines = wrap("Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", tabW - 12, T_BODY);
+      const emptyLines = wrap(isConduit ? "Tubazione vuota (0 cavi posati)" : "Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", tabW - 12, T_BODY);
       const bodyH = bodyRows.length ? bodyRows.reduce((a, b) => a + b.h, 0) : blockH(emptyLines.length, T_BODY);
       const tableInnerH = titleH + headerH + bodyH;
 
@@ -6474,8 +7226,32 @@
 
       let currentRightY = cursorY;
 
+      // 2. TUBAZIONI: verifica di ogni tubo al posto del diagramma di carico (escluso in Stampa Minimal)
+      if (!isMinimal && isConduit && metrics.conduit) {
+        const mc = metrics.conduit;
+        const vTitle = wrap(`2. VERIFICA DEI TUBI - ${mc.typeName} Ø${Math.round(mc.dn)} (interno ${fmtConduitMm(mc.di)} mm): interno >= 1,3 x Ø fascio (CEI 64-8)`, tabW - 8, 2.5);
+        const vTitleH = Math.max(9, blockH(vTitle.length, 2.5));
+        let vy = currentRightY - 2;
+        rect("TABELLA", rightX, vy - vTitleH, tabW, vTitleH, mc.allOk ? "#4ade80" : "#ef4444", boxBg, true);
+        textLines("TABELLA", rightX + 4, vy, 2.5, vTitle, mc.allOk ? "#4ade80" : "#f87171");
+        vy -= vTitleH;
+        mc.tubes.forEach((t, i) => {
+          const txt = t.cavi
+            ? `T${t.n}: ${t.cavi} cavi, ${t.circuiti} circ. | fascio Ø${fmtConduitMm(t.fascio)} -> interno min ${fmtConduitMm(t.minimo)} mm | riempimento ${fmtConduitMm(t.riempimento)}% | Kr ${t.kr.toFixed(2).replace(".", ",")}`
+            : `T${t.n}: vuoto (riserva)`;
+          const esito = !t.cavi ? "RISERVA" : (t.ok && t.segregazione ? "OK" : (!t.ok ? "NON VERIFICATO" : "SEGREGAZIONE"));
+          const l1 = wrap(txt, tabW - 40, T_BOM);
+          const hh = Math.max(7, blockH(l1.length, T_BOM));
+          rect("TABELLA", rightX, vy - hh, tabW, hh, "#334155", i % 2 === 0 ? boxBg : boxAlt, true);
+          textLines("TABELLA", rightX + 3, vy, T_BOM, l1, "#f8fafc");
+          textLines("TABELLA", rightX + tabW - 36, vy, T_BOM, [esito], esito === "OK" ? "#4ade80" : esito === "RISERVA" ? "#94a3b8" : "#f87171");
+          vy -= hh;
+        });
+        currentRightY = vy - 4;
+      }
+
       // 2. DIAGRAMMA CURVA DI CARICO IN TAVOLA CAD (Opzionale - escluso in Stampa Minimal)
-      if (!isMinimal && state.showLoadChart !== false) {
+      if (!isMinimal && !isConduit && state.showLoadChart !== false) {
         const chartH = 54, chartY = currentRightY - chartH - 22;
         currentRightY = chartY - 6;
         rect("CURVA_CARICO", rightX, chartY, tabW, chartH + 16, "#38bdf8", boxBg, true);
@@ -6584,6 +7360,68 @@
       return { prims, bounds: { minX, maxX, minY, maxY }, rightBounds: { minX: rightX - 8, maxX, minY: currentRightY - 8, maxY: topY + (isMinimal ? 12 : 2) } };
     }
 
+
+    // Sezione a tubi: anelli dei tubi (parete piena, interno vuoto), nome e diametri di ogni tubo; per i cavidotti il
+    // letto di sabbia, per i corrugati la parete in cui sono incassati. Restituisce il punto più basso disegnato.
+    function drawConduitProfile(h, isLight) {
+      const g = conduitGeometry();
+      const type = conduitType();
+      const bg = isLight ? "#ffffff" : "#04070d";
+      const muted = isLight ? "#475569" : "#94a3b8";
+      let lowest = -18;
+      if (type.laying === "interrato") {
+        // Letto di sabbia attorno al banco (100 mm) e piano di posa.
+        const m = 100;
+        h.rect("STAFFAGGI", -m, -m, g.W + 2 * m, g.H + 2 * m, "#a16207", null, false);
+        for (let x = -m + 10; x < g.W + m; x += 25) h.line("STAFFAGGI", x, -m, x + 8, -m - 8, "#78716c", 0.3);
+        h.text("STAFFAGGI", g.W + m + 4, g.H + m - 6, 2.5, "Letto di sabbia vagliata", "#ca8a04", "left");
+        h.text("STAFFAGGI", g.W + m + 4, -m + 2, 2.5, "Piano di posa", muted, "left");
+        lowest = -m - 20;
+      } else if (type.laying === "incassato") {
+        // Parete in cui il tubo è incassato: bordo della traccia.
+        const m = 15;
+        h.line("STAFFAGGI", -m - 20, g.H + m, g.W + m + 20, g.H + m, "#78716c", 0.5);
+        for (let x = -m - 18; x < g.W + m + 18; x += 8) h.line("STAFFAGGI", x, g.H + m, x + 5, g.H + m + 5, "#57534e", 0.3);
+        h.text("STAFFAGGI", g.W + m + 22, g.H + m - 1, 2.5, "Filo parete (sottotraccia)", muted, "left");
+      } else {
+        // Posa a vista: superficie di appoggio e collare di fissaggio sotto ogni fila inferiore.
+        const y0 = -6;
+        h.line("STAFFAGGI", -25, y0, g.W + 25, y0, "#64748b", 0.6);
+        for (let x = -22; x <= g.W + 20; x += 8) h.line("STAFFAGGI", x, y0, x + 5, y0 - 5, "#475569", 0.3);
+        g.tubes.filter(t => t.cy === g.D / 2).forEach(t => {
+          h.rect("STAFFAGGI", t.cx - t.D * 0.35, y0, t.D * 0.7, 6, "#94a3b8", "#334155", true);
+        });
+        h.text("STAFFAGGI", g.W + 28, y0 - 1, 2.5, `Collari di fissaggio (passo ${(+state.conduitPitchM > 0 ? +state.conduitPitchM : type.pitchM)} m)`, muted, "left");
+        lowest = y0 - 20;
+      }
+      const a = (typeof metrics !== "undefined" && metrics && metrics.conduit) ? metrics.conduit.tubes : [];
+      g.tubes.forEach(t => {
+        h.circle("Tubazioni", t.cx, t.cy, t.D / 2, type.stroke, type.fill, true);
+        h.circle("Tubazioni", t.cx, t.cy, t.Di / 2, type.stroke, bg, true);
+        if (type.laying === "interrato" || state.conduitType === "corrugato") {
+          // Doppia parete / corrugazione: cerchio a metà parete.
+          h.circle("Tubazioni", t.cx, t.cy, (t.D + t.Di) / 4, type.stroke, null, false);
+        }
+        const res = a[t.i];
+        const bad = res && !res.ok;
+        h.text("Testi", t.cx, t.cy + t.D / 2 + 3, 2.5, `T${t.i + 1}`, bad ? "#ef4444" : "#38bdf8", "center");
+      });
+      // Quote: diametri del tubo e ingombro del banco.
+      const q = -Math.max(30, -lowest + 6);
+      h.line("QUOTE", 0, q, g.D, q, "#f59e0b", 0.45);
+      h.line("QUOTE", 0, q - 1.5, 0, q + 1.5, "#f59e0b", 0.4);
+      h.line("QUOTE", g.D, q - 1.5, g.D, q + 1.5, "#f59e0b", 0.4);
+      h.text("QUOTE", g.D / 2, q - 5, 2.5, `Ø${Math.round(g.D)} (int. ${fmtConduitMm(g.Di)}) mm`, "#fbbf24", "center");
+      if (g.tubes.length > 1) {
+        const q2 = q - 12;
+        h.line("QUOTE", 0, q2, g.W, q2, "#f59e0b", 0.45);
+        h.line("QUOTE", 0, q2 - 1.5, 0, q2 + 1.5, "#f59e0b", 0.4);
+        h.line("QUOTE", g.W, q2 - 1.5, g.W, q2 + 1.5, "#f59e0b", 0.4);
+        h.text("QUOTE", g.W / 2, q2 - 5, 2.5, `Ingombro ${Math.round(g.W)} × ${Math.round(g.H)} mm (${g.tubes.length} tubi, distanza ${Math.round(g.gap)} mm)`, "#fbbf24", "center");
+        return Math.min(lowest, q2 - 10);
+      }
+      return Math.min(lowest, q - 10);
+    }
     // ============================================================================
     // 7. MOTORE GRAFICO INTERATTIVO (PAN, ZOOM, DRAG CAVI, RIGHELLO)
     // ============================================================================
@@ -6889,6 +7727,18 @@
     }
 
     function dragCableTo(cable, pt) {
+      if (isConduitSystem()) {
+        // Tubazioni: il cavo (con tutto il suo circuito) passa nel tubo sotto il puntatore; ripartizione a mano.
+        const g = conduitGeometry();
+        const t = g.tubes.find(tb => Math.hypot(pt.x - tb.cx, pt.y - tb.cy) <= tb.D / 2);
+        if (t && t.i !== Math.round(+cable.tube || 0)) {
+          const key = conduitCircuitKey(cable, state.cables.indexOf(cable));
+          state.cables.forEach((o, i) => { if (conduitCircuitKey(o, i) === key) o.tube = t.i; });
+          state.conduitAssign = "manual";
+          pushStateToUI();
+        }
+        return;
+      }
       const oldX = cable.x, oldY = cable.y;
       const pos = resolveNonOverlappingPosition(cable, pt.x, pt.y);
       const dx = pos.x - oldX, dy = pos.y - oldY;
@@ -7560,7 +8410,7 @@
         const mParen = String(sec.title || "").match(/\(([^)]+)\)/);
         const displayName = mParen ? mParen[1].trim() : (sec.title || `Canalina ${idx + 1}`);
         const cableCount = Array.isArray(sec.cables) ? sec.cables.length : 0;
-        const dims = `${sec.width}x${sec.height} mm`;
+        const dims = sec.system === "conduit" ? conduitLabel(sec) : `${sec.width}x${sec.height} mm`;
         const tooltip = `Scheda #${idx + 1}: ${sec.title || displayName}\nDimensioni: ${dims}\nCavi posati: ${cableCount}\nSerie: ${sec.type || 'P2000'}`;
 
         // 1. Creazione Tab nello Strip orizzontale
@@ -7689,7 +8539,9 @@
       if (duplicateCurrent) {
         newSec.title = `${state.title.replace(/\s*\(Copia\)/i, "")} (Sez. ${letter}-${letter})`;
       } else {
-        newSec.title = `NUOVA CANALINA ${String(nextNum).padStart(2, "0")} - L=${state.width}mm H=${state.height}mm`;
+        newSec.title = state.system === "conduit"
+          ? `NUOVA TUBAZIONE ${String(nextNum).padStart(2, "0")}`
+          : `NUOVA CANALINA ${String(nextNum).padStart(2, "0")} - L=${state.width}mm H=${state.height}mm`;
         newSec.cables = [];
         newSec.support = "none";
         newSec.pdfLoaded = false;
@@ -8022,6 +8874,7 @@
     const CAD_LAYERS_SPEC = {
       "0":                  { aci: 7,   tc: 0xffffff, lw: 25, desc: "Default" },
       "Canalina":           { aci: 140, tc: 0x38bdf8, lw: 50, desc: "Profilo e accessori canalina" },
+      "Tubazioni":          { aci: 252, tc: 0xcbd5e1, lw: 50, desc: "Tubi e cavidotti" },
       "Cavi":               { aci: 30,  tc: 0xf59e0b, lw: 35, desc: "Guaine esterne cavi" },
       "Anime_Cavi":         { aci: 40,  tc: 0xfbbf24, lw: 25, desc: "Conduttori e trefoli cordati" },
       "STAFFAGGI":          { aci: 252, tc: 0x94a3b8, lw: 35, desc: "Supporti, mensole, tiranti, PE" },
@@ -8252,7 +9105,7 @@
 
         const aci = hexToClosestACI(p.fill);
         const tc = hexToTrueColorOrNull(p.fill);
-        const lay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
+        const lay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "Tubazioni" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
 
         if (p.t === "rect") {
           W.fillQuad(lay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, aci, tc);
@@ -8430,7 +9283,7 @@
         if (!p.fill) return;
         const isContainerBoxBg = p.t === "rect" && (p.fill === "#0f172a" || p.fill === "#04070d" || p.fill === "#1e293b") && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
         if (!exportDxfOptions.includeBackgrounds && isContainerBoxBg) return;
-        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
+        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "Tubazioni" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
         if (p.t === "rect") {
           emitSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.fill);
         } else if (p.t === "circle") {
@@ -8588,7 +9441,9 @@
       const e = escapeHtml;
       const html = `<html><head><meta charset="utf-8"></head><body style="font-family:Arial">
         <h2>RELAZIONE TECNICA DI POSA: ${e(state.title)}</h2>
-        <p>Dimensioni: L=${state.width}mm x H=${state.height}mm | Riempimento: ${metrics.fillPct}% (Riserva +${metrics.sparePct}%) | Derating CEI 35024 Kr=${metrics.kr} | Segregazione 64-8: ${metrics.segConform ? "CONFORME" : "NON CONFORME"}</p>
+        <p>${isConduitSystem() && metrics.conduit
+          ? `Tubazioni: ${metrics.conduit.typeName} ${metrics.conduit.count} x Ø${Math.round(metrics.conduit.dn)} (interno ${metrics.conduit.di} mm) | Verifica 1,3 x fascio (CEI 64-8): ${metrics.conduit.allOk ? "VERIFICATA" : "NON VERIFICATA"} | Riempimento max: ${metrics.fillPct}% | Kr=${metrics.kr}`
+          : `Dimensioni: L=${state.width}mm x H=${state.height}mm | Riempimento: ${metrics.fillPct}% (Riserva +${metrics.sparePct}%) | Derating CEI 35024 Kr=${metrics.kr}`} | Segregazione 64-8: ${metrics.segConform ? "CONFORME" : "NON CONFORME"}</p>
         <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%">
           <tr><th>Pos</th><th>Sigla</th><th>Descrizione</th><th>Tipo</th><th>Formazione</th><th>Ø (mm)</th></tr>
           ${state.cables.map((c, i) => `<tr><td>#${i + 1}</td><td>${e(c.code)}</td><td>${e(c.desc)}</td><td>${e(c.type)}</td><td>${e(c.form)}</td><td>${e(c.d)}</td></tr>`).join("")}
@@ -8686,6 +9541,8 @@
 
       if (n === 0) {
         out.push({ id: "empty", tone: "info", chip: "Nessun cavo", title: "Nessun cavo nella sezione", text: "Aggiungi cavi dal catalogo oppure importa un disegno DWG/DXF.", action: { id: "addCables", label: "Aggiungi cavi" } });
+      } else if (isConduitSystem() && m.conduit) {
+        conduitChecks(m, out);
       } else {
         if (m.segConform === false) {
           const code = (String(m.segDetail || "").match(/Conflitto (.+?):/) || [])[1] || "di segnale";
@@ -8710,7 +9567,9 @@
         }
       }
 
-      if (!hasSupport) {
+      if (isConduitSystem()) {
+        // Tubazioni: niente verifica di carico (collari, manicotti e pozzetti sono nella distinta).
+      } else if (!hasSupport) {
         out.push({ id: "load", tone: "info", chip: "Staffaggio da definire", title: "Staffaggio non definito", text: "Scegli un supporto per verificare carico sulle mensole e freccia.", action: { id: "chooseSupport", label: "Scegli supporto" } });
       } else {
         if ((m.loadPct || 0) <= 100) {
@@ -8810,6 +9669,110 @@
       } else if (id === "addCables") {
         showPanel("cavi", true);
         setTimeout(() => document.getElementById("selCableCatalog")?.focus(), 0);
+      } else if (id === "proposeConduit") {
+        applyConduitProposal();
+      } else if (id === "conduitAuto") {
+        state.conduitAssign = "auto";
+        pushStateToUI();
+        toast("Ripartizione automatica dei cavi", "ok", { label: "Annulla", onClick: undoLastChange });
+      }
+    }
+
+    // --- Tubazioni ---------------------------------------------------------------
+    function conduitChecks(m, out) {
+      const mc = m.conduit;
+      const bad = mc.tubes.filter(t => t.cavi && !t.ok);
+      const dn = Math.round(mc.dn);
+      if (bad.length) {
+        const t = bad[0];
+        out.push({ id: "tube", tone: "error", chip: `Tubi insufficienti (${bad.length})`, title: "Diametro dei tubi insufficiente",
+          value: `T${t.n}: ${fmtIt(t.minimo, 1)} mm`,
+          text: `Nel tubo T${t.n} il fascio di ${t.cavi} cavi è Ø${fmtIt(t.fascio, 1)} mm: serve un interno di almeno ${fmtIt(t.minimo, 1)} mm, il Ø${dn} ne ha ${fmtIt(mc.di, 1)}.` +
+            (bad.length > 1 ? ` Anche ${bad.slice(1).map(x => "T" + x.n).join(", ")}.` : ""),
+          ref: "Interno ≥ 1,3 × Ø fascio · CEI 64-8", action: { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
+      } else {
+        const used = mc.tubes.filter(t => t.cavi);
+        const worst = used.slice().sort((a, b) => b.minimo - a.minimo)[0];
+        out.push({ id: "tube", tone: "ok", chip: `Tubi Ø${dn}`, title: "Diametro dei tubi", value: `${mc.count} × Ø${dn}`,
+          text: worst ? `Il fascio più grande (T${worst.n}, Ø${fmtIt(worst.fascio, 1)} mm) chiede un interno di ${fmtIt(worst.minimo, 1)} mm: il tubo ne ha ${fmtIt(mc.di, 1)}.` : "Tubi vuoti.",
+          ref: "Interno ≥ 1,3 × Ø fascio · CEI 64-8" });
+      }
+      const conflict = mc.tubes.find(t => !t.segregazione);
+      if (conflict) {
+        out.push({ id: "seg", tone: "error", chip: "Segregazione", title: "Segnali e energia nello stesso tubo",
+          text: `Nel tubo T${conflict.n} ci sono cavi di segnale non schermati con cavi di energia: vanno in tubi separati.`,
+          ref: "Segregazione · CEI 64-8 art. 528.1",
+          action: state.conduitAssign === "manual" ? { id: "conduitAuto", label: "Ripartizione automatica" } : { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
+      } else {
+        out.push({ id: "seg", tone: "ok", chip: "Segregazione", title: "Segregazione rispettata",
+          text: state.cables.some(c => conduitCableClass(c) === "elv") ? "I segnali non schermati sono in tubi separati dall'energia." : "Nella sezione non ci sono segnali non schermati.",
+          ref: "CEI 64-8 art. 528.1" });
+      }
+      const mixed = mc.tubes.find(t => t.sicurezzaConEnergia);
+      if (mixed) {
+        out.push({ id: "safety", tone: "warn", chip: "Circuiti di sicurezza", title: "Sicurezza con circuiti ordinari",
+          text: `Nel tubo T${mixed.n} i circuiti di sicurezza sono insieme a circuiti ordinari: verifica che sia ammesso o usa un tubo in più.`,
+          ref: "CEI 64-8 Sez. 56", action: { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
+      }
+      const empty = mc.tubes.filter(t => !t.cavi).length;
+      out.push({ id: "fill", tone: "info", chip: `Riempimento ${fmtIt(m.fillPct, 0)} %`, title: "Riempimento dei tubi", value: `${fmtIt(m.fillPct, 1)} %`,
+        text: `Il tubo più pieno occupa il ${fmtIt(m.fillPct, 0)} % della sezione interna.` + (empty ? ` ${empty === 1 ? "Un tubo è" : empty + " tubi sono"} di riserva.` : "") });
+    }
+
+    // Numero di tubi e diametro proposti (ripartizione automatica): numero fisso se l'utente l'ha alzato oltre la proposta.
+    function applyConduitProposal() {
+      if (!isConduitSystem()) return;
+      if (!state.cables.length) { toast("Aggiungi prima i cavi della tubazione", "info"); return; }
+      const p = proposeConduit(state, false);
+      if (!p) {
+        toast("Nessuna combinazione di tubi di questo tipo basta: scegli un tipo con diametri più grandi o dividi la sezione", "error");
+        return;
+      }
+      state.conduitDn = p.dn;
+      state.conduitCount = p.count;
+      state.conduitInner = 0;
+      state.conduitAssign = "auto";
+      pushStateToUI();
+      fitAll();
+      toast(`Proposta: ${p.count} ${p.count === 1 ? "tubo" : "tubi"} Ø${p.dn}`, "ok", { label: "Annulla", onClick: undoLastChange });
+    }
+
+    // Campi del pannello secondo il sistema (canalina o tubazioni) e diametri del tipo di tubo.
+    function updateConduitUI() {
+      const conduit = isConduitSystem();
+      document.querySelectorAll("[data-tray-only]").forEach(el => el.classList.toggle("hidden", conduit));
+      document.querySelectorAll("[data-conduit-only]").forEach(el => el.classList.toggle("hidden", !conduit));
+      if (!conduit) return;
+      const type = conduitType();
+      const sel = document.getElementById("inpConduitDn");
+      if (sel) {
+        const key = state.conduitType + ":" + type.sizes.map(sz => sz[0]).join(",");
+        if (sel.dataset.key !== key) {
+          sel.innerHTML = type.sizes.map(sz => `<option value="${sz[0]}">Ø${sz[0]}</option>`).join("");
+          sel.dataset.key = key;
+        }
+        if (!type.sizes.some(sz => sz[0] === +state.conduitDn)) {
+          sel.insertAdjacentHTML("beforeend", `<option value="${state.conduitDn}">Ø${state.conduitDn}</option>`);
+          sel.dataset.key = "";
+        }
+        sel.value = String(state.conduitDn);
+      }
+      const inner = document.getElementById("inpConduitInner");
+      if (inner) inner.placeholder = fmtIt(conduitInnerDiameter(Object.assign({}, state, { conduitInner: 0 })), 1);
+      const pitchLbl = document.getElementById("lblConduitPitch");
+      const pitchHelp = document.getElementById("helpConduitPitch");
+      const pitch = document.getElementById("inpConduitPitch");
+      if (pitchLbl) pitchLbl.textContent = type.laying === "interrato" ? "Pozzetti ogni" : type.laying === "vista" ? "Passo dei collari" : "Passo (non usato)";
+      if (pitch) { pitch.placeholder = type.pitchM ? fmtIt(type.pitchM, 1) : "—"; pitch.disabled = type.laying === "incassato"; }
+      if (pitchHelp) pitchHelp.textContent = type.laying === "incassato"
+        ? "Tubi sottotraccia: niente collari. Manicotti e curve sono nella distinta materiali."
+        : "Per le tubazioni il carico non si verifica: collari, manicotti o pozzetti sono nella distinta materiali.";
+      const sum = document.getElementById("conduitSummary");
+      const mc = metrics && metrics.conduit;
+      if (sum && mc) {
+        const bad = mc.tubes.filter(t => t.cavi && !t.ok).length;
+        sum.textContent = `${mc.count} ${mc.count === 1 ? "tubo" : "tubi"} Ø${Math.round(mc.dn)} (interno ${fmtIt(mc.di, 1)} mm), ingombro ${Math.round(state.width)} × ${Math.round(state.height)} mm. ` +
+          (state.cables.length ? (bad ? `${bad} ${bad === 1 ? "tubo non verifica" : "tubi non verificano"} la regola dell'1,3.` : "Tutti i tubi verificano la regola dell'1,3.") : "");
       }
     }
 

@@ -191,6 +191,7 @@
     const CAD_LAYERS_SPEC = {
       "0":                  { aci: 7,   tc: 0xffffff, lw: 25, desc: "Default" },
       "Canalina":           { aci: 140, tc: 0x38bdf8, lw: 50, desc: "Profilo e accessori canalina" },
+      "Tubazioni":          { aci: 252, tc: 0xcbd5e1, lw: 50, desc: "Tubi e cavidotti" },
       "Cavi":               { aci: 30,  tc: 0xf59e0b, lw: 35, desc: "Guaine esterne cavi" },
       "Anime_Cavi":         { aci: 40,  tc: 0xfbbf24, lw: 25, desc: "Conduttori e trefoli cordati" },
       "STAFFAGGI":          { aci: 252, tc: 0x94a3b8, lw: 35, desc: "Supporti, mensole, tiranti, PE" },
@@ -421,7 +422,7 @@
 
         const aci = hexToClosestACI(p.fill);
         const tc = hexToTrueColorOrNull(p.fill);
-        const lay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
+        const lay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "Tubazioni" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
 
         if (p.t === "rect") {
           W.fillQuad(lay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, aci, tc);
@@ -599,7 +600,7 @@
         if (!p.fill) return;
         const isContainerBoxBg = p.t === "rect" && (p.fill === "#0f172a" || p.fill === "#04070d" || p.fill === "#1e293b") && (p.layer === "TABELLA" || p.layer === "VISTA_3D_ISO" || p.layer === "CURVA_CARICO" || p.layer === "CORNICE");
         if (!exportDxfOptions.includeBackgrounds && isContainerBoxBg) return;
-        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
+        const fillLay = (p.layer === "Cavi" || p.layer === "Anime_Cavi" || p.layer === "Canalina" || p.layer === "Tubazioni" || p.layer === "VISTA_3D_ISO") ? p.layer : "SFONDI_RIEMPIMENTI";
         if (p.t === "rect") {
           emitSolidQuad(fillLay, p.x, p.y, p.x + p.w, p.y, p.x + p.w, p.y + p.h, p.x, p.y + p.h, p.fill);
         } else if (p.t === "circle") {
@@ -757,7 +758,9 @@
       const e = escapeHtml;
       const html = `<html><head><meta charset="utf-8"></head><body style="font-family:Arial">
         <h2>RELAZIONE TECNICA DI POSA: ${e(state.title)}</h2>
-        <p>Dimensioni: L=${state.width}mm x H=${state.height}mm | Riempimento: ${metrics.fillPct}% (Riserva +${metrics.sparePct}%) | Derating CEI 35024 Kr=${metrics.kr} | Segregazione 64-8: ${metrics.segConform ? "CONFORME" : "NON CONFORME"}</p>
+        <p>${isConduitSystem() && metrics.conduit
+          ? `Tubazioni: ${metrics.conduit.typeName} ${metrics.conduit.count} x Ø${Math.round(metrics.conduit.dn)} (interno ${metrics.conduit.di} mm) | Verifica 1,3 x fascio (CEI 64-8): ${metrics.conduit.allOk ? "VERIFICATA" : "NON VERIFICATA"} | Riempimento max: ${metrics.fillPct}% | Kr=${metrics.kr}`
+          : `Dimensioni: L=${state.width}mm x H=${state.height}mm | Riempimento: ${metrics.fillPct}% (Riserva +${metrics.sparePct}%) | Derating CEI 35024 Kr=${metrics.kr}`} | Segregazione 64-8: ${metrics.segConform ? "CONFORME" : "NON CONFORME"}</p>
         <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%">
           <tr><th>Pos</th><th>Sigla</th><th>Descrizione</th><th>Tipo</th><th>Formazione</th><th>Ø (mm)</th></tr>
           ${state.cables.map((c, i) => `<tr><td>#${i + 1}</td><td>${e(c.code)}</td><td>${e(c.desc)}</td><td>${e(c.type)}</td><td>${e(c.form)}</td><td>${e(c.d)}</td></tr>`).join("")}

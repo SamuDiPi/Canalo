@@ -459,3 +459,52 @@
       return isoY;
     }
 
+
+    // Assonometria (obliqua) della tubazione: ogni tubo è un cilindro con la faccia anteriore vera, le generatrici
+    // di contorno e i cavi in sezione sulla faccia anteriore. Restituisce il nuovo punto più basso.
+    function buildConduitIsoScene(prims, leftBoxX, lowestY, leftBoxW) {
+      const isoH = 126;
+      const isoY = lowestY - isoH - 12;
+      const isLight = state.theme === "light";
+      const boxBg = isLight ? "#f8fafc" : "#0f172a";
+      const boxBorder = isLight ? "#cbd5e1" : "#38bdf8";
+      const bg = isLight ? "#ffffff" : "#04070d";
+      const txtMul = (typeof state.textScale === "number" && state.textScale > 0) ? state.textScale : 1.0;
+      const g = conduitGeometry();
+      const type = conduitType();
+      prims.push({ t: "rect", layer: "VISTA_3D_ISO", x: leftBoxX, y: isoY, w: leftBoxW, h: isoH, color: boxBorder, fill: boxBg, solid: true });
+      const text = (x, y, h, str, color) => prims.push({ t: "text", layer: "VISTA_3D_ISO", x, y, h: +(h * txtMul).toFixed(3), str, color, align: "left" });
+      text(leftBoxX + 6, isoY + isoH - 7, 2.3, `ASSONOMETRIA — ${type.name.toUpperCase()} ${conduitLabel().toUpperCase()}`, "#38bdf8");
+      text(leftBoxX + 6, isoY + isoH - 12, 1.85, `${state.cables.length} cavi | Riempimento max ${metrics.fillPct}% | Tratto ${state.lengthM} m`, isLight ? "#475569" : "#94a3b8");
+
+      const ang = 30 * Math.PI / 180;
+      const depth = 1.7 * Math.max(g.W, g.H);
+      const dx = depth * Math.cos(ang), dy = depth * Math.sin(ang);
+      const uMinX = leftBoxX + 14, uMinY = isoY + 10;
+      const availW = leftBoxW - 28, availH = isoH - 34;
+      const s = Math.min(availW / (g.W + dx), availH / (g.H + dy));
+      const ox = uMinX + (availW - (g.W + dx) * s) / 2, oy = uMinY + (availH - (g.H + dy) * s) / 2;
+      const P = (x, y, back) => ({ x: ox + (x + (back ? dx : 0)) * s, y: oy + (y + (back ? dy : 0)) * s });
+      const nx = -Math.sin(ang), ny = Math.cos(ang); // normale alla direzione di profondità
+      // Dal tubo più lontano (in alto a destra) al più vicino, così le facce anteriori coprono le generatrici dietro.
+      const order = g.tubes.slice().sort((a, b) => (b.cy - a.cy) || (b.cx - a.cx));
+      order.forEach(t => {
+        const r = t.D / 2 * s;
+        const f = P(t.cx, t.cy, false), b = P(t.cx, t.cy, true);
+        // Corpo del tubo: quadrilatero tra le generatrici, poi faccia posteriore e anteriore.
+        const pts = [
+          { x: f.x + nx * r, y: f.y + ny * r }, { x: b.x + nx * r, y: b.y + ny * r },
+          { x: b.x - nx * r, y: b.y - ny * r }, { x: f.x - nx * r, y: f.y - ny * r }
+        ];
+        prims.push({ t: "poly", layer: "VISTA_3D_ISO", pts, color: type.stroke, fill: type.fill, lw: 0.35, alpha: 1 });
+        prims.push({ t: "circle", layer: "VISTA_3D_ISO", cx: b.x, cy: b.y, r, color: type.stroke, fill: type.fill, solid: true });
+        prims.push({ t: "circle", layer: "VISTA_3D_ISO", cx: f.x, cy: f.y, r, color: type.stroke, fill: type.fill, solid: true });
+        prims.push({ t: "circle", layer: "VISTA_3D_ISO", cx: f.x, cy: f.y, r: t.Di / 2 * s, color: type.stroke, fill: bg, solid: true });
+      });
+      state.cables.forEach(c => {
+        const p = P(c.x, c.y, false);
+        const col = c.sys === "SPECIAL_ELV" ? "#38bdf8" : c.sys === "BT_FIRE" ? "#f87171" : "#f59e0b";
+        prims.push({ t: "circle", layer: "VISTA_3D_ISO", cx: p.x, cy: p.y, r: Math.max(0.3, c.d / 2 * s), color: col, fill: null, solid: false });
+      });
+      return isoY;
+    }

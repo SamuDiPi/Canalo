@@ -78,6 +78,8 @@
 
       if (n === 0) {
         out.push({ id: "empty", tone: "info", chip: "Nessun cavo", title: "Nessun cavo nella sezione", text: "Aggiungi cavi dal catalogo oppure importa un disegno DWG/DXF.", action: { id: "addCables", label: "Aggiungi cavi" } });
+      } else if (isConduitSystem() && m.conduit) {
+        conduitChecks(m, out);
       } else {
         if (m.segConform === false) {
           const code = (String(m.segDetail || "").match(/Conflitto (.+?):/) || [])[1] || "di segnale";
@@ -102,7 +104,9 @@
         }
       }
 
-      if (!hasSupport) {
+      if (isConduitSystem()) {
+        // Tubazioni: niente verifica di carico (collari, manicotti e pozzetti sono nella distinta).
+      } else if (!hasSupport) {
         out.push({ id: "load", tone: "info", chip: "Staffaggio da definire", title: "Staffaggio non definito", text: "Scegli un supporto per verificare carico sulle mensole e freccia.", action: { id: "chooseSupport", label: "Scegli supporto" } });
       } else {
         if ((m.loadPct || 0) <= 100) {
@@ -202,6 +206,110 @@
       } else if (id === "addCables") {
         showPanel("cavi", true);
         setTimeout(() => document.getElementById("selCableCatalog")?.focus(), 0);
+      } else if (id === "proposeConduit") {
+        applyConduitProposal();
+      } else if (id === "conduitAuto") {
+        state.conduitAssign = "auto";
+        pushStateToUI();
+        toast("Ripartizione automatica dei cavi", "ok", { label: "Annulla", onClick: undoLastChange });
+      }
+    }
+
+    // --- Tubazioni ---------------------------------------------------------------
+    function conduitChecks(m, out) {
+      const mc = m.conduit;
+      const bad = mc.tubes.filter(t => t.cavi && !t.ok);
+      const dn = Math.round(mc.dn);
+      if (bad.length) {
+        const t = bad[0];
+        out.push({ id: "tube", tone: "error", chip: `Tubi insufficienti (${bad.length})`, title: "Diametro dei tubi insufficiente",
+          value: `T${t.n}: ${fmtIt(t.minimo, 1)} mm`,
+          text: `Nel tubo T${t.n} il fascio di ${t.cavi} cavi è Ø${fmtIt(t.fascio, 1)} mm: serve un interno di almeno ${fmtIt(t.minimo, 1)} mm, il Ø${dn} ne ha ${fmtIt(mc.di, 1)}.` +
+            (bad.length > 1 ? ` Anche ${bad.slice(1).map(x => "T" + x.n).join(", ")}.` : ""),
+          ref: "Interno ≥ 1,3 × Ø fascio · CEI 64-8", action: { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
+      } else {
+        const used = mc.tubes.filter(t => t.cavi);
+        const worst = used.slice().sort((a, b) => b.minimo - a.minimo)[0];
+        out.push({ id: "tube", tone: "ok", chip: `Tubi Ø${dn}`, title: "Diametro dei tubi", value: `${mc.count} × Ø${dn}`,
+          text: worst ? `Il fascio più grande (T${worst.n}, Ø${fmtIt(worst.fascio, 1)} mm) chiede un interno di ${fmtIt(worst.minimo, 1)} mm: il tubo ne ha ${fmtIt(mc.di, 1)}.` : "Tubi vuoti.",
+          ref: "Interno ≥ 1,3 × Ø fascio · CEI 64-8" });
+      }
+      const conflict = mc.tubes.find(t => !t.segregazione);
+      if (conflict) {
+        out.push({ id: "seg", tone: "error", chip: "Segregazione", title: "Segnali e energia nello stesso tubo",
+          text: `Nel tubo T${conflict.n} ci sono cavi di segnale non schermati con cavi di energia: vanno in tubi separati.`,
+          ref: "Segregazione · CEI 64-8 art. 528.1",
+          action: state.conduitAssign === "manual" ? { id: "conduitAuto", label: "Ripartizione automatica" } : { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
+      } else {
+        out.push({ id: "seg", tone: "ok", chip: "Segregazione", title: "Segregazione rispettata",
+          text: state.cables.some(c => conduitCableClass(c) === "elv") ? "I segnali non schermati sono in tubi separati dall'energia." : "Nella sezione non ci sono segnali non schermati.",
+          ref: "CEI 64-8 art. 528.1" });
+      }
+      const mixed = mc.tubes.find(t => t.sicurezzaConEnergia);
+      if (mixed) {
+        out.push({ id: "safety", tone: "warn", chip: "Circuiti di sicurezza", title: "Sicurezza con circuiti ordinari",
+          text: `Nel tubo T${mixed.n} i circuiti di sicurezza sono insieme a circuiti ordinari: verifica che sia ammesso o usa un tubo in più.`,
+          ref: "CEI 64-8 Sez. 56", action: { id: "proposeConduit", label: "Proponi diametro e numero di tubi" } });
+      }
+      const empty = mc.tubes.filter(t => !t.cavi).length;
+      out.push({ id: "fill", tone: "info", chip: `Riempimento ${fmtIt(m.fillPct, 0)} %`, title: "Riempimento dei tubi", value: `${fmtIt(m.fillPct, 1)} %`,
+        text: `Il tubo più pieno occupa il ${fmtIt(m.fillPct, 0)} % della sezione interna.` + (empty ? ` ${empty === 1 ? "Un tubo è" : empty + " tubi sono"} di riserva.` : "") });
+    }
+
+    // Numero di tubi e diametro proposti (ripartizione automatica): numero fisso se l'utente l'ha alzato oltre la proposta.
+    function applyConduitProposal() {
+      if (!isConduitSystem()) return;
+      if (!state.cables.length) { toast("Aggiungi prima i cavi della tubazione", "info"); return; }
+      const p = proposeConduit(state, false);
+      if (!p) {
+        toast("Nessuna combinazione di tubi di questo tipo basta: scegli un tipo con diametri più grandi o dividi la sezione", "error");
+        return;
+      }
+      state.conduitDn = p.dn;
+      state.conduitCount = p.count;
+      state.conduitInner = 0;
+      state.conduitAssign = "auto";
+      pushStateToUI();
+      fitAll();
+      toast(`Proposta: ${p.count} ${p.count === 1 ? "tubo" : "tubi"} Ø${p.dn}`, "ok", { label: "Annulla", onClick: undoLastChange });
+    }
+
+    // Campi del pannello secondo il sistema (canalina o tubazioni) e diametri del tipo di tubo.
+    function updateConduitUI() {
+      const conduit = isConduitSystem();
+      document.querySelectorAll("[data-tray-only]").forEach(el => el.classList.toggle("hidden", conduit));
+      document.querySelectorAll("[data-conduit-only]").forEach(el => el.classList.toggle("hidden", !conduit));
+      if (!conduit) return;
+      const type = conduitType();
+      const sel = document.getElementById("inpConduitDn");
+      if (sel) {
+        const key = state.conduitType + ":" + type.sizes.map(sz => sz[0]).join(",");
+        if (sel.dataset.key !== key) {
+          sel.innerHTML = type.sizes.map(sz => `<option value="${sz[0]}">Ø${sz[0]}</option>`).join("");
+          sel.dataset.key = key;
+        }
+        if (!type.sizes.some(sz => sz[0] === +state.conduitDn)) {
+          sel.insertAdjacentHTML("beforeend", `<option value="${state.conduitDn}">Ø${state.conduitDn}</option>`);
+          sel.dataset.key = "";
+        }
+        sel.value = String(state.conduitDn);
+      }
+      const inner = document.getElementById("inpConduitInner");
+      if (inner) inner.placeholder = fmtIt(conduitInnerDiameter(Object.assign({}, state, { conduitInner: 0 })), 1);
+      const pitchLbl = document.getElementById("lblConduitPitch");
+      const pitchHelp = document.getElementById("helpConduitPitch");
+      const pitch = document.getElementById("inpConduitPitch");
+      if (pitchLbl) pitchLbl.textContent = type.laying === "interrato" ? "Pozzetti ogni" : type.laying === "vista" ? "Passo dei collari" : "Passo (non usato)";
+      if (pitch) { pitch.placeholder = type.pitchM ? fmtIt(type.pitchM, 1) : "—"; pitch.disabled = type.laying === "incassato"; }
+      if (pitchHelp) pitchHelp.textContent = type.laying === "incassato"
+        ? "Tubi sottotraccia: niente collari. Manicotti e curve sono nella distinta materiali."
+        : "Per le tubazioni il carico non si verifica: collari, manicotti o pozzetti sono nella distinta materiali.";
+      const sum = document.getElementById("conduitSummary");
+      const mc = metrics && metrics.conduit;
+      if (sum && mc) {
+        const bad = mc.tubes.filter(t => t.cavi && !t.ok).length;
+        sum.textContent = `${mc.count} ${mc.count === 1 ? "tubo" : "tubi"} Ø${Math.round(mc.dn)} (interno ${fmtIt(mc.di, 1)} mm), ingombro ${Math.round(state.width)} × ${Math.round(state.height)} mm. ` +
+          (state.cables.length ? (bad ? `${bad} ${bad === 1 ? "tubo non verifica" : "tubi non verificano"} la regola dell'1,3.` : "Tutti i tubi verificano la regola dell'1,3.") : "");
       }
     }
 

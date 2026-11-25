@@ -62,8 +62,39 @@
         if (elTitle) elTitle.value = state.title;
       }
 
-      state.width = getNum("inpWidth", state.width);
-      state.height = getNum("inpHeight", state.height);
+      // Canalina o tubazioni: al cambio la sezione si ricostruisce (dimensioni della canalina conservate).
+      const sys = getVal("inpSystem", state.system || "tray");
+      if (sys !== (state.system || "tray")) {
+        setSectionSystem(sys);
+        pushStateToUI();
+        if (typeof fitAll === "function") fitAll();
+        return;
+      }
+      if (isConduitSystem()) {
+        const optNum = (id) => { const v = String(getVal(id, "")).trim(); return v === "" || !(+v > 0) ? 0 : +v; };
+        const prevType = state.conduitType;
+        state.conduitType = getVal("inpConduitType", state.conduitType);
+        if (state.conduitType !== prevType) {
+          // Tipo nuovo: il diametro più vicino del tipo, interno e passo dalla tabella.
+          const sizes = conduitType().sizes;
+          const cur = +state.conduitDn || 0;
+          state.conduitDn = (sizes.find(sz => sz[0] >= cur) || sizes[sizes.length - 1])[0];
+          state.conduitInner = 0;
+          state.conduitPitchM = 0;
+          if (state.conduitType === "cavidotto" && +state.conduitGap > 0 && +state.conduitGap < 20) state.conduitGap = 0;
+        } else {
+          state.conduitDn = getNum("inpConduitDn", state.conduitDn);
+          state.conduitInner = optNum("inpConduitInner");
+          state.conduitPitchM = optNum("inpConduitPitch");
+        }
+        state.conduitCount = Math.max(1, Math.min(24, Math.round(getNum("inpConduitCount", state.conduitCount))));
+        state.conduitCols = Math.round(optNum("inpConduitCols"));
+        state.conduitGap = Math.max(0, getNum("inpConduitGap", state.conduitGap));
+        state.conduitAssign = getVal("inpConduitAssign", state.conduitAssign) === "manual" ? "manual" : "auto";
+      } else {
+        state.width = getNum("inpWidth", state.width);
+        state.height = getNum("inpHeight", state.height);
+      }
       state.thk = getNum("inpThk", state.thk);
       state.lengthM = getNum("inpLength", state.lengthM);
       state.trayType = getVal("inpTrayType", state.trayType);
@@ -183,8 +214,19 @@
       updateLayoutUI();
       updateCableCalloutsUI();
 
-      safeVal("inpWidth", state.width);
-      safeVal("inpHeight", state.height);
+      safeVal("inpSystem", state.system === "conduit" ? "conduit" : "tray");
+      if (state.system === "conduit") {
+        safeVal("inpConduitType", state.conduitType || "rigido");
+        safeVal("inpConduitInner", +state.conduitInner > 0 ? state.conduitInner : "");
+        safeVal("inpConduitCount", state.conduitCount || 1);
+        safeVal("inpConduitCols", +state.conduitCols > 0 ? state.conduitCols : "");
+        safeVal("inpConduitGap", +state.conduitGap || 0);
+        safeVal("inpConduitAssign", state.conduitAssign === "manual" ? "manual" : "auto");
+        safeVal("inpConduitPitch", +state.conduitPitchM > 0 ? state.conduitPitchM : "");
+      } else {
+        safeVal("inpWidth", state.width);
+        safeVal("inpHeight", state.height);
+      }
       safeVal("inpThk", (+state.thk || 1.5).toFixed(1)); // le option sono "1.5", "2.0", "2.5"
       safeVal("inpLength", state.lengthM);
       safeVal("inpTrayType", state.trayType);
@@ -214,7 +256,7 @@
       const elScaleRev = document.getElementById("inpScaleRev"); if (elScaleRev) state.tb.scaleRev = elScaleRev.value;
       const elScale = document.getElementById("inpScale"); if (elScale) state.scale = elScale.value || "1:1";
 
-      state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`).replace(/H=\s*\d+\s*mm/i, `H=${state.height}mm`);
+      if (state.system !== "conduit") state.title = state.title.replace(/L=\s*\d+\s*mm/i, `L=${state.width}mm`).replace(/H=\s*\d+\s*mm/i, `H=${state.height}mm`);
       safeVal("inpTitle", state.title);
       const hTitle = document.getElementById("headerTitle"); if (hTitle) hTitle.textContent = state.title;
       document.title = `${state.title} — ${APP_NAME}`;
@@ -222,6 +264,7 @@
       const elElec = document.getElementById("kpiElectricalCard"); if (elElec) elElec.classList.toggle("hidden", !state.pdfLoaded);
       applyThemeUI();
       safeVal("exportName", state.title.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, ""));
+      if (typeof updateConduitUI === "function") updateConduitUI();
 
       recalculateAll();
     }
@@ -489,6 +532,7 @@
     }
 
     function recalculateAll() {
+      if (isConduitSystem()) { recalculateConduit(); return; }
       const W = state.width, H = state.height;
       if (state.packing === "input") {
         state.cables.forEach(c => { c.x = -999; c.y = -999; });

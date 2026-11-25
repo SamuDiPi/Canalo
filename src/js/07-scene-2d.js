@@ -71,7 +71,13 @@
         prims.push({ t: "text", layer, x, y, h: effectiveH, str: s, color: isLight && color === "#f8fafc" ? txtCol : color, align });
       };
 
-      const ceilY = H + (state.clearance > 0 ? 42 : 18);
+      const isConduit = isConduitSystem();
+      const ceilY = H + (!isConduit && state.clearance > 0 ? 42 : 18);
+      let lowestY = -thk - 18;
+      if (isConduit) {
+        lowestY = drawConduitProfile({ line, rect, circle, text }, isLight);
+      }
+      if (!isConduit) {
       if (state.clearance > 0) {
         line("STAFFAGGI", -25, ceilY, W + 25, ceilY, "#64748b", 0.6);
         for (let hx = -22; hx <= W + 20; hx += 8) line("STAFFAGGI", hx, ceilY, hx + 5, ceilY + 5, "#475569", 0.3);
@@ -132,7 +138,6 @@
       }
 
       // Staffaggi (Disegnati sul layer STAFFAGGI solo se configurato un supporto)
-      let lowestY = -thk - 18;
       if (state.support && state.support !== "none") {
         if (state.support.startsWith("wall_")) {
           const wallX = -25, armH = sup.armH;
@@ -219,6 +224,7 @@
         text("Testi", tagX - 2, tagY + 6.0, 1.95, `NODO PE M6 (${isGV ? `FS17 G/V ${secPE}mmq` : `Treccia Cu ${secPE}mmq`})`, isGV ? "#4ade80" : "#fb923c", "right");
         text("Testi", tagX - 2, tagY + 1.8, 1.65, `Continuità CEI 64-8 Art.543`, "#94a3b8", "right");
       }
+      } // fine delle parti della sola canalina
 
       // ==========================================================================
       // PUNTO 2: DISEGNO DIFFERENZIATO CAVI UNIPOLARI (1X) VS MULTIPOLARI
@@ -285,7 +291,7 @@
       // ========================================================================
       // FASCETTE DI ANCORAGGIO CAVI (CEI EN 61537) SU LAYER DEDICATO "FASCETTE_ANCORAGGIO"
       // ========================================================================
-      if (state.clamps && state.cables.length > 0) {
+      if (!isConduit && state.clamps && state.cables.length > 0) {
         // A. Fascette amagnetiche per terne a trifoglio
         const trfGroups = {};
         state.cables.forEach(c => {
@@ -361,11 +367,13 @@
         });
       }
 
-      const qY = -thk - 22;
-      line("QUOTE", 0, qY, W, qY, "#f59e0b", 0.45);
-      text("QUOTE", W / 2, qY + 2.5, 2.5, `Base L = ${W} mm`, "#fbbf24", "center");
-      line("QUOTE", W + 10, 0, W + 10, H, "#f59e0b", 0.45);
-      text("QUOTE", W + 12, H / 2 - 1, 2.5, `H=${H}mm`, "#fbbf24", "left");
+      if (!isConduit) {
+        const qY = -thk - 22;
+        line("QUOTE", 0, qY, W, qY, "#f59e0b", 0.45);
+        text("QUOTE", W / 2, qY + 2.5, 2.5, `Base L = ${W} mm`, "#fbbf24", "center");
+        line("QUOTE", W + 10, 0, W + 10, H, "#f59e0b", 0.45);
+        text("QUOTE", W + 12, H / 2 - 1, 2.5, `H=${H}mm`, "#fbbf24", "left");
+      }
 
       const isMinimal = state.layoutMode === "minimal";
       const leftBoxX = -48, leftBoxW = Math.max(200, W + 92);
@@ -379,7 +387,8 @@
       }
 
       if (!isMinimal && state.showIso3D) {
-        lowestY = build3DIsoScene(prims, leftBoxX, lowestY, leftBoxW, W, H, thk, mat, sup);
+        lowestY = isConduit ? buildConduitIsoScene(prims, leftBoxX, lowestY, leftBoxW)
+                            : build3DIsoScene(prims, leftBoxX, lowestY, leftBoxW, W, H, thk, mat, sup);
       }
 
       // ------------------------------------------------------------------------
@@ -406,6 +415,7 @@
       const showDesc = state.showTableDesc !== false && !state.hideTableDesc;
       const colDefs = [
         { key: "pos", header: "POS", col: "#cbd5e1", wrap: false },
+        ...(isConduit ? [{ key: "tube", header: "TUBO", col: "#38bdf8", wrap: false }] : []),
         { key: "code", header: "SIGLA LINEA", col: "#38bdf8", wrap: true, prio: 2 },
         ...(showDesc ? [{ key: "desc", header: "DESCRIZIONE UTENZA", col: "#f8fafc", wrap: true, prio: 1, grow: true, minW: 30 }] : []),
         { key: "type", header: "TIPO CAVO", col: "#f8fafc", wrap: true, prio: 3 },
@@ -420,6 +430,7 @@
         return {
           isUni,
           pos: `#${idx + 1}`,
+          tube: `T${(Math.round(+c.tube || 0)) + 1}`,
           code: c.code,
           desc: cleanUtenzaDescription(c.desc, c.code) || c.desc || "-",
           type: getDisplayCableType(c, state.cables),
@@ -466,7 +477,7 @@
         const cells = colDefs.map(cd => cellLines(r[cd.key], cd, T_BODY));
         return { r, cells, h: blockH(Math.max(...cells.map(l => l.length)), T_BODY) };
       });
-      const emptyLines = wrap("Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", tabW - 12, T_BODY);
+      const emptyLines = wrap(isConduit ? "Tubazione vuota (0 cavi posati)" : "Canalina vuota (0 cavi posati) - Importa un DWG/DXF reale", tabW - 12, T_BODY);
       const bodyH = bodyRows.length ? bodyRows.reduce((a, b) => a + b.h, 0) : blockH(emptyLines.length, T_BODY);
       const tableInnerH = titleH + headerH + bodyH;
 
@@ -519,8 +530,32 @@
 
       let currentRightY = cursorY;
 
+      // 2. TUBAZIONI: verifica di ogni tubo al posto del diagramma di carico (escluso in Stampa Minimal)
+      if (!isMinimal && isConduit && metrics.conduit) {
+        const mc = metrics.conduit;
+        const vTitle = wrap(`2. VERIFICA DEI TUBI - ${mc.typeName} Ø${Math.round(mc.dn)} (interno ${fmtConduitMm(mc.di)} mm): interno >= 1,3 x Ø fascio (CEI 64-8)`, tabW - 8, 2.5);
+        const vTitleH = Math.max(9, blockH(vTitle.length, 2.5));
+        let vy = currentRightY - 2;
+        rect("TABELLA", rightX, vy - vTitleH, tabW, vTitleH, mc.allOk ? "#4ade80" : "#ef4444", boxBg, true);
+        textLines("TABELLA", rightX + 4, vy, 2.5, vTitle, mc.allOk ? "#4ade80" : "#f87171");
+        vy -= vTitleH;
+        mc.tubes.forEach((t, i) => {
+          const txt = t.cavi
+            ? `T${t.n}: ${t.cavi} cavi, ${t.circuiti} circ. | fascio Ø${fmtConduitMm(t.fascio)} -> interno min ${fmtConduitMm(t.minimo)} mm | riempimento ${fmtConduitMm(t.riempimento)}% | Kr ${t.kr.toFixed(2).replace(".", ",")}`
+            : `T${t.n}: vuoto (riserva)`;
+          const esito = !t.cavi ? "RISERVA" : (t.ok && t.segregazione ? "OK" : (!t.ok ? "NON VERIFICATO" : "SEGREGAZIONE"));
+          const l1 = wrap(txt, tabW - 40, T_BOM);
+          const hh = Math.max(7, blockH(l1.length, T_BOM));
+          rect("TABELLA", rightX, vy - hh, tabW, hh, "#334155", i % 2 === 0 ? boxBg : boxAlt, true);
+          textLines("TABELLA", rightX + 3, vy, T_BOM, l1, "#f8fafc");
+          textLines("TABELLA", rightX + tabW - 36, vy, T_BOM, [esito], esito === "OK" ? "#4ade80" : esito === "RISERVA" ? "#94a3b8" : "#f87171");
+          vy -= hh;
+        });
+        currentRightY = vy - 4;
+      }
+
       // 2. DIAGRAMMA CURVA DI CARICO IN TAVOLA CAD (Opzionale - escluso in Stampa Minimal)
-      if (!isMinimal && state.showLoadChart !== false) {
+      if (!isMinimal && !isConduit && state.showLoadChart !== false) {
         const chartH = 54, chartY = currentRightY - chartH - 22;
         currentRightY = chartY - 6;
         rect("CURVA_CARICO", rightX, chartY, tabW, chartH + 16, "#38bdf8", boxBg, true);
@@ -629,3 +664,65 @@
       return { prims, bounds: { minX, maxX, minY, maxY }, rightBounds: { minX: rightX - 8, maxX, minY: currentRightY - 8, maxY: topY + (isMinimal ? 12 : 2) } };
     }
 
+
+    // Sezione a tubi: anelli dei tubi (parete piena, interno vuoto), nome e diametri di ogni tubo; per i cavidotti il
+    // letto di sabbia, per i corrugati la parete in cui sono incassati. Restituisce il punto più basso disegnato.
+    function drawConduitProfile(h, isLight) {
+      const g = conduitGeometry();
+      const type = conduitType();
+      const bg = isLight ? "#ffffff" : "#04070d";
+      const muted = isLight ? "#475569" : "#94a3b8";
+      let lowest = -18;
+      if (type.laying === "interrato") {
+        // Letto di sabbia attorno al banco (100 mm) e piano di posa.
+        const m = 100;
+        h.rect("STAFFAGGI", -m, -m, g.W + 2 * m, g.H + 2 * m, "#a16207", null, false);
+        for (let x = -m + 10; x < g.W + m; x += 25) h.line("STAFFAGGI", x, -m, x + 8, -m - 8, "#78716c", 0.3);
+        h.text("STAFFAGGI", g.W + m + 4, g.H + m - 6, 2.5, "Letto di sabbia vagliata", "#ca8a04", "left");
+        h.text("STAFFAGGI", g.W + m + 4, -m + 2, 2.5, "Piano di posa", muted, "left");
+        lowest = -m - 20;
+      } else if (type.laying === "incassato") {
+        // Parete in cui il tubo è incassato: bordo della traccia.
+        const m = 15;
+        h.line("STAFFAGGI", -m - 20, g.H + m, g.W + m + 20, g.H + m, "#78716c", 0.5);
+        for (let x = -m - 18; x < g.W + m + 18; x += 8) h.line("STAFFAGGI", x, g.H + m, x + 5, g.H + m + 5, "#57534e", 0.3);
+        h.text("STAFFAGGI", g.W + m + 22, g.H + m - 1, 2.5, "Filo parete (sottotraccia)", muted, "left");
+      } else {
+        // Posa a vista: superficie di appoggio e collare di fissaggio sotto ogni fila inferiore.
+        const y0 = -6;
+        h.line("STAFFAGGI", -25, y0, g.W + 25, y0, "#64748b", 0.6);
+        for (let x = -22; x <= g.W + 20; x += 8) h.line("STAFFAGGI", x, y0, x + 5, y0 - 5, "#475569", 0.3);
+        g.tubes.filter(t => t.cy === g.D / 2).forEach(t => {
+          h.rect("STAFFAGGI", t.cx - t.D * 0.35, y0, t.D * 0.7, 6, "#94a3b8", "#334155", true);
+        });
+        h.text("STAFFAGGI", g.W + 28, y0 - 1, 2.5, `Collari di fissaggio (passo ${(+state.conduitPitchM > 0 ? +state.conduitPitchM : type.pitchM)} m)`, muted, "left");
+        lowest = y0 - 20;
+      }
+      const a = (typeof metrics !== "undefined" && metrics && metrics.conduit) ? metrics.conduit.tubes : [];
+      g.tubes.forEach(t => {
+        h.circle("Tubazioni", t.cx, t.cy, t.D / 2, type.stroke, type.fill, true);
+        h.circle("Tubazioni", t.cx, t.cy, t.Di / 2, type.stroke, bg, true);
+        if (type.laying === "interrato" || state.conduitType === "corrugato") {
+          // Doppia parete / corrugazione: cerchio a metà parete.
+          h.circle("Tubazioni", t.cx, t.cy, (t.D + t.Di) / 4, type.stroke, null, false);
+        }
+        const res = a[t.i];
+        const bad = res && !res.ok;
+        h.text("Testi", t.cx, t.cy + t.D / 2 + 3, 2.5, `T${t.i + 1}`, bad ? "#ef4444" : "#38bdf8", "center");
+      });
+      // Quote: diametri del tubo e ingombro del banco.
+      const q = -Math.max(30, -lowest + 6);
+      h.line("QUOTE", 0, q, g.D, q, "#f59e0b", 0.45);
+      h.line("QUOTE", 0, q - 1.5, 0, q + 1.5, "#f59e0b", 0.4);
+      h.line("QUOTE", g.D, q - 1.5, g.D, q + 1.5, "#f59e0b", 0.4);
+      h.text("QUOTE", g.D / 2, q - 5, 2.5, `Ø${Math.round(g.D)} (int. ${fmtConduitMm(g.Di)}) mm`, "#fbbf24", "center");
+      if (g.tubes.length > 1) {
+        const q2 = q - 12;
+        h.line("QUOTE", 0, q2, g.W, q2, "#f59e0b", 0.45);
+        h.line("QUOTE", 0, q2 - 1.5, 0, q2 + 1.5, "#f59e0b", 0.4);
+        h.line("QUOTE", g.W, q2 - 1.5, g.W, q2 + 1.5, "#f59e0b", 0.4);
+        h.text("QUOTE", g.W / 2, q2 - 5, 2.5, `Ingombro ${Math.round(g.W)} × ${Math.round(g.H)} mm (${g.tubes.length} tubi, distanza ${Math.round(g.gap)} mm)`, "#fbbf24", "center");
+        return Math.min(lowest, q2 - 10);
+      }
+      return Math.min(lowest, q - 10);
+    }

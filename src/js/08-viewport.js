@@ -303,6 +303,18 @@
     }
 
     function dragCableTo(cable, pt) {
+      if (isConduitSystem()) {
+        // Tubazioni: il cavo (con tutto il suo circuito) passa nel tubo sotto il puntatore; ripartizione a mano.
+        const g = conduitGeometry();
+        const t = g.tubes.find(tb => Math.hypot(pt.x - tb.cx, pt.y - tb.cy) <= tb.D / 2);
+        if (t && t.i !== Math.round(+cable.tube || 0)) {
+          const key = conduitCircuitKey(cable, state.cables.indexOf(cable));
+          state.cables.forEach((o, i) => { if (conduitCircuitKey(o, i) === key) o.tube = t.i; });
+          state.conduitAssign = "manual";
+          pushStateToUI();
+        }
+        return;
+      }
       const oldX = cable.x, oldY = cable.y;
       const pos = resolveNonOverlappingPosition(cable, pt.x, pt.y);
       const dx = pos.x - oldX, dy = pos.y - oldY;

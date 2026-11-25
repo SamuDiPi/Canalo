@@ -352,6 +352,21 @@
       showLoadChart: true,
       showBOM: true,
       showCartiglio: true,
+      // Sistema della sezione: canalina ("tray") o tubazioni ("conduit", vedi 02b-conduit.js). Per i tubi:
+      // tipo, diametro esterno nominale, interno (0 = dalla tabella del tipo), numero, tubi per fila (0 =
+      // automatico), distanza tra i tubi, ripartizione dei cavi ("auto" o "manual"), passo di collari o pozzetti
+      // (0 = quello del tipo). trayW/trayH: dimensioni della canalina da ripristinare tornando alla canalina.
+      system: "tray",
+      conduitType: "rigido",
+      conduitDn: 25,
+      conduitInner: 0,
+      conduitCount: 1,
+      conduitCols: 0,
+      conduitGap: 10,
+      conduitAssign: "auto",
+      conduitPitchM: 0,
+      trayW: 0,
+      trayH: 0,
       tb: { client: "PROGETTO ESECUTIVO", project: "IMPIANTI ELETTRICI E SPECIALI", docCode: "PE-IMP-EL-PART-02", author: "STUDIO TECNICO", checker: "RESPONSABILE TECNICO", rev: "Rev. 00", date: new Date().toLocaleDateString("it-IT"), scaleRev: "Scala 1:1 - Rev.00" },
       cables: []
     };

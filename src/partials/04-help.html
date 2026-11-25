@@ -19,6 +19,7 @@
           <a href="#help-dwg">Importare un disegno DWG/DXF</a>
           <a href="#help-pdf">Importare lo schema unifilare</a>
           <a href="#help-sezione">Pannello Sezione</a>
+          <a href="#help-tubazioni">Tubazioni</a>
           <a href="#help-cavi">Cavi e distinta</a>
           <a href="#help-staffaggio">Staffaggio e carichi</a>
           <a href="#help-verifiche">Verifiche</a>
@@ -84,6 +85,20 @@
               <li><strong>Disposizione dei cavi</strong>: <em>Automatica</em> dispone i cavi per gravità, dal più grande, rispettando gli scomparti; <em>Come nel disegno</em> mantiene le posizioni importate o trascinate a mano.</li>
               <li><strong>Setti separatori</strong>: da 0 a 2. Si regolano con i cursori sotto i pulsanti oppure trascinando il setto nel disegno. Con i setti, i cavi dati e di sicurezza vanno negli scomparti dedicati.</li>
               <li><strong>Materiale</strong>, <strong>Dotazioni</strong> (coperchio, conduttore di terra, distanza dal solaio, varchi tagliafuoco, bordino, fascette) e cartellino di planimetria: determinano il disegno e il computo dei materiali.</li>
+            </ul>
+          </section>
+
+          <section id="help-tubazioni" data-help>
+            <h3>Tubazioni</h3>
+            <p>Nel pannello Sezione, <strong>Sistema &gt; Tubazioni</strong> trasforma la scheda in uno o più tubi uguali (anche un banco di cavidotti su più file). Le misure della canalina restano da parte e tornano scegliendo di nuovo <em>Canalina</em>.</p>
+            <ul>
+              <li><strong>Tipo di tubo</strong>: rigido a vista, corrugato sottotraccia, cavidotto interrato a doppia parete, metallico in acciaio zincato. Il <strong>diametro interno</strong> in grigio è un valore indicativo del tipo: per l'esecutivo scrivi quello del catalogo del tubo scelto.</li>
+              <li><strong>Tubi, Per fila, Distanza</strong>: numero di tubi, quanti per fila (vuoto = automatico) e distanza tra un tubo e l'altro.</li>
+              <li><strong>Ripartizione dei cavi</strong>: <em>Automatica</em> tiene i conduttori di uno stesso circuito nello stesso tubo, mette i segnali non schermati e i circuiti di sicurezza in tubi separati dall'energia e usa i tubi che servono (gli altri restano di riserva). <em>A mano</em>: trascina un cavo nel disegno sopra un altro tubo e si sposta con tutto il suo circuito.</li>
+              <li><strong>Proponi diametro e numero di tubi</strong>: sceglie il numero di tubi più piccolo e poi il diametro più piccolo che verificano la regola dell'1,3 (diametro interno almeno 1,3 volte quello del fascio di cavi, CEI 64-8).</li>
+              <li><strong>Verifiche</strong>: regola dell'1,3 per ogni tubo, segregazione (CEI 64-8 art. 528.1), circuiti di sicurezza insieme a quelli ordinari, riempimento. La portata dei cavi usa i coefficienti di raggruppamento in tubo (IEC 60364-5-52 tab. B.52.17) e, per i cavidotti affiancati, quelli dei tubi interrati (tab. B.52.19): valori indicativi.</li>
+              <li><strong>Staffaggio</strong>: per i tubi non c'è la verifica di carico; il pannello chiede il passo dei collari (posa a vista) o la distanza tra i pozzetti (cavidotti). Collari, manicotti, curve, pozzetti, nastro di segnalazione e tappi dei tubi di riserva sono nella distinta materiali.</li>
+              <li><strong>Tavola</strong>: tubi sul layer <code>Tubazioni</code>, colonna TUBO nella distinta cavi e tabella <em>Verifica dei tubi</em> al posto del diagramma di carico.</li>
             </ul>
           </section>
 

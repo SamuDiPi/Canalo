@@ -232,7 +232,7 @@
         const mParen = String(sec.title || "").match(/\(([^)]+)\)/);
         const displayName = mParen ? mParen[1].trim() : (sec.title || `Canalina ${idx + 1}`);
         const cableCount = Array.isArray(sec.cables) ? sec.cables.length : 0;
-        const dims = `${sec.width}x${sec.height} mm`;
+        const dims = sec.system === "conduit" ? conduitLabel(sec) : `${sec.width}x${sec.height} mm`;
         const tooltip = `Scheda #${idx + 1}: ${sec.title || displayName}\nDimensioni: ${dims}\nCavi posati: ${cableCount}\nSerie: ${sec.type || 'P2000'}`;
 
         // 1. Creazione Tab nello Strip orizzontale
@@ -361,7 +361,9 @@
       if (duplicateCurrent) {
         newSec.title = `${state.title.replace(/\s*\(Copia\)/i, "")} (Sez. ${letter}-${letter})`;
       } else {
-        newSec.title = `NUOVA CANALINA ${String(nextNum).padStart(2, "0")} - L=${state.width}mm H=${state.height}mm`;
+        newSec.title = state.system === "conduit"
+          ? `NUOVA TUBAZIONE ${String(nextNum).padStart(2, "0")}`
+          : `NUOVA CANALINA ${String(nextNum).padStart(2, "0")} - L=${state.width}mm H=${state.height}mm`;
         newSec.cables = [];
         newSec.support = "none";
         newSec.pdfLoaded = false;
